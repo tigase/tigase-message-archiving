@@ -26,9 +26,15 @@ import java.util.logging.Logger;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 import tigase.server.Packet;
+import tigase.util.DNSResolver;
 import tigase.xml.Element;
 import tigase.xmpp.*;
 
+/**
+ * MessageArchingPlugin is implementation of plugin which forwards messages 
+ * with type set to "chat" to MessageArchivingComponent to store this messages
+ * in message archive.
+ */
 public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessorIfc {
 
         private static final Logger log =
@@ -44,8 +50,8 @@ public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessor
         public static final String REMOVE = "remove";
         private static final String MESSAGE = "message";
         private static final String XMLNS = "jabber:client";
-        private static final String ID = "message-archive";
-        private static final String[] ELEMENTS = {MESSAGE, "*"};
+        private static final String ID = "message-archive-xep-0136";
+        private static final String[] ELEMENTS = {MESSAGE, ALL};
         public static final String XEP0136NS = "urn:xmpp:archive";
         private static final String[] XMLNSS = {XMLNS, XEP0136NS};
         private static final Element[] DISCO_FEATURES = {
@@ -58,10 +64,21 @@ public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessor
         
         @Override
         public void init(Map<String, Object> settings) throws TigaseDBException {
-                super.init(settings);
-                JID sm_jid = (JID) settings.get("sm-jid");
+                super.init(settings);                
                 
-                ma_jid = JID.jidInstanceNS(id(), sm_jid.getDomain(), null);
+                String componentJidStr = (String) settings.get("component-jid");
+                if (componentJidStr != null) {
+                        ma_jid = JID.jidInstanceNS(componentJidStr);
+                }
+                else {
+                        String defHost = DNSResolver.getDefaultHostname();
+                        ma_jid = JID.jidInstanceNS(id(), defHost, null);
+                }                
+                
+                log.log(Level.CONFIG, "Loaded message archiving component jid option: {0} = {1}", 
+                        new Object[] { "component-jid", ma_jid });
+                
+                System.out.println("MA LOADED = " + ma_jid.toString());
         }
         
         @Override
