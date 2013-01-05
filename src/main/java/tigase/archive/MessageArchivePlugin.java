@@ -72,7 +72,7 @@ public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessor
                 }
                 else {
                         String defHost = DNSResolver.getDefaultHostname();
-                        ma_jid = JID.jidInstanceNS(id(), defHost, null);
+                        ma_jid = JID.jidInstanceNS("message-archive", defHost, null);
                 }                
                 
                 log.log(Level.CONFIG, "Loaded message archiving component jid option: {0} = {1}", 
