@@ -146,6 +146,7 @@ public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessor
                                                 session.putCommonSessionData(ID + "/" + AUTO, save);
 
                                                 Element res = new Element("auto");
+                                                res.setXMLNS(XEP0136NS);
                                                 res.setAttribute("save", save ? "true" : "false");
                                                 results.offer(packet.okResult(res, 0));
                                                 return;
