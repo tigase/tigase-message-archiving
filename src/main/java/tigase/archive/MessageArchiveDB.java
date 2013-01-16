@@ -108,7 +108,7 @@ public class MessageArchiveDB {
         private static final String GET_MESSAGES =
                 "select " + MSGS_MSG + " from " + MSGS_TABLE
                 + " where " + MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID + " = ?"
-                + " and date(" + MSGS_TIMESTAMP + ") = ?"
+                + " and date(" + MSGS_TIMESTAMP + ") = date(?)"
                 + " order by " + MSGS_TIMESTAMP + " limit ? offset ?";
         private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE
                 + " where " + MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID + " = ?"
