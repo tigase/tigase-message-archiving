@@ -123,11 +123,50 @@ public class MessageArchivePlugin extends XMPPProcessor implements XMPPProcessor
                                 }
                                 
                                 Element auto = packet.getElement().getChild("auto");
-                                if (auto == null) {
+                                Element pref = packet.getElement().getChild("pref");
+                                if (auto == null && pref == null) {
                                         // redirecting to message archiving component                                
                                         Packet result = packet.copyElementOnly();
                                         result.setPacketTo(ma_jid);
                                         results.offer(result);
+                                }
+                                else if (pref != null) {
+                                        if (packet.getType() == StanzaType.get) {
+                                                Element prefEl = new Element("pref");
+                                                prefEl.setXMLNS(XEP0136NS);
+                                                
+                                                // auto
+                                                Element autoEl = new Element("auto");
+                                                autoEl.setAttribute("save", String.valueOf(getAutoSave(session)));
+                                                prefEl.addChild(autoEl);
+                                                
+                                                // default
+                                                Element defaultEl = new Element("default");
+                                                defaultEl.setAttribute("otr", "forbid");
+                                                defaultEl.setAttribute("save", "message");
+                                                prefEl.addChild(defaultEl);
+                                                
+                                                Element methodEl = new Element("method");
+                                                methodEl.setAttribute("type", "auto");
+                                                methodEl.setAttribute("use", "prefer");
+                                                prefEl.addChild(methodEl);
+                                                methodEl = new Element("method");
+                                                methodEl.setAttribute("type", "local");
+                                                methodEl.setAttribute("use", "prefer");
+                                                prefEl.addChild(methodEl);
+                                                methodEl = new Element("method");
+                                                methodEl.setAttribute("type", "manual");
+                                                methodEl.setAttribute("use", "prefer");
+                                                prefEl.addChild(methodEl);
+                                                
+                                                results.offer(packet.okResult(prefEl, 0));
+                                        }
+                                        else if (packet.getType() == StanzaType.set) {
+                                                results.offer(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, null, true));
+                                        }
+                                        else {
+                                                results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, null, true));
+                                        }
                                 }
                                 else {
                                         String val = auto.getAttribute("save");
