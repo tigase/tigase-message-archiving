@@ -6,7 +6,8 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -227,7 +228,7 @@ public class MessageArchivePlugin
 										true));
 					}
 				} else {
-					String val   = auto.getAttribute("save");
+					String val   = auto.getAttributeStaticStr("save");
 					boolean save = false;
 
 					if ("1".equals(val) || "true".equals(val)) {
@@ -353,4 +354,4 @@ public class MessageArchivePlugin
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/16
+//~ Formatted in Tigase Code Convention on 13/02/20

@@ -6,7 +6,8 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -29,6 +30,7 @@ import tigase.db.DataRepository;
 import tigase.db.RepositoryFactory;
 
 import tigase.server.Message;
+import tigase.server.Packet;
 
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
@@ -254,7 +256,7 @@ public class MessageArchiveDB {
 
 			if (delay != null) {
 				try {
-					String stamp = delay.getAttribute("stamp");
+					String stamp = delay.getAttributeStaticStr("stamp");
 
 					if (stamp.endsWith("Z")) {
 						synchronized (formatter) {
@@ -271,7 +273,7 @@ public class MessageArchiveDB {
 			}
 			msg.addAttribute("time", String.valueOf(mtime.getTime()));
 
-			String type                      = msg.getAttribute("type");
+			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
@@ -400,20 +402,24 @@ public class MessageArchiveDB {
 			Element msg          = null;
 
 			while ((msg = queue.poll()) != null) {
-				Element item = new Element(msg.getAttribute("from").startsWith(ownerStr)
-																	 ? "to"
-																	 : "from");
+				Element item =
+					new Element(msg.getAttributeStaticStr(Packet.FROM_ATT).startsWith(ownerStr)
+											? Packet.TO_ATT
+											: Packet.FROM_ATT);
 
 				item.addChild(msg.getChild("body"));
-				item.setAttribute("secs",
-													String.valueOf((Long.valueOf(msg.getAttribute("time")) -
-																					collection.getTime()) / 1000));
+				item.setAttribute(
+						"secs",
+						String.valueOf(
+							(Long.valueOf(msg.getAttributeStaticStr("time")) - collection.getTime()) /
+							1000));
 				msgs.add(item);
 			}
 			Collections.sort(msgs, new Comparator<Element>() {
 				@Override
 				public int compare(Element m1, Element m2) {
-					return m1.getAttribute("secs").compareTo(m2.getAttribute("secs"));
+					return m1.getAttributeStaticStr("secs").compareTo(
+							m2.getAttributeStaticStr("secs"));
 				}
 			});
 		}
@@ -719,4 +725,4 @@ public class MessageArchiveDB {
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/16
+//~ Formatted in Tigase Code Convention on 13/02/20
