@@ -2,7 +2,7 @@
  * MessageArchivePlugin.java
  *
  * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
+ * Copyright (C) 2004-2013 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -68,28 +68,26 @@ public class MessageArchivePlugin
 	public static final String RETRIEVE = "retrieve";
 
 	/** Field description */
-	public static final String XEP0136NS = "urn:xmpp:archive";
-	private static final String ARCHIVE  = "message-archive";
-	private static final String AUTO     = "auto";
-	private static final String ID       = "message-archive-xep-0136";
-	private static final Logger log      =
-		Logger.getLogger(MessageArchivePlugin.class.getCanonicalName());
-	private static final String MESSAGE           = "message";
-	private static final String SETTINGS          = ARCHIVE + "/settings";
-	private static final String XMLNS             = "jabber:client";
-	private static final String[] ELEMENTS        = { MESSAGE, ALL };
-	private static final String[] XMLNSS          = { XMLNS, XEP0136NS };
-	private static final Element[] DISCO_FEATURES = { new Element("feature",
-																										new String[] { "var" },
-																										new String[] {
-																											XEP0136NS + ":" + AUTO }),
-					new Element("feature", new String[] { "var" },
-											new String[] { XEP0136NS + ":manage" }) };
+	public static final String  XEP0136NS = "urn:xmpp:archive";
+	private static final String ARCHIVE   = "message-archive";
+	private static final String AUTO      = "auto";
+	private static final String ID        = "message-archive-xep-0136";
+	private static final Logger log = Logger.getLogger(MessageArchivePlugin.class
+			.getCanonicalName());
+	private static final String    MESSAGE  = "message";
+	private static final String    SETTINGS = ARCHIVE + "/settings";
+	private static final String    XMLNS    = "jabber:client";
+	private static final String[]  ELEMENTS = { MESSAGE, ALL_NAMES };
+	private static final String[]  XMLNSS   = { XMLNS, XEP0136NS };
+	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
+			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
+			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
+					":manage" }) };
 
 	//~--- fields ---------------------------------------------------------------
 
 	private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	private JID ma_jid                 = null;
+	private JID              ma_jid    = null;
 
 	//~--- methods --------------------------------------------------------------
 
@@ -115,8 +113,8 @@ public class MessageArchivePlugin
 			ma_jid = JID.jidInstanceNS("message-archive", defHost, null);
 		}
 		log.log(Level.CONFIG, "Loaded message archiving component jid option: {0} = {1}",
-						new Object[] { "component-jid",
-													 ma_jid });
+				new Object[] { "component-jid",
+				ma_jid });
 		System.out.println("MA LOADED = " + ma_jid.toString());
 	}
 
@@ -134,8 +132,7 @@ public class MessageArchivePlugin
 	 */
 	@Override
 	public void process(Packet packet, XMPPResourceConnection session,
-											NonAuthUserRepository repo, Queue<Packet> results,
-											Map<String, Object> settings)
+			NonAuthUserRepository repo, Queue<Packet> results, Map<String, Object> settings)
 					throws XMPPException {
 		if (session == null) {
 			return;
@@ -145,8 +142,8 @@ public class MessageArchivePlugin
 				StanzaType type = packet.getType();
 
 				if ((packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH) ==
-						 null) || ((type != null) && (type != StanzaType.chat) &&
-											 (type != StanzaType.normal))) {
+						null) || ((type != null) && (type != StanzaType.chat) && (type != StanzaType
+						.normal))) {
 					return;
 				}
 
@@ -163,7 +160,7 @@ public class MessageArchivePlugin
 				}
 			} else if ("iq".equals(packet.getElemName())) {
 				if (ma_jid.equals(packet.getPacketFrom())) {
-					JID connId    = session.getConnectionId(packet.getStanzaTo());
+					JID    connId = session.getConnectionId(packet.getStanzaTo());
 					Packet result = packet.copyElementOnly();
 
 					result.setPacketTo(connId);
@@ -171,8 +168,8 @@ public class MessageArchivePlugin
 
 					return;
 				}
-				if ((packet.getType() != StanzaType.get) &&
-						(packet.getType() != StanzaType.set)) {
+				if ((packet.getType() != StanzaType.get) && (packet.getType() != StanzaType
+						.set)) {
 					return;
 				}
 
@@ -220,15 +217,14 @@ public class MessageArchivePlugin
 						prefEl.addChild(methodEl);
 						results.offer(packet.okResult(prefEl, 0));
 					} else if (packet.getType() == StanzaType.set) {
-						results.offer(
-								Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(
-									packet, null, true));
+						results.offer(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(
+								packet, null, true));
 					} else {
 						results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, null,
-										true));
+								true));
 					}
 				} else {
-					String val   = auto.getAttributeStaticStr("save");
+					String  val  = auto.getAttributeStaticStr("save");
 					boolean save = false;
 
 					if ("1".equals(val) || "true".equals(val)) {
@@ -237,7 +233,7 @@ public class MessageArchivePlugin
 						save = false;
 					} else {
 						results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
-										"Save value is incorrect or missing", false));
+								"Save value is incorrect or missing", false));
 					}
 					try {
 						setAutoSave(session, save);
@@ -247,23 +243,23 @@ public class MessageArchivePlugin
 
 						res.setXMLNS(XEP0136NS);
 						res.setAttribute("save", save
-																		 ? "true"
-																		 : "false");
+								? "true"
+								: "false");
 						results.offer(packet.okResult(res, 0));
 
 						return;
 					} catch (TigaseDBException ex) {
-						log.log(Level.WARNING, "Error setting Message Archive state: {0}",
-										ex.getMessage());
+						log.log(Level.WARNING, "Error setting Message Archive state: {0}", ex
+								.getMessage());
 						results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
-										"Database error occured", true));
+								"Database error occured", true));
 					}
 				}
 			}
 		} catch (NotAuthorizedException ex) {
 			log.log(Level.WARNING, "NotAuthorizedException for packet: {0}", packet);
 			results.offer(Authorization.NOT_AUTHORIZED.getResponseMessage(packet,
-							"You must authorize session first.", true));
+					"You must authorize session first.", true));
 		}
 	}
 
@@ -326,8 +322,8 @@ public class MessageArchivePlugin
 				auto = Boolean.parseBoolean(data);
 				session.putCommonSessionData(ID + "/" + AUTO, auto);
 			} catch (TigaseDBException ex) {
-				log.log(Level.WARNING, "Error getting Message Archive state: {0}",
-								ex.getMessage());
+				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
+						.getMessage());
 				auto = false;
 			}
 		}
@@ -354,4 +350,4 @@ public class MessageArchivePlugin
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/20
+//~ Formatted in Tigase Code Convention on 13/03/13
