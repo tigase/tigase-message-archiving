@@ -202,21 +202,12 @@ public class MessageArchiveDB {
 																									") references " + JIDS_TABLE + " (" +
 																									JIDS_ID + ")," + " foreign key (" +
 																									MSGS_OWNER_ID + ") references " +
-																									JIDS_TABLE + " (" + JIDS_ID + ") ); " +
-																									"create index " + MSGS_TABLE + "_" +
-																									MSGS_OWNER_ID + "_index on " +
-																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
-																									"); " + "create index " + MSGS_TABLE +
-																									"_" + MSGS_OWNER_ID + "_" +
-																									MSGS_BUDDY_ID + "_index on " +
-																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
-																									", " + MSGS_BUDDY_ID + "); " +
-																									"create index " + MSGS_TABLE + "_" +
-																									MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP +
-																									"_" + MSGS_BUDDY_ID + "_index on " +
-																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
-																									", " + MSGS_TIMESTAMP + ", " + 
-																									MSGS_BUDDY_ID + "); ";
+																									JIDS_TABLE + " (" + JIDS_ID + "), " +
+																									"key (" + MSGS_OWNER_ID + "), " + 
+																									"key (" + MSGS_OWNER_ID + ", " + 
+																									MSGS_BUDDY_ID + "), key (" + 
+																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + 
+																									", " + MSGS_BUDDY_ID + "));";
 
 	//~--- fields ---------------------------------------------------------------
 
