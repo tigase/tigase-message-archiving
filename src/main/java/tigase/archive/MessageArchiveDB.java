@@ -59,6 +59,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Queue;
+import java.util.TimeZone;
 
 /**
  * Class description
@@ -77,10 +78,12 @@ public class MessageArchiveDB {
 		Logger.getLogger(MessageArchiveDB.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
 	private static final long MILIS_PER_DAY          = 24 * 60 * 60 * 1000;
-	private final static SimpleDateFormat formatter2 =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 	private final static SimpleDateFormat formatter =
 		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final static SimpleDateFormat formatter2 =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+	private final static SimpleDateFormat formatter3 =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
@@ -235,6 +238,9 @@ public class MessageArchiveDB {
 	 */
 	public void initRepository(String conn_str, Map<String, String> params)
 					throws SQLException {
+		synchronized(formatter) {
+			formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+		}
 		try {
 			data_repo = RepositoryFactory.getDataRepository(null, conn_str, params);
 
@@ -298,16 +304,7 @@ public class MessageArchiveDB {
 			if (delay != null) {
 				try {
 					String stamp = delay.getAttributeStaticStr("stamp");
-
-					if (stamp.endsWith("Z")) {
-						synchronized (formatter) {
-							mtime = new java.sql.Timestamp(formatter.parse(stamp).getTime());
-						}
-					} else {
-						synchronized (formatter2) {
-							mtime = new java.sql.Timestamp(formatter2.parse(stamp).getTime());
-						}
-					}
+					mtime = parseTimestamp(stamp);
 				} catch (ParseException e1) {}
 			} else {
 				mtime = new java.sql.Timestamp(System.currentTimeMillis());
@@ -390,7 +387,7 @@ public class MessageArchiveDB {
 	 *
 	 * @throws SQLException
 	 */
-	public List<Element> getItems(BareJID owner, String withJid, String start, int limit,
+	public List<Element> getItems(BareJID owner, String withJid, Date start, int limit,
 																int offset)
 					throws SQLException {
 		long[] jids_ids   = getJidsIds(owner.toString(), withJid);
@@ -398,12 +395,10 @@ public class MessageArchiveDB {
 		StringBuilder buf = new StringBuilder(16 * 1024);
 
 //  long collection = LONG_NULL;
-		Timestamp collection = null;
+		Timestamp collection = new Timestamp(start.getTime());
 
 		try {
-			synchronized (formatter) {
-				collection = new Timestamp(formatter.parse(start).getTime());    // / MILIS_PER_DAY;
-			}
+			//collection = parseTimestamp(start);
 
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner,
 																						GET_MESSAGES);
@@ -428,8 +423,8 @@ public class MessageArchiveDB {
 					buf.append(rs.getString(1));
 				}
 			}
-		} catch (ParseException ex) {
-			return null;
+//		} catch (ParseException ex) {
+//			return null;
 		} finally {
 			data_repo.release(null, rs);
 		}
@@ -582,8 +577,8 @@ public class MessageArchiveDB {
 				while (rs.next()) {
 					Timestamp day = rs.getTimestamp(1);
 
-					synchronized (formatter) {
-						results.add(formatter.format(day));
+					synchronized (formatter2) {
+						results.add(formatter2.format(day));
 					}
 				}
 			}
@@ -770,6 +765,29 @@ public class MessageArchiveDB {
 			return LONG_NULL;
 		}
 	}
+	
+	private Timestamp parseTimestamp(String tmp) throws ParseException {
+		Date date = null;
+		
+		if (tmp.endsWith("Z")) {
+			synchronized(formatter) {
+				date = formatter.parse(tmp);
+			}
+		}
+		else if (tmp.contains(".")) {
+			synchronized(formatter3) {
+				date = formatter3.parse(tmp);
+			}			
+		}
+		else {
+			synchronized(formatter2) {
+				date = formatter2.parse(tmp);
+			}			
+		}
+		
+		return new Timestamp(date.getTime());
+	}
+	
 }
 
 

@@ -63,7 +63,12 @@ public class MessageArchiveComponent
 
 	//~--- fields ---------------------------------------------------------------
 
-	private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final static SimpleDateFormat formatter =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final static SimpleDateFormat formatter2 =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+	private final static SimpleDateFormat formatter3 =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 	private MessageArchiveDB msg_repo  = new MessageArchiveDB();
 
 	//~--- constructors ---------------------------------------------------------
@@ -74,6 +79,7 @@ public class MessageArchiveComponent
 	 */
 	public MessageArchiveComponent() {
 		super();
+		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setName("message-archive");
 	}
 
@@ -274,56 +280,27 @@ public class MessageArchiveComponent
 
 			if (rsm.getAfter() != null) {
 				Calendar cal = Calendar.getInstance();
-				Date tmp;
+				Date tmp = parseTimestamp(rsm.getAfter());
 
-				synchronized (formatter) {
-					try {
-						tmp = formatter.parse(rsm.getAfter());
-					} catch (ParseException e) {
-						addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
-										"Date parsing error", true));
-
-						return;
-					}
-				}
 				cal.setTime(tmp);
 				cal.add(Calendar.DAY_OF_MONTH, 1);
-				synchronized (formatter) {
-					startStr = formatter.format(cal.getTime());
+				synchronized (formatter2) {
+					startStr = formatter2.format(cal.getTime());
 				}
 			}
 			if (rsm.getBefore() != null) {
 				Calendar cal = Calendar.getInstance();
-				Date tmp;
+				Date tmp = parseTimestamp(rsm.getBefore());
 
-				synchronized (formatter) {
-					try {
-						tmp = formatter.parse(rsm.getBefore());
-					} catch (ParseException e) {
-						addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
-										"Date parsing error", true));
-
-						return;
-					}
-				}
 				cal.setTime(tmp);
 				cal.add(Calendar.DAY_OF_MONTH, -1);
-				synchronized (formatter) {
-					stopStr = formatter.format(cal.getTime());
+				synchronized (formatter2) {
+					stopStr = formatter2.format(cal.getTime());
 				}
 			}
 
-			Date start = null;
-			Date stop  = null;
-
-			synchronized (formatter) {
-				try {
-					start = formatter.parse(startStr);
-					stop  = formatter.parse(stopStr);
-				} catch (Exception ex) {
-					log.log(Level.FINER, "datetime parsing format exception", ex);
-				}
-			}
+			Date start = parseTimestamp(startStr);
+			Date stop  = parseTimestamp(stopStr);
 
 			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(),
 															with, start, stop, rsm.getBefore() != null, rsm.getLimit());
@@ -345,6 +322,9 @@ public class MessageArchiveComponent
 				addOutPacket(Authorization.ITEM_NOT_FOUND.getResponseMessage(packet,
 								"No items in specified period", true));
 			}
+		} catch (ParseException e) {
+			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
+					"Date parsing error", true));
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, "Error listing collections", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
@@ -366,12 +346,19 @@ public class MessageArchiveComponent
 				offset = Integer.parseInt(rsm.getAfter());
 			}
 
+			Date start = parseTimestamp(retrieve.getAttributeStaticStr("start"));
+			
 			List<Element> items = msg_repo.getItems(packet.getStanzaFrom().getBareJID(),
 															retrieve.getAttributeStaticStr("with"),
-															retrieve.getAttributeStaticStr("start"), limit, offset);
-			Element retList = new Element("chat", new String[] { "with", "start" },
-																		new String[] { retrieve.getAttributeStaticStr("with"),
-							retrieve.getAttributeStaticStr("start") });
+															start, limit, offset);
+			
+			String startStr = null;
+			synchronized(formatter2) {
+				startStr = formatter2.format(start);
+			}
+			
+			Element retList = new Element("chat", new String[]{"with", "start"},
+					new String[]{retrieve.getAttributeStaticStr("with"), startStr});
 
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {
@@ -382,6 +369,9 @@ public class MessageArchiveComponent
 				retList.addChild(rsm.toElement());
 			}
 			addOutPacket(packet.okResult(retList, 0));
+		} catch (ParseException e) {
+			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
+					"Date parsing error", true));
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, "Error retrieving messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
@@ -403,25 +393,42 @@ public class MessageArchiveComponent
 		try {
 			String startStr = remove.getAttributeStaticStr("start");
 			String stopStr  = remove.getAttributeStaticStr("end");
-			Date start      = null;
-			Date stop       = null;
+			Date start      = parseTimestamp(startStr);
+			Date stop       = parseTimestamp(stopStr);
 
-			synchronized (formatter) {
-				try {
-					start = formatter.parse(startStr);
-					stop  = formatter.parse(stopStr);
-				} catch (Exception ex) {
-					log.log(Level.FINER, "datetime parsing format exception", ex);
-				}
-			}
 			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(),
 													 remove.getAttributeStaticStr("with"), start, stop);
 			addOutPacket(packet.okResult((Element) null, 0));
+		} catch (ParseException e) {
+			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
+					"Date parsing error", true));
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, "Error removing messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 							"Database error occured", true));
 		}
+	}
+	
+	private Date parseTimestamp(String tmp) throws ParseException {
+		Date date = null;
+		
+		if (tmp.endsWith("Z")) {
+			synchronized(formatter) {
+				date = formatter.parse(tmp);
+			}
+		}
+		else if (tmp.contains(".")) {
+			synchronized(formatter3) {
+				date = formatter3.parse(tmp);
+			}			
+		}
+		else {
+			synchronized(formatter2) {
+				date = formatter2.parse(tmp);
+			}			
+		}
+		
+		return date;
 	}
 }
 
