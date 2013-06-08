@@ -41,11 +41,16 @@ import tigase.xmpp.*;
 //~--- JDK imports ------------------------------------------------------------
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import tigase.server.Iq;
 
 /**
  * MessageArchingPlugin is implementation of plugin which forwards messages
@@ -77,12 +82,23 @@ public class MessageArchivePlugin
 	private static final String    MESSAGE  = "message";
 	private static final String    SETTINGS = ARCHIVE + "/settings";
 	private static final String    XMLNS    = "jabber:client";
-	private static final String[]  ELEMENTS = { MESSAGE, ALL_NAMES };
-	private static final String[]  XMLNSS   = { XMLNS, XEP0136NS };
+	private static final String[][]  ELEMENT_PATHS = { {MESSAGE}, {Iq.ELEM_NAME, AUTO}, 
+		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST} };
+	private static final String[] XMLNSS = { Packet.CLIENT_XMLNS, XEP0136NS, 
+		XEP0136NS, XEP0136NS };
+	private static final Set<StanzaType> TYPES;
 	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
 			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
 					":manage" }) };
+	
+	static {
+		HashSet tmpTYPES = new HashSet<StanzaType>();
+		tmpTYPES.add(null);
+		tmpTYPES.addAll(EnumSet.of(StanzaType.normal, StanzaType.chat, 
+			StanzaType.get, StanzaType.set, StanzaType.error, StanzaType.result));
+		TYPES = Collections.unmodifiableSet(tmpTYPES);
+	}
 
 	//~--- fields ---------------------------------------------------------------
 
@@ -138,7 +154,7 @@ public class MessageArchivePlugin
 			return;
 		}
 		try {
-			if (MESSAGE.equals(packet.getElemName())) {
+			if (Message.ELEM_NAME == packet.getElemName()) {
 				StanzaType type = packet.getType();
 
 				if ((packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH) ==
@@ -158,7 +174,7 @@ public class MessageArchivePlugin
 					result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
 					results.offer(result);
 				}
-			} else if ("iq".equals(packet.getElemName())) {
+			} else if (Iq.ELEM_NAME == packet.getElemName()) {
 				if (ma_jid.equals(packet.getPacketFrom())) {
 					JID    connId = session.getConnectionId(packet.getStanzaTo());
 					Packet result = packet.copyElementOnly();
@@ -281,8 +297,9 @@ public class MessageArchivePlugin
 	 * @return
 	 */
 	@Override
-	public String[] supElements() {
-		return ELEMENTS;
+	public String[][] supElementNamePaths() {
+		return ELEMENT_PATHS;
+		
 	}
 
 	/**
@@ -309,6 +326,17 @@ public class MessageArchivePlugin
 		return DISCO_FEATURES;
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @return
+	 */
+	@Override
+	public Set<StanzaType> supTypes() {
+		return TYPES;
+	}
+	
 	//~--- get methods ----------------------------------------------------------
 
 	private boolean getAutoSave(final XMPPResourceConnection session)
