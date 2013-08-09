@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
@@ -11,8 +12,63 @@
 	<name>Tigase Message Archiving Component</name>
 	<description>Implementation of Message Archiving component for Tigase XMPP Server.</description>
 	<url>http://maven.apache.org</url>
+	<scm>
+		<connection>scm:git:https://repository.tigase.org/git/message-archiving.git</connection>
+		<developerConnection>scm:git:https://repository.tigase.org/git/message-archiving.git</developerConnection>
+		<url>https://projects.tigase.org/projects/message-archiving/repository</url>
+	</scm>
+	
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>1.1</version>
+				<configuration>
+					<timestampFormat>{0,date} {0,time}</timestampFormat>
+					<doCheck>false</doCheck>
+					<doUpdate>false</doUpdate>
+					 <shortRevisionLength>8</shortRevisionLength>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>gitver</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<providerSelection>2.0</providerSelection>
+							<properties>
+								<script>git rev-list master --count</script>
+							</properties>
+							<source>
+								def command = project.properties.script
+								def process = command.execute()
+								process.waitFor()
+
+								def describe = process.in.text.trim()
+								println "setting revision to: " + describe
+
+								project.properties.setProperty('gitVersion',describe)
+							</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>		
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -28,9 +84,11 @@
 				<version>2.4.0</version>
 				<extensions>true</extensions>
 				<configuration>
-					<instructions>
+					<instructions combine.inherited="append">
+						<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
+						<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
 						<Bundle-Activator>tigase.archive.Activator</Bundle-Activator>
-						<Bundle-SymbolicName>${pom.artifactId};singleton=true</Bundle-SymbolicName>
+						<Bundle-SymbolicName>${project.artifactId};singleton=true</Bundle-SymbolicName>
 					</instructions>
 				</configuration>
 			</plugin>
