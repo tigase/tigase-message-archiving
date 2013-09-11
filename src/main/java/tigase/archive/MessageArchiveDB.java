@@ -119,7 +119,7 @@ public class MessageArchiveDB {
 																									+ " ( " + JIDS_JID + ");";
 	private static final String SQLSERVER_CREATE_JIDS = "create table " + JIDS_TABLE + " ( "
 																									+ JIDS_ID + " bigint identity(1,1), " + JIDS_JID
-																									+ " varchar(2049),"
+																									+ " nvarchar(2049),"
 																									+ JIDS_JID + "_fragment as left (" + JIDS_JID + ", 765),"
 																									+ "primary key (" + JIDS_ID + ")); "
 																									+ "create unique index " + JIDS_TABLE
@@ -202,7 +202,7 @@ public class MessageArchiveDB {
 																									MSGS_BUDDY_ID + " bigint, " +
 																									MSGS_TIMESTAMP + " datetime, " +
 																									MSGS_DIRECTION + " smallint, " +
-																									MSGS_TYPE + " varchar(10)," +
+																									MSGS_TYPE + " nvarchar(10)," +
 																									MSGS_MSG + " ntext," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
