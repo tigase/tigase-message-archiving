@@ -85,6 +85,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions combine.inherited="append">
+						<Implementation-Title>${project.name}</Implementation-Title>
 						<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
 						<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
 						<Bundle-Activator>tigase.archive.Activator</Bundle-Activator>
