@@ -39,6 +39,7 @@ public class RSM {
 	protected static final String XMLNS           = "http://jabber.org/protocol/rsm";
 	private static final String[] SET_AFTER_PATH  = { "set", "after" };
 	private static final String[] SET_BEFORE_PATH = { "set", "before" };
+	private static final String[] SET_INDEX_PATH = { "set", "index" };
 
 	//~--- fields ---------------------------------------------------------------
 
@@ -47,7 +48,8 @@ public class RSM {
 	Integer count = null;
 	String first  = null;
 	String last   = null;
-	Integer limit = 30;
+	int max = 100;
+	Integer index = null;
 
 	//~--- constructors ---------------------------------------------------------
 
@@ -57,7 +59,8 @@ public class RSM {
 	 *
 	 * @param e
 	 */
-	public RSM(Element e) {
+	public RSM(Element e, int defaultMax) {
+		this.max = defaultMax;
 		if (e == null) {
 			return;
 		}
@@ -65,10 +68,18 @@ public class RSM {
 		Element param = e.getChild("max");
 
 		if (param != null) {
-			limit = Integer.parseInt(param.getCData());
+			max = Integer.parseInt(param.getCData());
 		}
 		after  = e.getCDataStaticStr(SET_AFTER_PATH);
 		before = e.getCDataStaticStr(SET_BEFORE_PATH);
+		String indexStr = e.getCDataStaticStr(SET_INDEX_PATH);
+		if (indexStr != null) {
+			index = Integer.parseInt(indexStr);
+		}
+	}
+	
+	public RSM(Element e) {
+		this(e, 100);
 	}
 
 	//~--- get methods ----------------------------------------------------------
@@ -79,10 +90,20 @@ public class RSM {
 	 *
 	 * @return
 	 */
-	public Integer getLimit() {
-		return limit;
+	public int getMax() {
+		return max;
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @return
+	 */
+	public Integer getIndex() {
+		return index;
+	}
+	
 	/**
 	 * Method description
 	 *
@@ -105,6 +126,18 @@ public class RSM {
 
 	//~--- set methods ----------------------------------------------------------
 
+	public void setFirst(String first) {
+		this.first = first;
+	}
+	
+	public void setLast(String last) {
+		this.last = last;
+	}
+
+	public void setIndex(Integer index) {
+		this.index = index;
+	}
+	
 	/**
 	 * Method description
 	 *
@@ -117,8 +150,22 @@ public class RSM {
 		this.count = count;
 		this.first = first;
 		this.last  = last;
+		this.index = null;
 	}
 
+	/**
+	 * Set count and index of first result
+	 * 
+	 * @param count
+	 * @param index 
+	 */
+	public void setResults(Integer count, Integer index) {
+		this.count = count;
+		this.index = index;
+		this.first = null;
+		this.last = null;
+	}
+	
 	//~--- methods --------------------------------------------------------------
 
 	/**
@@ -132,14 +179,17 @@ public class RSM {
 
 		set.setXMLNS(XMLNS);
 		if ((first != null) && (last != null)) {
-			set.addChild(new Element("first", first.toString(), new String[] { "index" },
-															 new String[] { first.toString() }));
+			Element firstEl = new Element("first", first.toString());
+			set.addChild(firstEl);
+			if (index != null) {
+				firstEl.setAttribute("index", index.toString());
+			}
 			set.addChild(new Element("last", last.toString()));
 			if (count != null) {
 				set.addChild(new Element("count", count.toString()));
 			}
 		} else {
-			set.addChild(new Element("max", limit.toString()));
+			set.addChild(new Element("max", String.valueOf(max)));
 			if (after != null) {
 				set.addChild(new Element("after", after));
 			}
@@ -156,11 +206,23 @@ public class RSM {
 	 *
 	 * @return
 	 */
-	public static RSM parseRootElement(Element e) {
+	public static RSM parseRootElement(Element e, int defaultMax) {
 		Element x = e.getChild("set", RSM.XMLNS);
-
-		return new RSM(x);
+		
+		return new RSM(x, defaultMax);
 	}
+	
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param e
+	 *
+	 * @return
+	 */
+	public static RSM parseRootElement(Element e) {
+		return RSM.parseRootElement(e, 100);
+	}	
 }
 
 

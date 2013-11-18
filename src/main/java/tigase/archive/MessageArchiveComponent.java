@@ -66,6 +66,11 @@ public class MessageArchiveComponent
 	private final static SimpleDateFormat formatter = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+	static {
+		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
+	}	
 	//~--- fields ---------------------------------------------------------------
 
 	private MessageArchiveDB msg_repo = new MessageArchiveDB();
@@ -282,10 +287,10 @@ public class MessageArchiveComponent
 				}
 			}
 
-			Date          start = parseTimestamp(startStr);
-			Date          stop  = parseTimestamp(stopStr);
+			Date          start = startStr != null ? parseTimestamp(startStr) : null;;
+			Date          stop  = stopStr != null ? parseTimestamp(stopStr) : null;
 			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(),
-					with, start, stop, rsm.getBefore() != null, rsm.getLimit());
+					with, start, stop, rsm);
 			Element retList = new Element(LIST);
 
 			retList.setXMLNS(XEP0136NS);
@@ -296,8 +301,8 @@ public class MessageArchiveComponent
 				return;
 			} else if (!chats.isEmpty()) {
 				retList.addChildren(chats);
-				rsm.setResults(null, chats.get(0).getAttributeStaticStr("start"), chats.get(chats
-						.size() - 1).getAttributeStaticStr("start"));
+				rsm.setFirst(chats.get(0).getAttributeStaticStr("start"));
+				rsm.setLast(chats.get(chats.size() - 1).getAttributeStaticStr("start"));
 				retList.addChild(rsm.toElement());
 				addOutPacket(packet.okResult(retList, 0));
 			} else {
@@ -387,18 +392,20 @@ public class MessageArchiveComponent
 		try {
 			RSM rsm = RSM.parseRootElement(
 					retrieve);    // new RSM(retrieve.findChild("/retrieve/set"), 30);
-			int limit  = (rsm.getLimit() != null)
-					? rsm.getLimit()
-					: 100;
-			int offset = 0;
-
+			// is it still valid? - leaving it here for compatibility with older versions
 			if (rsm.getAfter() != null) {
-				offset = Integer.parseInt(rsm.getAfter());
+				int offset = Integer.parseInt(rsm.getAfter());
+				if (rsm.getIndex() != null) {
+					rsm.setIndex(offset);
+				} 
 			}
 
 			Date          start = parseTimestamp(retrieve.getAttributeStaticStr("start"));
+			Date		  end = null;
+			if (retrieve.getAttributeStaticStr("end") != null)
+				end = parseTimestamp(retrieve.getAttributeStaticStr("end"));
 			List<Element> items = msg_repo.getItems(packet.getStanzaFrom().getBareJID(),
-					retrieve.getAttributeStaticStr("with"), start, limit, offset);
+					retrieve.getAttributeStaticStr("with"), start, end, rsm);
 			String startStr = null;
 
 			synchronized (formatter2) {
@@ -411,9 +418,8 @@ public class MessageArchiveComponent
 
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {
-				rsm = new RSM(null);
-				rsm.setResults(items.size(), String.valueOf(offset + 1), String.valueOf(offset +
-						items.size()));
+				rsm.setFirst(items.get(0).getAttributeStaticStr("secs"));
+				rsm.setLast(items.get(items.size()-1).getAttributeStaticStr("secs"));
 				retList.addChildren(items);
 				retList.addChild(rsm.toElement());
 			}

@@ -60,6 +60,7 @@ import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Queue;
 import java.util.TimeZone;
+import static tigase.db.DataRepository.dbTypes.derby;
 
 /**
  * Class description
@@ -84,6 +85,12 @@ public class MessageArchiveDB {
 		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 	private final static SimpleDateFormat formatter3 =
 		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+	
+	static {
+		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
+	}
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
@@ -129,25 +136,56 @@ public class MessageArchiveDB {
 															"create table " + JIDS_TABLE + " ( " + JIDS_ID
 															+ " bigint unsigned NOT NULL auto_increment, " + JIDS_JID
 															+ " varchar(2049), primary key (" + JIDS_ID + ")); ";
-	private static final String GET_MESSAGES = "select " + MSGS_MSG + " from " +
-																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
-																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
-																						 " and date(" + MSGS_TIMESTAMP +
-																						 ") = date(?)" + " order by " +
-																						 MSGS_TIMESTAMP + " limit ? offset ?";
-	private static final String DERBY_GET_MESSAGES = "select " + MSGS_MSG + " from " +
-																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
-																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
-																						 " and date(" + MSGS_TIMESTAMP +
-																						 ") = ?" + " order by " +
-																						 MSGS_TIMESTAMP + " offset ? rows fetch next ? rows only";
-	private static final String GET_COLLECTIONS = "select distinct date(" +
-																								MSGS_TIMESTAMP + ")" + " from " +
-																								MSGS_TABLE + " where " + MSGS_OWNER_ID +
-																								" = ?" + " and " + MSGS_BUDDY_ID +
-																								" = ? and " + MSGS_TIMESTAMP + " <= ?" +
-																								" and " + MSGS_TIMESTAMP + " >= ?" +
-																								" order by date(" + MSGS_TIMESTAMP + ")";
+//	private static final String GET_MESSAGES = "select " + MSGS_MSG + " from " +
+//																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
+//																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
+//																						 " and date(" + MSGS_TIMESTAMP +
+//																						 ") = date(?)" + " order by " +
+//																						 MSGS_TIMESTAMP + " limit ? offset ?";
+//	private static final String DERBY_GET_MESSAGES = "select " + MSGS_MSG + " from " +
+//																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
+//																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
+//																						 " and date(" + MSGS_TIMESTAMP +
+//																						 ") = ?" + " order by " +
+//																						 MSGS_TIMESTAMP + " offset ? rows fetch next ? rows only";
+	private static final String GET_MESSAGES = "select " + MSGS_MSG + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? order by " + MSGS_TIMESTAMP;
+	private static final String GET_MESSAGES_END = "select " + MSGS_MSG + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ? order by " + MSGS_TIMESTAMP;
+	private static final String GET_MESSAGES_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " + MSGS_OWNER_ID 
+			+ " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
+	private static final String GET_MESSAGES_END_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " 
+			+ MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
+//	private static final String GET_COLLECTIONS = "select distinct date(" +
+//																								MSGS_TIMESTAMP + ")" + " from " +
+//																								MSGS_TABLE + " where " + MSGS_OWNER_ID +
+//																								" = ?" + " and " + MSGS_BUDDY_ID +
+//																								" = ? and " + MSGS_TIMESTAMP + " <= ?" +
+//																								" and " + MSGS_TIMESTAMP + " >= ?" +
+//																								" order by date(" + MSGS_TIMESTAMP + ")";
+	private static final String GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + " from " + MSGS_TABLE + " m "
+			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
+			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
+	private static final String GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + " from " 
+			+ MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
+	private static final String GENERIC_LIMIT = " limit ? offset ?";
+	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";
+	private static final String[][] GET_COLLECTIONS_WHERES = { 
+			{ "FROM", "and m." + MSGS_TIMESTAMP + " >= ? " },
+			{ "TO", "and m." + MSGS_TIMESTAMP + " <= ? " },
+			{ "WITH", "and m." + MSGS_BUDDY_ID + " = ? " }
+	};
+	private static final String[] GET_COLLECTIONS_COMBINATIONS = {
+		"FROM", "FROM_TO", "FROM_TO_WITH", "FROM_WITH",
+		"TO", "TO_WITH", "WITH"
+	};
+//	private static final String GET_COLLECTIONS_PGSQL = "select min(ts),j.jid from tig_ma_msgs m inner join tig_ma_jids j on m.buddy_id = j.jid_id "
+//			+ "where owner_id = 4 and ts >= '2013-11-13' "
+//			+ "group by floor(EXTRACT(EPOCH FROM (ts - cast('2013-11-12T22:00:00-0000' as timestamp with time zone)))/(60*60*24)), buddy_id, j.jid;"
+//	private static final String GET_COLLECTIONS_MYSQL = "select min(ts), j.jid from tig_ma_msgs m "
+//			+ "inner join tig_ma_jids j on m.buddy_id = j.jid_id where owner_id = 4 group by datediff(ts,'2013-11-01T00:00:00'), buddy_id"
 	private static final String ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -289,15 +327,47 @@ public class MessageArchiveDB {
 			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
 
 			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE);
-			data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
+			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
+			
+			for (String combination : GET_COLLECTIONS_COMBINATIONS) {
+				String[] whereParts = combination.split("_");
+				String select = GET_COLLECTIONS_SELECT;
+				String count = GET_COLLECTIONS_COUNT;
+				for (String part : whereParts) {
+					for (String[] where : GET_COLLECTIONS_WHERES) {
+						if (!part.equals(where[0]))
+							continue;
+						
+						select += where[1];
+						count += where[1];
+					}
+				}
+				select += GET_COLLECTIONS_SELECT_GROUP;
+				count += GET_COLLECTIONS_COUNT_GROUP;
+				switch ( data_repo.getDatabaseType() ) {
+					case derby:
+						select += DERBY_LIMIT;
+						break;
+					default:
+						select += GENERIC_LIMIT;
+						break;
+				}
+				data_repo.initPreparedStatement("GET_COLLECTIONS_" + combination + "_SELECT", select);
+				data_repo.initPreparedStatement("GET_COLLECTIONS_" + combination + "_COUNT", count);
+			}
+			
 			switch ( data_repo.getDatabaseType() ) {
 				case derby:
-					data_repo.initPreparedStatement( GET_MESSAGES, DERBY_GET_MESSAGES );
+					data_repo.initPreparedStatement( GET_MESSAGES, GET_MESSAGES + DERBY_LIMIT );
+					data_repo.initPreparedStatement( GET_MESSAGES_END, GET_MESSAGES_END + DERBY_LIMIT);
 					break;
 				default:
-					data_repo.initPreparedStatement( GET_MESSAGES, GET_MESSAGES );
+					data_repo.initPreparedStatement( GET_MESSAGES, GET_MESSAGES + GENERIC_LIMIT );
+					data_repo.initPreparedStatement( GET_MESSAGES_END, GET_MESSAGES_END + GENERIC_LIMIT );
 					break;
 			}
+			data_repo.initPreparedStatement(GET_MESSAGES_COUNT, GET_MESSAGES_COUNT);
+			data_repo.initPreparedStatement(GET_MESSAGES_END_COUNT, GET_MESSAGES_END_COUNT);
 			data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
@@ -369,33 +439,48 @@ public class MessageArchiveDB {
 	 * @param withJid
 	 * @param start
 	 * @param end
-	 * @param before
-	 * @param limit
+	 * @param rsm
 	 *
 	 * @return
 	 *
 	 * @throws SQLException
 	 */
 	public List<Element> getCollections(BareJID owner, String withJid, Date start,
-					Date end, boolean before, int limit)
+					Date end, RSM rsm)
 					throws SQLException {
-		if (start == null) {
-			start = new Date(0);
-		}
-		if (end == null) {
-			end = new Date(0);
-		}
+		
+		long[] jids_ids      = withJid == null ? getJidsIds(owner.toString()) : getJidsIds(owner.toString(), withJid);
 
-//  boolean done = false;
-		List<Element> results = new LinkedList<Element>();
-		List<String> ids      = getCollectionsPriv(owner, withJid, start, end, before, limit);
+		Long buddyId = jids_ids.length > 1 ? jids_ids[1] : null;
+		java.sql.Timestamp start_ = start != null ? new java.sql.Timestamp(start.getTime()) : null;
+		java.sql.Timestamp end_ = end != null ? new java.sql.Timestamp(end.getTime()) : null;
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 
-		for (String id : ids) {
-			results.add(new Element("chat", new String[] { "with", "start" },
-															new String[] { withJid,
-							id }));
+		StringBuilder query = new StringBuilder(20);
+		if (start_ != null) {
+			query.append("FROM");
 		}
-
+		if (end_ != null) {
+			if (query.length() > 0) {
+				query.append("_");
+			}
+			query.append("TO");
+		}
+		if (buddyId != null) {
+			if (query.length() > 0) {
+				query.append("_");
+			}
+			query.append("WITH");
+		} else {
+			// not supported
+		}
+		String queryStr = query.toString();		
+		
+		List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, rsm.getMax(), queryStr);
+		Integer count = getCollectionsCount(owner, jids_ids[0], buddyId, start_, end_, queryStr);
+				
+		rsm.setResults(count, index);
+		
 		return results;
 	}
 
@@ -413,89 +498,23 @@ public class MessageArchiveDB {
 	 *
 	 * @throws SQLException
 	 */
-	public List<Element> getItems(BareJID owner, String withJid, Date start, int limit,
-																int offset)
+	public List<Element> getItems(BareJID owner, String withJid, Date start, Date end, RSM rsm)
 					throws SQLException {
 		long[] jids_ids   = getJidsIds(owner.toString(), withJid);
-		ResultSet rs      = null;
-		StringBuilder buf = new StringBuilder(16 * 1024);
 
-//  long collection = LONG_NULL;
-		Timestamp collection = new Timestamp(start.getTime());
+		Timestamp startTimestamp = new Timestamp(start.getTime());
+		Timestamp endTimestamp = end != null ? new Timestamp(end.getTime()) : null;
 
-		try {
-			//collection = parseTimestamp(start);
-
-			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner,
-																						GET_MESSAGES);
-
-			synchronized (get_messages_st) {
-				get_messages_st.setLong(1, jids_ids[0]);
-				get_messages_st.setLong(2, jids_ids[1]);
-
-			switch ( data_repo.getDatabaseType() ) {
-				case derby:
-					get_messages_st.setTimestamp(3, collection);
-					get_messages_st.setInt(4, offset);
-					get_messages_st.setInt(5, limit);
-					break;
-				default:
-					long milis = collection.getTime() / (24 * 60 * 60 * 1000);
-					get_messages_st.setDate(3, new java.sql.Date(milis * 24 * 60 * 60 * 1000));
-					get_messages_st.setInt(4, limit);
-					get_messages_st.setInt(5, offset);
-					break;
-			}
-
-				rs = get_messages_st.executeQuery();
-				while (rs.next()) {
-					buf.append(rs.getString(1));
-				}
-			}
-		} finally {
-			data_repo.release(null, rs);
-		}
-
-		List<Element> msgs = null;
-
-		if (buf != null) {
-			String results = buf.toString();
-
-			msgs = new LinkedList<Element>();
-
-			DomBuilderHandler domHandler = new DomBuilderHandler();
-
-			parser.parse(domHandler, results.toCharArray(), 0, results.length());
-
-			Queue<Element> queue = domHandler.getParsedElements();
-			String ownerStr      = owner.toString();
-			Element msg          = null;
-
-			while ((msg = queue.poll()) != null) {
-				Element item =
-					new Element(msg.getAttributeStaticStr(Packet.FROM_ATT).startsWith(ownerStr)
-											? Packet.TO_ATT
-											: Packet.FROM_ATT);
-
-				item.addChild(msg.getChild("body"));
-				item.setAttribute(
-						"secs",
-						String.valueOf(
-							(Long.valueOf(msg.getAttributeStaticStr("time")) - collection.getTime()) /
-							1000));
-				msgs.add(item);
-			}
-			Collections.sort(msgs, new Comparator<Element>() {
-				@Override
-				public int compare(Element m1, Element m2) {
-					return m1.getAttributeStaticStr("secs").compareTo(
-							m2.getAttributeStaticStr("secs"));
-				}
-			});
-		}
-
-		return msgs;
-
+		int offset = rsm.getIndex() != null ? rsm.getIndex() : 0;
+		int limit = rsm.getMax();
+		
+		List<Element> items = getItems(owner, jids_ids[0], jids_ids[1], startTimestamp, 
+				endTimestamp, offset, limit);
+		
+		int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);
+		rsm.setResults(count, offset);
+		
+		return items;
 	}
 
 	//~--- methods --------------------------------------------------------------
@@ -537,44 +556,191 @@ public class MessageArchiveDB {
 		}
 	}
 
-	//~--- get methods ----------------------------------------------------------
-
-	private List<String> getCollectionsPriv(BareJID owner, String withJid, Date start,
-					Date end, boolean before, int limit)
+	private List<Element> getCollections(BareJID owner,long ownerId, Long buddyId, Timestamp start,
+					Timestamp end, int index, int limit, String queryStr)
 					throws SQLException {
-		long[] jids_ids      = getJidsIds(owner.toString(), withJid);
-		List<String> results = new LinkedList<String>();
-		ResultSet rs         = null;
-
+		List<Element> results = new LinkedList<Element>();
+		ResultSet selectRs   = null;
 		try {
-			java.sql.Timestamp start_            = new java.sql.Timestamp(start.getTime());
-			java.sql.Timestamp end_              = new java.sql.Timestamp(end.getTime());
-			PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner,
-																							 GET_COLLECTIONS);
+			PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
+					+ queryStr + "_SELECT");
 
+			int i=2;
 			synchronized (get_collections_st) {
-				get_collections_st.setLong(1, jids_ids[0]);
-				get_collections_st.setLong(2, jids_ids[1]);
-				get_collections_st.setTimestamp(3, end_);
-				get_collections_st.setTimestamp(4, start_);
-				rs = get_collections_st.executeQuery();
-				while (rs.next()) {
-					Timestamp day = rs.getTimestamp(1);
-
+				get_collections_st.setLong(1, ownerId);
+				if (start != null) {
+					get_collections_st.setTimestamp(i++, start);
+				}
+				if (end != null) {
+					get_collections_st.setTimestamp(i++, end);
+				}
+				if (buddyId != null) {
+					get_collections_st.setLong(i++, buddyId);
+				}
+				
+				switch (data_repo.getDatabaseType()) {
+					case derby:
+						get_collections_st.setInt(i++, index);						
+						get_collections_st.setInt(i++, limit);
+						break;
+					default:
+						get_collections_st.setInt(i++, limit);
+						get_collections_st.setInt(i++, index);
+						break;
+				}
+				selectRs = get_collections_st.executeQuery();
+				while (selectRs.next()) {
+					Timestamp startTs = selectRs.getTimestamp(1);
+					String with = selectRs.getString(2);
+					String formattedStart = null;
 					synchronized (formatter2) {
-						results.add(formatter2.format(day));
+						formattedStart = formatter2.format(startTs);
 					}
+					results.add(new Element("chat", new String[] { "with", "start" },
+							new String[] { with, formattedStart }));
 				}
 			}
+		} finally {
+			data_repo.release(null, selectRs);
+		}
+		return results;
+	}	
+	
+	private Integer getCollectionsCount(BareJID owner, long ownerId, Long buddyId, Timestamp start_, 
+			Timestamp end_, String queryStr) throws SQLException {
+		ResultSet countRs = null;		
+		Integer count = null;
+		try {
+			PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
+					+ queryStr + "_COUNT");
+			int i=2;
+			synchronized (get_collections_count) {
+				get_collections_count.setLong(1, ownerId);
+				if (start_ != null) {
+					get_collections_count.setTimestamp(i++, start_);
+				}
+				if (end_ != null) {
+					get_collections_count.setTimestamp(i++, end_);
+				}
+				if (buddyId != null) {
+					get_collections_count.setLong(i++, buddyId);
+				}				
+				countRs = get_collections_count.executeQuery();
+				if (countRs.next()) {
+					count = countRs.getInt(1);
+				}
+			}
+		} finally {
+			data_repo.release(null, countRs);
+		}
+		return count;
+	}
+	
+	private List<Element> getItems(BareJID owner, long ownerId, long withId, Timestamp startTimestamp, 
+			Timestamp endTimestamp, int offset, int limit) throws SQLException {
+		ResultSet rs      = null;		
+		StringBuilder buf = new StringBuilder(16 * 1024);
+		int i=1;
+		try {
+			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
+					? GET_MESSAGES_END : GET_MESSAGES);
+			synchronized (get_messages_st) {
+				get_messages_st.setLong(i++, ownerId);
+				get_messages_st.setLong(i++, withId);
+				get_messages_st.setTimestamp(i++, startTimestamp);
 
-			return results;
+				if (endTimestamp != null) {
+					get_messages_st.setTimestamp(i++, endTimestamp);
+				}
+				switch (data_repo.getDatabaseType()) {
+					case derby:
+						get_messages_st.setInt(i++, offset);
+						get_messages_st.setInt(i++, limit);
+						break;
+					default:
+						get_messages_st.setInt(i++, limit);
+						get_messages_st.setInt(i++, offset);
+						break;
+				}
+
+				rs = get_messages_st.executeQuery();
+				while (rs.next()) {
+					buf.append(rs.getString(1));
+				}
+			}
 		} finally {
 			data_repo.release(null, rs);
 		}
 
+		List<Element> msgs = null;
+
+		if (buf != null) {
+			String results = buf.toString();
+
+			msgs = new LinkedList<Element>();
+
+			DomBuilderHandler domHandler = new DomBuilderHandler();
+
+			parser.parse(domHandler, results.toCharArray(), 0, results.length());
+
+			Queue<Element> queue = domHandler.getParsedElements();
+			String ownerStr      = owner.toString();
+			Element msg          = null;
+
+			while ((msg = queue.poll()) != null) {
+				Element item =
+					new Element(msg.getAttributeStaticStr(Packet.FROM_ATT).startsWith(ownerStr)
+											? Packet.TO_ATT
+											: Packet.FROM_ATT);
+
+				item.addChild(msg.getChild("body"));
+				item.setAttribute(
+						"secs",
+						String.valueOf(
+							(Long.valueOf(msg.getAttributeStaticStr("time")) - startTimestamp.getTime()) /
+							1000));
+				msgs.add(item);
+			}
+			Collections.sort(msgs, new Comparator<Element>() {
+				@Override
+				public int compare(Element m1, Element m2) {
+					return m1.getAttributeStaticStr("secs").compareTo(
+							m2.getAttributeStaticStr("secs"));
+				}
+			});
+		}
+
+		return msgs;		
 	}
 
+	private Integer getItemsCount(BareJID owner, long ownerId, long withId, Timestamp startTimestamp, 
+			Timestamp endTimestamp) throws SQLException {
+		ResultSet rs      = null;		
+		Integer count = null;
+		int i=1;
+		try {
+			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
+					? GET_MESSAGES_END_COUNT : GET_MESSAGES_COUNT);
+			synchronized (get_messages_st) {
+				get_messages_st.setLong(i++, ownerId);
+				get_messages_st.setLong(i++, withId);
+				get_messages_st.setTimestamp(i++, startTimestamp);
 
+				if (endTimestamp != null) {
+					get_messages_st.setTimestamp(i++, endTimestamp);
+				}
+
+				rs = get_messages_st.executeQuery();
+				if (rs.next()) {
+					count = rs.getInt(1);
+				}
+			}
+		} finally {
+			data_repo.release(null, rs);
+		}
+		return count;
+	}
+	
 	/**
 	 * Method description
 	 *
