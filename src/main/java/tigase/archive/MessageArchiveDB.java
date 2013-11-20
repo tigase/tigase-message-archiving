@@ -85,11 +85,14 @@ public class MessageArchiveDB {
 		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 	private final static SimpleDateFormat formatter3 =
 		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+	private final static SimpleDateFormat formatter4 =
+		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 	
 	static {
 		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter4.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
 	private static final String MSGS_DIRECTION = "direction";
@@ -834,8 +837,15 @@ public class MessageArchiveDB {
 		Date date = null;
 		
 		if (tmp.endsWith("Z")) {
-			synchronized(formatter) {
-				date = formatter.parse(tmp);
+			if (tmp.contains(".")) {
+				synchronized(formatter4) {
+					date = formatter4.parse(tmp);
+				}
+			}
+			else {
+				synchronized(formatter) {
+					date = formatter.parse(tmp);
+				}
 			}
 		}
 		else if (tmp.contains(".")) {
