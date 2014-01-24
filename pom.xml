@@ -8,7 +8,7 @@
 	<groupId>tigase</groupId>
 	<artifactId>tigase-message-archiving</artifactId>
 	<packaging>bundle</packaging>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0-tigase-server-5.2.0-rc2</version>
 	<name>Tigase Message Archiving Component</name>
 	<description>Implementation of Message Archiving component for Tigase XMPP Server.</description>
 	<url>http://maven.apache.org</url>
@@ -118,7 +118,7 @@
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-server</artifactId>
-			<version>5.2.0-SNAPSHOT</version>
+			<version>5.2.0-rc2</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
