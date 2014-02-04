@@ -255,12 +255,12 @@ public class MessageArchiveComponent
 		try {
 			RSM rsm = RSM.parseRootElement(list);
 
-			if (list.getAttributeStaticStr("with") == null) {
-				addOutPacket(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
-						"Request parameter with must be specified", true));
-
-				return;
-			}
+//			if (list.getAttributeStaticStr("with") == null) {
+//				addOutPacket(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
+//						"Request parameter with must be specified", true));
+//
+//				return;
+//			}
 
 			String with     = list.getAttributeStaticStr("with");
 			String startStr = list.getAttributeStaticStr("start");
