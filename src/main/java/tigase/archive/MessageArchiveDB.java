@@ -704,13 +704,15 @@ public class MessageArchiveDB {
 							1000));
 				msgs.add(item);
 			}
-			Collections.sort(msgs, new Comparator<Element>() {
-				@Override
-				public int compare(Element m1, Element m2) {
-					return m1.getAttributeStaticStr("secs").compareTo(
-							m2.getAttributeStaticStr("secs"));
-				}
-			});
+			// no point in sorting messages by secs attribute as messages are already
+			// sorted in SQL query and also this sorting is incorrect
+//			Collections.sort(msgs, new Comparator<Element>() {
+//				@Override
+//				public int compare(Element m1, Element m2) {
+//					return m1.getAttributeStaticStr("secs").compareTo(
+//							m2.getAttributeStaticStr("secs"));
+//				}
+//			});
 		}
 
 		return msgs;		
