@@ -696,7 +696,11 @@ public class MessageArchiveDB {
 											? Packet.TO_ATT
 											: Packet.FROM_ATT);
 
-				item.addChild(msg.getChild("body"));
+				// Now we should send all elements of a message so as we can store not only <body/> 
+				// element. If we will store only <body/> element then only this element will 
+				// be available in store
+				//item.addChild(msg.getChild("body"));
+				item.addChildren(msg.getChildren());	
 				item.setAttribute(
 						"secs",
 						String.valueOf(

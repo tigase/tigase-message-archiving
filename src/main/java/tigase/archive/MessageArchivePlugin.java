@@ -60,6 +60,9 @@ import tigase.server.Iq;
 public class MessageArchivePlugin
 				extends XMPPProcessor
 				implements XMPPProcessorIfc {
+	
+	public static final String DEFAULT_SAVE = "default-save";
+	
 	/** Field description */
 	public static final String LIST = "list";
 
@@ -83,14 +86,17 @@ public class MessageArchivePlugin
 	private static final String    SETTINGS = ARCHIVE + "/settings";
 	private static final String    XMLNS    = "jabber:client";
 	private static final String[][]  ELEMENT_PATHS = { {MESSAGE}, {Iq.ELEM_NAME, AUTO}, 
-		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST} };
+		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, "pref"} };
 	private static final String[] XMLNSS = { Packet.CLIENT_XMLNS, XEP0136NS, 
-		XEP0136NS, XEP0136NS };
+		XEP0136NS, XEP0136NS, XEP0136NS };
 	private static final Set<StanzaType> TYPES;
 	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
 			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
 					":manage" }) };
+	
+	private static final String DEFAULT_STORE_METHOD_KEY = "default-store-method";
+	private static final String REQUIRED_STORE_METHOD_KEY = "required-store-method";
 	
 	static {
 		HashSet tmpTYPES = new HashSet<StanzaType>();
@@ -102,7 +108,10 @@ public class MessageArchivePlugin
 
 	//~--- fields ---------------------------------------------------------------
 
-	private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private StoreMethod defaultStoreMethod = StoreMethod.Body;
+	private StoreMethod requiredStoreMethod = StoreMethod.False;
+	
+	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
 
 	//~--- methods --------------------------------------------------------------
@@ -132,6 +141,17 @@ public class MessageArchivePlugin
 				new Object[] { "component-jid",
 				ma_jid });
 		System.out.println("MA LOADED = " + ma_jid.toString());
+		
+		// setting required and default level of archiving
+		if (settings.containsKey(REQUIRED_STORE_METHOD_KEY)) {
+			requiredStoreMethod = StoreMethod.valueof((String) settings.get(REQUIRED_STORE_METHOD_KEY));
+		}
+		if (settings.containsKey(DEFAULT_STORE_METHOD_KEY)) {
+			defaultStoreMethod = StoreMethod.valueof((String) settings.get(DEFAULT_STORE_METHOD_KEY));
+		}
+		if (defaultStoreMethod.ordinal() < requiredStoreMethod.ordinal()) {
+			defaultStoreMethod  = requiredStoreMethod;
+		}
 	}
 
 	/**
@@ -166,12 +186,34 @@ public class MessageArchivePlugin
 				boolean auto = getAutoSave(session);
 
 				if (auto && (packet.getElemCDataStaticStr(Message.MESSAGE_BODY_PATH) != null)) {
-
+					StoreMethod storeMethod = getStoreMethod(session);
+					if (storeMethod == StoreMethod.False) {
+						// ignoring as False means we should not store anything
+						return;
+					}
+					
 					// redirecting to message archiving component
 					Packet result = packet.copyElementOnly();
 
 					result.setPacketTo(ma_jid);
 					result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
+					switch (storeMethod) {
+						case Body:
+							// in this store method we should only store <body/> element
+							Element message = result.getElement();
+							for (Element elem : message.getChildren()) {
+								switch (elem.getName()) {
+									case "body":
+										break;
+									default:
+										message.removeChild(elem);
+								}
+							}
+							break;
+						default:
+							// in other case we store whole message
+							break;
+					}
 					results.offer(result);
 				}
 			} else if (Iq.ELEM_NAME == packet.getElemName()) {
@@ -215,7 +257,9 @@ public class MessageArchivePlugin
 						Element defaultEl = new Element("default");
 
 						defaultEl.setAttribute("otr", "forbid");
-						defaultEl.setAttribute("save", "message");
+								
+						StoreMethod storeMethod = getStoreMethod(session);
+						defaultEl.setAttribute("save", storeMethod.toString());
 						prefEl.addChild(defaultEl);
 
 						Element methodEl = new Element("method");
@@ -233,24 +277,94 @@ public class MessageArchivePlugin
 						prefEl.addChild(methodEl);
 						results.offer(packet.okResult(prefEl, 0));
 					} else if (packet.getType() == StanzaType.set) {
-						results.offer(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(
-								packet, null, true));
+						Authorization error = null;
+						StoreMethod storeMethod = null;
+						Boolean autoSave = null;
+						String errorMsg = null;
+						for (Element elem : pref.getChildren()) {
+							switch (elem.getName()) {
+								case "default":
+									storeMethod = StoreMethod.valueof(elem.getAttributeStaticStr("save"));
+									if (storeMethod == StoreMethod.Stream) {
+										error = Authorization.FEATURE_NOT_IMPLEMENTED;
+										errorMsg = "Value stream of save attribute is not supported";
+										break;
+									}
+									if (storeMethod.ordinal() < requiredStoreMethod.ordinal()) {
+										error = Authorization.NOT_ACCEPTABLE;
+										errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString();
+										break;
+									}
+									String otr = elem.getAttributeStaticStr("otr");
+									if (otr != null && !"forbid".equals(otr)) {
+										error = Authorization.FEATURE_NOT_IMPLEMENTED;
+										errorMsg = "Value " + otr + " of otr attribute is not supported";
+									}
+									break;
+								case "auto":
+									autoSave = Boolean.valueOf(elem.getAttributeStaticStr("save"));
+									if (requiredStoreMethod != StoreMethod.False && (autoSave == null || autoSave == false)) {
+										error = Authorization.NOT_ACCEPTABLE;
+										errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString() 
+												+ " and that requires automatic archiving to be enabled";
+									}
+									break;
+								default: 
+									error = Authorization.FEATURE_NOT_IMPLEMENTED;
+									errorMsg = null;
+							}
+						}
+						if (error != null) {
+							results.offer(error.getResponseMessage(
+									packet, errorMsg, true));
+						}
+						else {
+							try {
+								if (autoSave != null) {
+									this.setAutoSave(session, autoSave);
+								}
+								if (storeMethod != null) {
+									this.setStoreMethod(session, storeMethod);
+								}
+								results.offer(packet.okResult((String) null, 0));
+								
+								// shouldn't we notify other connected resources? see section 2.4.of XEP-0136
+							}
+							catch (TigaseDBException ex) {
+								results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, null, false));
+							}
+						}
 					} else {
 						results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, null,
 								true));
 					}
 				} else {
 					String  val  = auto.getAttributeStaticStr("save");
+					if (val == null) val = "";
 					boolean save = false;
 
-					if ("1".equals(val) || "true".equals(val)) {
-						save = true;
-					} else if ("0".equals(val) || "false".equals(val)) {
-						save = false;
-					} else {
-						results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
-								"Save value is incorrect or missing", false));
+					switch (val) {
+						case "true":
+						case "1":
+							save = true;
+							break;
+						case "false":
+						case "0":
+							save = false;
+							break;
+						default:
+							results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
+									"Save value is incorrect or missing", false));
+							return;
 					}
+					
+					if (!save && requiredStoreMethod != StoreMethod.False) {
+						results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet, 
+								"Required minimal message archiving level is " + requiredStoreMethod.toString() 
+								+ " and that requires automatic archiving to be enabled", false));
+						return;
+					}
+					
 					try {
 						setAutoSave(session, save);
 						session.putCommonSessionData(ID + "/" + AUTO, save);
@@ -341,6 +455,9 @@ public class MessageArchivePlugin
 
 	private boolean getAutoSave(final XMPPResourceConnection session)
 					throws NotAuthorizedException {
+		if (requiredStoreMethod != StoreMethod.False)
+			return true;
+		
 		Boolean auto = (Boolean) session.getCommonSessionData(ID + "/" + AUTO);
 
 		if (auto == null) {
@@ -359,6 +476,36 @@ public class MessageArchivePlugin
 		return auto;
 	}
 
+	private StoreMethod getStoreMethod(XMPPResourceConnection session) 
+					throws NotAuthorizedException {
+		StoreMethod save = (StoreMethod) session.getCommonSessionData(ID + "/" + DEFAULT_SAVE);
+		
+		if (save == null) {
+			try {
+				String data = session.getData(SETTINGS, DEFAULT_SAVE, StoreMethod.Body.toString());
+
+				save = StoreMethod.valueof(data);
+				session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
+			} catch (TigaseDBException ex) {
+				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
+						.getMessage());
+				save = StoreMethod.False;
+			}			
+		}
+
+		if (save.ordinal() < requiredStoreMethod.ordinal()) {
+			save = requiredStoreMethod;
+			session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
+			try {
+				setStoreMethod(session, save);
+			} catch (TigaseDBException ex) {
+				log.log(Level.WARNING, "Error updating message archiving level to required level {0}", ex.getMessage());
+			}
+		}
+		
+		return save;
+	}
+	
 	//~--- set methods ----------------------------------------------------------
 
 	/**
@@ -374,6 +521,11 @@ public class MessageArchivePlugin
 	public void setAutoSave(XMPPResourceConnection session, Boolean auto)
 					throws NotAuthorizedException, TigaseDBException {
 		session.setData(SETTINGS, AUTO, String.valueOf(auto));
+	}
+	
+	public void setStoreMethod(XMPPResourceConnection session, StoreMethod save) 
+					throws NotAuthorizedException, TigaseDBException {
+		session.setData(SETTINGS, DEFAULT_SAVE, (save == null ? StoreMethod.False : save).toString());
 	}
 }
 
