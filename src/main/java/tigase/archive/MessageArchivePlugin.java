@@ -482,7 +482,7 @@ public class MessageArchivePlugin
 		
 		if (save == null) {
 			try {
-				String data = session.getData(SETTINGS, DEFAULT_SAVE, StoreMethod.Body.toString());
+				String data = session.getData(SETTINGS, DEFAULT_SAVE, defaultStoreMethod.toString());
 
 				save = StoreMethod.valueof(data);
 				session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
