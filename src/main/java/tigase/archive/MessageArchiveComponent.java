@@ -292,23 +292,16 @@ public class MessageArchiveComponent
 			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(),
 					with, start, stop, rsm);
 			Element retList = new Element(LIST);
-
 			retList.setXMLNS(XEP0136NS);
-			if (chats == null) {
-				addOutPacket(Authorization.ITEM_NOT_FOUND.getResponseMessage(packet,
-						"No such collection", true));
 
-				return;
-			} else if (!chats.isEmpty()) {
+			if (chats != null && !chats.isEmpty()) {
 				retList.addChildren(chats);
 				rsm.setFirst(chats.get(0).getAttributeStaticStr("start"));
 				rsm.setLast(chats.get(chats.size() - 1).getAttributeStaticStr("start"));
 				retList.addChild(rsm.toElement());
-				addOutPacket(packet.okResult(retList, 0));
-			} else {
-				addOutPacket(Authorization.ITEM_NOT_FOUND.getResponseMessage(packet,
-						"No items in specified period", true));
 			}
+			
+			addOutPacket(packet.okResult(retList, 0));
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Date parsing error", true));

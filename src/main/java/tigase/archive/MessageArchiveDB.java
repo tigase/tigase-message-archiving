@@ -781,7 +781,7 @@ public class MessageArchiveDB {
 					}
 				}
 
-				return null;
+				return results;
 			} else {
 				PreparedStatement get_jids_id_st = data_repo.getPreparedStatement(null,
 																						 GET_JID_IDS_QUERY);
