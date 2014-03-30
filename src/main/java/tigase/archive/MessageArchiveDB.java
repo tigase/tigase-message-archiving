@@ -457,7 +457,6 @@ public class MessageArchiveDB {
 		Long buddyId = jids_ids.length > 1 ? jids_ids[1] : null;
 		java.sql.Timestamp start_ = start != null ? new java.sql.Timestamp(start.getTime()) : null;
 		java.sql.Timestamp end_ = end != null ? new java.sql.Timestamp(end.getTime()) : null;
-		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 
 		StringBuilder query = new StringBuilder(20);
 		if (start_ != null) {
@@ -478,11 +477,38 @@ public class MessageArchiveDB {
 			// not supported
 		}
 		String queryStr = query.toString();		
-		
-		List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, rsm.getMax(), queryStr);
+
 		Integer count = getCollectionsCount(owner, jids_ids[0], buddyId, start_, end_, queryStr);
-				
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+		int limit = rsm.getMax();
+		if (rsm.getAfter() != null) {
+			int after = Integer.parseInt(rsm.getAfter());
+			// it is ok, if we go out of range we will return empty result
+			index = after + 1;
+		} else if (rsm.getBefore() != null) {
+			int before = Integer.parseInt(rsm.getBefore());
+			index = before - rsm.getMax();
+			// if we go out of range we need to set index to 0 and reduce limit
+			// to return proper results
+			if (index < 0) {
+				index = 0;
+				limit = before;
+			}
+		}
+		else if (rsm.hasBefore()) {
+			index = count - rsm.getMax();
+			if (index < 0) {
+				index = 0;
+			}
+		}
+		
+		List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, limit, queryStr);
+
 		rsm.setResults(count, index);
+		if (!results.isEmpty()) {
+			rsm.setFirst(String.valueOf(index));
+			rsm.setLast(String.valueOf(index + (results.size() - 1)));
+		}
 		
 		return results;
 	}
@@ -508,14 +534,38 @@ public class MessageArchiveDB {
 		Timestamp startTimestamp = new Timestamp(start.getTime());
 		Timestamp endTimestamp = end != null ? new Timestamp(end.getTime()) : null;
 
-		int offset = rsm.getIndex() != null ? rsm.getIndex() : 0;
+		int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);		
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 		int limit = rsm.getMax();
+		if (rsm.getAfter() != null) {
+			int after = Integer.parseInt(rsm.getAfter());
+			// it is ok, if we go out of range we will return empty result
+			index = after + 1;
+		} else if (rsm.getBefore() != null) {
+			int before = Integer.parseInt(rsm.getBefore());
+			index = before - rsm.getMax();
+			// if we go out of range we need to set index to 0 and reduce limit
+			// to return proper results
+			if (index < 0) {
+				index = 0;
+				limit = before;
+			}
+		}
+		else if (rsm.hasBefore()) {
+			index = count - rsm.getMax();
+			if (index < 0) {
+				index = 0;
+			}
+		}
 		
 		List<Element> items = getItems(owner, jids_ids[0], jids_ids[1], startTimestamp, 
-				endTimestamp, offset, limit);
+				endTimestamp, index, limit);
 		
-		int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);
-		rsm.setResults(count, offset);
+		rsm.setResults(count, index);
+		if (!items.isEmpty()) {
+			rsm.setFirst(String.valueOf(index));
+			rsm.setLast(String.valueOf(index + (items.size() - 1)));
+		}
 		
 		return items;
 	}

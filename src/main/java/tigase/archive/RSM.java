@@ -45,6 +45,7 @@ public class RSM {
 
 	String after  = null;
 	String before = null;
+	boolean hasBefore = false;
 	Integer count = null;
 	String first  = null;
 	String last   = null;
@@ -71,7 +72,11 @@ public class RSM {
 			max = Integer.parseInt(param.getCData());
 		}
 		after  = e.getCDataStaticStr(SET_AFTER_PATH);
-		before = e.getCDataStaticStr(SET_BEFORE_PATH);
+		Element beforeEl = e.findChildStaticStr(SET_BEFORE_PATH);
+		if (beforeEl != null) {
+			hasBefore = true;
+			before = beforeEl.getCData();
+		}
 		String indexStr = e.getCDataStaticStr(SET_INDEX_PATH);
 		if (indexStr != null) {
 			index = Integer.parseInt(indexStr);
@@ -124,6 +129,14 @@ public class RSM {
 		return before;
 	}
 
+	public boolean hasBefore() {
+		return hasBefore;
+	}
+	
+	public Integer getCount() {
+		return count;
+	}
+	
 	//~--- set methods ----------------------------------------------------------
 
 	public void setFirst(String first) {
@@ -178,13 +191,17 @@ public class RSM {
 		Element set = new Element("set");
 
 		set.setXMLNS(XMLNS);
-		if ((first != null) && (last != null)) {
-			Element firstEl = new Element("first", first.toString());
-			set.addChild(firstEl);
-			if (index != null) {
-				firstEl.setAttribute("index", index.toString());
+		if ((first != null) && (last != null) || count != null) {
+			if (first != null) {
+				Element firstEl = new Element("first", first.toString());
+				set.addChild(firstEl);
+				if (index != null) {
+					firstEl.setAttribute("index", index.toString());
+				}
 			}
-			set.addChild(new Element("last", last.toString()));
+			if (last != null) {
+				set.addChild(new Element("last", last.toString()));
+			}
 			if (count != null) {
 				set.addChild(new Element("count", count.toString()));
 			}

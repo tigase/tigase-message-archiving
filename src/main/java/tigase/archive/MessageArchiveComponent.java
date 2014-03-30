@@ -255,39 +255,11 @@ public class MessageArchiveComponent
 		try {
 			RSM rsm = RSM.parseRootElement(list);
 
-//			if (list.getAttributeStaticStr("with") == null) {
-//				addOutPacket(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
-//						"Request parameter with must be specified", true));
-//
-//				return;
-//			}
-
 			String with     = list.getAttributeStaticStr("with");
 			String startStr = list.getAttributeStaticStr("start");
 			String stopStr  = list.getAttributeStaticStr("end");
 
-			if (rsm.getAfter() != null) {
-				Calendar cal = Calendar.getInstance();
-				Date     tmp = parseTimestamp(rsm.getAfter());
-
-				cal.setTime(tmp);
-				cal.add(Calendar.DAY_OF_MONTH, 1);
-				synchronized (formatter2) {
-					startStr = formatter2.format(cal.getTime());
-				}
-			}
-			if (rsm.getBefore() != null) {
-				Calendar cal = Calendar.getInstance();
-				Date     tmp = parseTimestamp(rsm.getBefore());
-
-				cal.setTime(tmp);
-				cal.add(Calendar.DAY_OF_MONTH, -1);
-				synchronized (formatter2) {
-					stopStr = formatter2.format(cal.getTime());
-				}
-			}
-
-			Date          start = startStr != null ? parseTimestamp(startStr) : null;;
+			Date          start = startStr != null ? parseTimestamp(startStr) : null;
 			Date          stop  = stopStr != null ? parseTimestamp(stopStr) : null;
 			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(),
 					with, start, stop, rsm);
@@ -296,10 +268,10 @@ public class MessageArchiveComponent
 
 			if (chats != null && !chats.isEmpty()) {
 				retList.addChildren(chats);
-				rsm.setFirst(chats.get(0).getAttributeStaticStr("start"));
-				rsm.setLast(chats.get(chats.size() - 1).getAttributeStaticStr("start"));
-				retList.addChild(rsm.toElement());
 			}
+			
+			if (rsm.getCount() == null || rsm.getCount() != 0)
+				retList.addChild(rsm.toElement());
 			
 			addOutPacket(packet.okResult(retList, 0));
 		} catch (ParseException e) {
@@ -385,13 +357,6 @@ public class MessageArchiveComponent
 		try {
 			RSM rsm = RSM.parseRootElement(
 					retrieve);    // new RSM(retrieve.findChild("/retrieve/set"), 30);
-			// is it still valid? - leaving it here for compatibility with older versions
-			if (rsm.getAfter() != null) {
-				int offset = Integer.parseInt(rsm.getAfter());
-				if (rsm.getIndex() != null) {
-					rsm.setIndex(offset);
-				} 
-			}
 
 			Date          start = parseTimestamp(retrieve.getAttributeStaticStr("start"));
 			Date		  end = null;
@@ -411,11 +376,10 @@ public class MessageArchiveComponent
 
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {
-				rsm.setFirst(items.get(0).getAttributeStaticStr("secs"));
-				rsm.setLast(items.get(items.size()-1).getAttributeStaticStr("secs"));
 				retList.addChildren(items);
-				retList.addChild(rsm.toElement());
 			}
+			if (rsm.getCount() == null || rsm.getCount() != 0)
+				retList.addChild(rsm.toElement());
 			addOutPacket(packet.okResult(retList, 0));
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
