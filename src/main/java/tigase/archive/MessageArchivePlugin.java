@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import tigase.server.Iq;
+import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
 
 /**
  * MessageArchingPlugin is implementation of plugin which forwards messages
@@ -175,6 +176,12 @@ public class MessageArchivePlugin
 		}
 		try {
 			if (Message.ELEM_NAME == packet.getElemName()) {
+				
+				// ignoring packets resent from c2s for redelivery as processing
+				// them would create unnecessary duplication of messages in archive
+				if (C2SDeliveryErrorProcessor.isDeliveryError(packet))
+					return;
+				
 				StanzaType type = packet.getType();
 
 				if ((packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH) ==
