@@ -26,28 +26,21 @@ package tigase.archive;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import tigase.conf.Configurable;
-
-import tigase.server.AbstractMessageReceiver;
-import tigase.server.Packet;
-
-import tigase.xml.Element;
-
-import tigase.xmpp.*;
-
-import static tigase.archive.MessageArchivePlugin.*;
-
-//~--- JDK imports ------------------------------------------------------------
-
 import java.sql.SQLException;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Map.Entry;
+import static tigase.archive.MessageArchivePlugin.*;
+import tigase.conf.Configurable;
+import tigase.conf.ConfigurationException;
+import tigase.server.AbstractMessageReceiver;
+import tigase.server.Packet;
+import tigase.xml.Element;
+import tigase.xmpp.*;
 
 /**
  *
@@ -164,9 +157,10 @@ public class MessageArchiveComponent
 	 *
 	 *
 	 * @param props
+	 * @throws tigase.conf.ConfigurationException
 	 */
 	@Override
-	public void setProperties(Map<String, Object> props) {
+	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		try {
 			super.setProperties(props);
 			if (props.size() == 1) {
