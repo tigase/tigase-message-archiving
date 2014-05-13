@@ -52,6 +52,8 @@ public class MessageArchiveComponent
 			.getCanonicalName());
 	private static final String           MSG_ARCHIVE_REPO_URI_PROP_KEY =
 			"archive-repo-uri";
+	private final static SimpleDateFormat formatter4 = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 	private final static SimpleDateFormat formatter3 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
@@ -63,6 +65,7 @@ public class MessageArchiveComponent
 		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
+		formatter4.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}	
 	//~--- fields ---------------------------------------------------------------
 
@@ -282,8 +285,15 @@ public class MessageArchiveComponent
 		Date date = null;
 
 		if (tmp.endsWith("Z")) {
-			synchronized (formatter) {
-				date = formatter.parse(tmp);
+			if (tmp.contains(".")) {
+				synchronized (formatter4) {
+					date = formatter4.parse(tmp);
+				}
+			}
+			else {
+				synchronized (formatter) {
+					date = formatter.parse(tmp);
+				}
 			}
 		} else if (tmp.contains(".")) {
 			synchronized (formatter3) {
