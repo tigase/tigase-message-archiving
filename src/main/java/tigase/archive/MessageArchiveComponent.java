@@ -26,7 +26,6 @@ package tigase.archive;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -35,9 +34,16 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static tigase.archive.MessageArchivePlugin.*;
+import tigase.archive.db.MessageArchiveRepository;
+import tigase.archive.db.MessageArchiveRepository.Direction;
 import tigase.conf.Configurable;
 import tigase.conf.ConfigurationException;
+import tigase.db.DBInitException;
+import tigase.db.RepositoryFactory;
+import tigase.db.TigaseDBException;
+import tigase.osgi.ModulesManagerImpl;
 import tigase.server.AbstractMessageReceiver;
+import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.*;
@@ -50,6 +56,8 @@ public class MessageArchiveComponent
 				extends AbstractMessageReceiver {
 	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class
 			.getCanonicalName());
+	private static final String			  MSG_ARCHIVE_REPO_CLASS_PROP_KEY =
+			"archive-repo-class";
 	private static final String           MSG_ARCHIVE_REPO_URI_PROP_KEY =
 			"archive-repo-uri";
 	private final static SimpleDateFormat formatter4 = new SimpleDateFormat(
@@ -69,7 +77,7 @@ public class MessageArchiveComponent
 	}	
 	//~--- fields ---------------------------------------------------------------
 
-	private MessageArchiveDB msg_repo = new MessageArchiveDB();
+	private MessageArchiveRepository msg_repo = null;
 
 	//~--- constructors ---------------------------------------------------------
 
@@ -179,15 +187,37 @@ public class MessageArchiveComponent
 				repoProps.put(entry.getKey(), entry.getValue().toString());
 			}
 
+			String repoClsName = (String) props.get(MSG_ARCHIVE_REPO_CLASS_PROP_KEY);
 			String uri = (String) props.get(MSG_ARCHIVE_REPO_URI_PROP_KEY);
 
 			if (uri != null) {
+				Class<? extends MessageArchiveRepository> repoCls = null;
+				if (repoClsName == null)
+					repoCls = RepositoryFactory.getRepoClass(MessageArchiveRepository.class, uri);
+				else {
+					try {
+						repoCls = (Class<? extends MessageArchiveRepository>) ModulesManagerImpl.getInstance().forName(repoClsName);
+					} catch (ClassNotFoundException ex) {
+						log.log(Level.SEVERE, "Could not find class " + repoClsName + " an implementation of MessageArchive repository", ex);
+						throw new ConfigurationException("Could not find class " + repoClsName + " an implementation of MessageArchive repository", ex);
+					}
+				}
+				if (repoCls == null && repoClsName == null) {
+					throw new ConfigurationException("Not found implementation of MessageArchive repository for URI = " + uri);
+				}
+				msg_repo = repoCls.newInstance();
 				msg_repo.initRepository(uri, repoProps);
 			} else {
 				log.log(Level.SEVERE, "repository uri is NULL!");
 			}
-		} catch (SQLException ex) {
-			log.log(Level.SEVERE, "error initializing repository", ex);
+		} catch (DBInitException ex) {	
+			throw new ConfigurationException("Could not initialize MessageArchive repository", ex);
+		} catch (InstantiationException ex) {
+			log.log(Level.SEVERE, "Could not initialize MessageArchive repository", ex);
+			throw new ConfigurationException("Could not initialize MessageArchive repository", ex);
+		} catch (IllegalAccessException ex) {
+			log.log(Level.SEVERE, "Could not initialize MessageArchive repository", ex);
+			throw new ConfigurationException("Could not initialize MessageArchive repository", ex);
 		}
 	}
 
@@ -274,7 +304,7 @@ public class MessageArchiveComponent
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Date parsing error", true));
-		} catch (SQLException e) {
+		} catch (TigaseDBException e) {
 			log.log(Level.SEVERE, "Error listing collections", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Database error occured", true));
@@ -328,7 +358,7 @@ public class MessageArchiveComponent
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Date parsing error", true));
-		} catch (SQLException e) {
+		} catch (TigaseDBException e) {
 			log.log(Level.SEVERE, "Error removing messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Database error occured", true));
@@ -342,14 +372,24 @@ public class MessageArchiveComponent
 			packet.getElement().removeAttribute(OWNER_JID);
 
 			BareJID owner    = BareJID.bareJIDInstanceNS(ownerStr);
-			boolean outgoing = owner.equals(packet.getStanzaFrom().getBareJID());
-			BareJID buddy    = outgoing
+			Direction direction = Direction.getDirection(owner, packet.getStanzaFrom().getBareJID());
+			BareJID buddy    = direction == Direction.outgoing
 					? packet.getStanzaTo().getBareJID()
 					: packet.getStanzaFrom().getBareJID();
 
-			msg_repo.archiveMessage(owner, buddy, (short) (outgoing
-					? 0
-					: 1), packet.getElement());
+			Element msg = packet.getElement();
+			Date timestamp  = null;
+			Element delay= msg.findChildStaticStr(Message.MESSAGE_DELAY_PATH);
+			if (delay != null) {
+				try {
+					String stamp = delay.getAttributeStaticStr("stamp");
+					timestamp = parseTimestamp(stamp);
+				} catch (ParseException e1) {}
+			} else {
+				timestamp = new java.util.Date();
+			}			
+			
+			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg);
 		} else {
 			log.log(Level.INFO, "Owner attribute missing from packet: {0}", packet);
 		}
@@ -388,7 +428,7 @@ public class MessageArchiveComponent
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Date parsing error", true));
-		} catch (SQLException e) {
+		} catch (TigaseDBException e) {
 			log.log(Level.SEVERE, "Error retrieving messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Database error occured", true));

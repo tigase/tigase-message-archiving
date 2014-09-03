@@ -10,6 +10,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+import tigase.archive.db.JDBCMessageArchiveRepository;
 import tigase.osgi.ModulesManager;
 
 /**
@@ -77,6 +78,7 @@ public class Activator implements BundleActivator, ServiceListener {
                 if (serviceManager != null) {
                         serviceManager.registerPluginClass(archivePluginClass);
                         serviceManager.registerServerComponentClass(archiveComponentClass);
+						serviceManager.registerClass(JDBCMessageArchiveRepository.class);
                         serviceManager.update();
                 }
         }
@@ -85,6 +87,7 @@ public class Activator implements BundleActivator, ServiceListener {
                 if (serviceManager != null) {
                         serviceManager.unregisterPluginClass(archivePluginClass);
                         serviceManager.unregisterServerComponentClass(archiveComponentClass);
+						serviceManager.unregisterClass(JDBCMessageArchiveRepository.class);
                         serviceManager.update();
                 }
         }

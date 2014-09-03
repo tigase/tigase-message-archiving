@@ -1,8 +1,8 @@
 /*
- * MessageArchiveDB.java
+ * JDBCMessageArchiveRepository.java
  *
  * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
+ * Copyright (C) 2004-2014 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,48 +19,35 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-
-
-
-package tigase.archive;
+package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
-
-import tigase.db.DataRepository;
-import tigase.db.RepositoryFactory;
-
-import tigase.server.Message;
-import tigase.server.Packet;
-
-import tigase.xml.DomBuilderHandler;
-import tigase.xml.Element;
-import tigase.xml.SimpleParser;
-import tigase.xml.SingletonFactory;
-
-import tigase.xmpp.BareJID;
-
-//~--- JDK imports ------------------------------------------------------------
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Queue;
-import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import tigase.archive.RSM;
+import tigase.db.DBInitException;
+import tigase.db.DataRepository;
 import static tigase.db.DataRepository.dbTypes.derby;
+import tigase.db.Repository;
+import tigase.db.RepositoryFactory;
+import tigase.db.TigaseDBException;
+import tigase.xml.DomBuilderHandler;
+import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
+import tigase.xmpp.BareJID;
 
 /**
  * Class description
@@ -69,31 +56,18 @@ import static tigase.db.DataRepository.dbTypes.derby;
  * @version        Enter version here..., 13/02/16
  * @author         Enter your name here...
  */
-public class MessageArchiveDB {
+@Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" } )
+public class JDBCMessageArchiveRepository extends AbstractMessageArchiveRepository {
 	private static final String JIDS_ID  = "jid_id";
 	private static final String JIDS_JID = "jid";
 
 	// jids table
 	private static final String JIDS_TABLE = "tig_ma_jids";
 	private static final Logger log        =
-		Logger.getLogger(MessageArchiveDB.class.getCanonicalName());
+		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
 	private static final long MILIS_PER_DAY          = 24 * 60 * 60 * 1000;
-	private final static SimpleDateFormat formatter =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	private final static SimpleDateFormat formatter2 =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-	private final static SimpleDateFormat formatter3 =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-	private final static SimpleDateFormat formatter4 =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-	
-	static {
-		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter4.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
+
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
@@ -151,9 +125,11 @@ public class MessageArchiveDB {
 //																						 " and date(" + MSGS_TIMESTAMP +
 //																						 ") = ?" + " order by " +
 //																						 MSGS_TIMESTAMP + " offset ? rows fetch next ? rows only";
-	private static final String GET_MESSAGES = "select " + MSGS_MSG + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+	private static final String GET_MESSAGES = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
+			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
 			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? order by " + MSGS_TIMESTAMP;
-	private static final String GET_MESSAGES_END = "select " + MSGS_MSG + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+	private static final String GET_MESSAGES_END = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
+			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
 			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ? order by " + MSGS_TIMESTAMP;
 	private static final String GET_MESSAGES_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " + MSGS_OWNER_ID 
 			+ " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
@@ -297,11 +273,9 @@ public class MessageArchiveDB {
 	 *
 	 * @throws SQLException
 	 */
+	@Override
 	public void initRepository(String conn_str, Map<String, String> params)
-					throws SQLException {
-		synchronized(formatter) {
-			formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-		}
+					throws DBInitException {
 		try {
 			data_repo = RepositoryFactory.getDataRepository( null, conn_str, params );
 
@@ -384,9 +358,11 @@ public class MessageArchiveDB {
 	 * @param owner
 	 * @param buddy
 	 * @param direction
+	 * @param timestamp
 	 * @param msg
 	 */
-	public void archiveMessage(BareJID owner, BareJID buddy, short direction, Element msg) {
+	@Override
+	public void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg) {
 		try {
 			String owner_str         = owner.toString();
 			String buddy_str         = buddy.toString();
@@ -397,17 +373,7 @@ public class MessageArchiveDB {
 			long buddy_id            = (jids_ids[1] != LONG_NULL)
 																 ? jids_ids[1]
 																 : addJidId(buddy_str);
-			java.sql.Timestamp mtime = null;
-			Element delay            = msg.findChildStaticStr(Message.MESSAGE_DELAY_PATH);
-
-			if (delay != null) {
-				try {
-					String stamp = delay.getAttributeStaticStr("stamp");
-					mtime = parseTimestamp(stamp);
-				} catch (ParseException e1) {}
-			} else {
-				mtime = new java.sql.Timestamp(System.currentTimeMillis());
-			}
+			java.sql.Timestamp mtime = new java.sql.Timestamp(timestamp.getTime());
 			msg.addAttribute("time", String.valueOf(mtime.getTime()));
 
 			String type                      = msg.getAttributeStaticStr("type");
@@ -419,7 +385,7 @@ public class MessageArchiveDB {
 				add_message_st.setLong(1, owner_id);
 				add_message_st.setLong(2, buddy_id);
 				add_message_st.setTimestamp(3, mtime);
-				add_message_st.setShort(4, direction);
+				add_message_st.setShort(4, direction.getValue());
 				add_message_st.setString(5, type);
 				add_message_st.setString(6, msgStr);
 				add_message_st.executeUpdate();
@@ -445,72 +411,74 @@ public class MessageArchiveDB {
 	 * @param rsm
 	 *
 	 * @return
-	 *
-	 * @throws SQLException
+	 * @throws tigase.db.TigaseDBException
 	 */
+	@Override
 	public List<Element> getCollections(BareJID owner, String withJid, Date start,
 					Date end, RSM rsm)
-					throws SQLException {
-		
-		long[] jids_ids      = withJid == null ? getJidsIds(owner.toString()) : getJidsIds(owner.toString(), withJid);
+					 throws TigaseDBException {
+		try {
+			long[] jids_ids = withJid == null ? getJidsIds(owner.toString()) : getJidsIds(owner.toString(), withJid);
 
-		Long buddyId = jids_ids.length > 1 ? jids_ids[1] : null;
-		java.sql.Timestamp start_ = start != null ? new java.sql.Timestamp(start.getTime()) : null;
-		java.sql.Timestamp end_ = end != null ? new java.sql.Timestamp(end.getTime()) : null;
+			Long buddyId = jids_ids.length > 1 ? jids_ids[1] : null;
+			java.sql.Timestamp start_ = start != null ? new java.sql.Timestamp(start.getTime()) : null;
+			java.sql.Timestamp end_ = end != null ? new java.sql.Timestamp(end.getTime()) : null;
 
-		StringBuilder query = new StringBuilder(20);
-		if (start_ != null) {
-			query.append("FROM");
-		}
-		if (end_ != null) {
-			if (query.length() > 0) {
-				query.append("_");
+			StringBuilder query = new StringBuilder(20);
+			if (start_ != null) {
+				query.append("FROM");
 			}
-			query.append("TO");
-		}
-		if (buddyId != null) {
-			if (query.length() > 0) {
-				query.append("_");
+			if (end_ != null) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("TO");
 			}
-			query.append("WITH");
-		} else {
-			// not supported
-		}
-		String queryStr = query.toString();		
+			if (buddyId != null) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("WITH");
+			} else {
+				// not supported
+			}
+			String queryStr = query.toString();
 
-		Integer count = getCollectionsCount(owner, jids_ids[0], buddyId, start_, end_, queryStr);
-		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
-		int limit = rsm.getMax();
-		if (rsm.getAfter() != null) {
-			int after = Integer.parseInt(rsm.getAfter());
-			// it is ok, if we go out of range we will return empty result
-			index = after + 1;
-		} else if (rsm.getBefore() != null) {
-			int before = Integer.parseInt(rsm.getBefore());
-			index = before - rsm.getMax();
+			Integer count = getCollectionsCount(owner, jids_ids[0], buddyId, start_, end_, queryStr);
+			int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+			int limit = rsm.getMax();
+			if (rsm.getAfter() != null) {
+				int after = Integer.parseInt(rsm.getAfter());
+				// it is ok, if we go out of range we will return empty result
+				index = after + 1;
+			} else if (rsm.getBefore() != null) {
+				int before = Integer.parseInt(rsm.getBefore());
+				index = before - rsm.getMax();
 			// if we go out of range we need to set index to 0 and reduce limit
-			// to return proper results
-			if (index < 0) {
-				index = 0;
-				limit = before;
+				// to return proper results
+				if (index < 0) {
+					index = 0;
+					limit = before;
+				}
+			} else if (rsm.hasBefore()) {
+				index = count - rsm.getMax();
+				if (index < 0) {
+					index = 0;
+				}
 			}
-		}
-		else if (rsm.hasBefore()) {
-			index = count - rsm.getMax();
-			if (index < 0) {
-				index = 0;
-			}
-		}
-		
-		List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, limit, queryStr);
 
-		rsm.setResults(count, index);
-		if (!results.isEmpty()) {
-			rsm.setFirst(String.valueOf(index));
-			rsm.setLast(String.valueOf(index + (results.size() - 1)));
-		}
-		
-		return results;
+			List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, limit, queryStr);
+
+			rsm.setResults(count, index);
+			if (!results.isEmpty()) {
+				rsm.setFirst(String.valueOf(index));
+				rsm.setLast(String.valueOf(index + (results.size() - 1)));
+			}
+
+			return results;
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Cound not retrieve collections", ex);
+		}		
 	}
 
 	/**
@@ -520,54 +488,57 @@ public class MessageArchiveDB {
 	 * @param owner
 	 * @param withJid
 	 * @param start
-	 * @param limit
-	 * @param offset
+	 * @param end
+	 * @param rsm
 	 *
 	 * @return
-	 *
-	 * @throws SQLException
+	 * @throws tigase.db.TigaseDBException
 	 */
+	@Override
 	public List<Element> getItems(BareJID owner, String withJid, Date start, Date end, RSM rsm)
-					throws SQLException {
-		long[] jids_ids   = getJidsIds(owner.toString(), withJid);
+					 throws TigaseDBException {
+		try {
+			long[] jids_ids = getJidsIds(owner.toString(), withJid);
 
-		Timestamp startTimestamp = new Timestamp(start.getTime());
-		Timestamp endTimestamp = end != null ? new Timestamp(end.getTime()) : null;
+			Timestamp startTimestamp = new Timestamp(start.getTime());
+			Timestamp endTimestamp = end != null ? new Timestamp(end.getTime()) : null;
 
-		int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);		
-		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
-		int limit = rsm.getMax();
-		if (rsm.getAfter() != null) {
-			int after = Integer.parseInt(rsm.getAfter());
-			// it is ok, if we go out of range we will return empty result
-			index = after + 1;
-		} else if (rsm.getBefore() != null) {
-			int before = Integer.parseInt(rsm.getBefore());
-			index = before - rsm.getMax();
+			int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);
+			int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+			int limit = rsm.getMax();
+			if (rsm.getAfter() != null) {
+				int after = Integer.parseInt(rsm.getAfter());
+				// it is ok, if we go out of range we will return empty result
+				index = after + 1;
+			} else if (rsm.getBefore() != null) {
+				int before = Integer.parseInt(rsm.getBefore());
+				index = before - rsm.getMax();
 			// if we go out of range we need to set index to 0 and reduce limit
-			// to return proper results
-			if (index < 0) {
-				index = 0;
-				limit = before;
+				// to return proper results
+				if (index < 0) {
+					index = 0;
+					limit = before;
+				}
+			} else if (rsm.hasBefore()) {
+				index = count - rsm.getMax();
+				if (index < 0) {
+					index = 0;
+				}
 			}
-		}
-		else if (rsm.hasBefore()) {
-			index = count - rsm.getMax();
-			if (index < 0) {
-				index = 0;
+
+			List<Element> items = getItems(owner, jids_ids[0], jids_ids[1], startTimestamp,
+					endTimestamp, index, limit);
+
+			rsm.setResults(count, index);
+			if (!items.isEmpty()) {
+				rsm.setFirst(String.valueOf(index));
+				rsm.setLast(String.valueOf(index + (items.size() - 1)));
 			}
-		}
-		
-		List<Element> items = getItems(owner, jids_ids[0], jids_ids[1], startTimestamp, 
-				endTimestamp, index, limit);
-		
-		rsm.setResults(count, index);
-		if (!items.isEmpty()) {
-			rsm.setFirst(String.valueOf(index));
-			rsm.setLast(String.valueOf(index + (items.size() - 1)));
-		}
-		
-		return items;
+
+			return items;
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Cound not retrieve items", ex);
+		}		
 	}
 
 	//~--- methods --------------------------------------------------------------
@@ -581,31 +552,36 @@ public class MessageArchiveDB {
 	 * @param start
 	 * @param end
 	 *
-	 * @throws SQLException
+	 * @throws TigaseDBException
 	 */
+	@Override
 	public void removeItems(BareJID owner, String withJid, Date start, Date end)
-					throws SQLException {
-		long[] jids_ids = getJidsIds(owner.toString(), withJid);
+					throws TigaseDBException {
+		try {
+			long[] jids_ids = getJidsIds(owner.toString(), withJid);
 
-		if (start == null) {
-			start = new Date(0);
-		}
-		if (end == null) {
-			end = new Date(0);
-		}
-
-		java.sql.Timestamp start_        = new java.sql.Timestamp(start.getTime());
-		java.sql.Timestamp end_          = new java.sql.Timestamp(end.getTime());
-		PreparedStatement remove_msgs_st = data_repo.getPreparedStatement(owner, REMOVE_MSGS);
-
-		synchronized (remove_msgs_st) {
-			synchronized (remove_msgs_st) {
-				remove_msgs_st.setLong(1, jids_ids[0]);
-				remove_msgs_st.setLong(2, jids_ids[1]);
-				remove_msgs_st.setTimestamp(3, end_);
-				remove_msgs_st.setTimestamp(4, start_);
-				remove_msgs_st.executeUpdate();
+			if (start == null) {
+				start = new Date(0);
 			}
+			if (end == null) {
+				end = new Date(0);
+			}
+
+			java.sql.Timestamp start_ = new java.sql.Timestamp(start.getTime());
+			java.sql.Timestamp end_ = new java.sql.Timestamp(end.getTime());
+			PreparedStatement remove_msgs_st = data_repo.getPreparedStatement(owner, REMOVE_MSGS);
+
+			synchronized (remove_msgs_st) {
+				synchronized (remove_msgs_st) {
+					remove_msgs_st.setLong(1, jids_ids[0]);
+					remove_msgs_st.setLong(2, jids_ids[1]);
+					remove_msgs_st.setTimestamp(3, end_);
+					remove_msgs_st.setTimestamp(4, start_);
+					remove_msgs_st.executeUpdate();
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Cound not remove items", ex);
 		}
 	}
 
@@ -645,12 +621,7 @@ public class MessageArchiveDB {
 				while (selectRs.next()) {
 					Timestamp startTs = selectRs.getTimestamp(1);
 					String with = selectRs.getString(2);
-					String formattedStart = null;
-					synchronized (formatter2) {
-						formattedStart = formatter2.format(startTs);
-					}
-					results.add(new Element("chat", new String[] { "with", "start" },
-							new String[] { with, formattedStart }));
+					addCollectionToResults(results, with, startTs);
 				}
 			}
 		} finally {
@@ -692,7 +663,7 @@ public class MessageArchiveDB {
 	private List<Element> getItems(BareJID owner, long ownerId, long withId, Timestamp startTimestamp, 
 			Timestamp endTimestamp, int offset, int limit) throws SQLException {
 		ResultSet rs      = null;		
-		StringBuilder buf = new StringBuilder(16 * 1024);
+		Queue<Item> results = new ArrayDeque<Item>();
 		int i=1;
 		try {
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
@@ -718,7 +689,11 @@ public class MessageArchiveDB {
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
-					buf.append(rs.getString(1));
+					Item item = new Item();
+					item.message = rs.getString(1);
+					item.timestamp = rs.getTimestamp(2);
+					item.direction = Direction.getDirection(rs.getShort(3));
+					results.offer(item);
 				}
 			}
 		} finally {
@@ -727,37 +702,24 @@ public class MessageArchiveDB {
 
 		List<Element> msgs = null;
 
-		if (buf != null) {
-			String results = buf.toString();
-
+		if (!results.isEmpty()) {
 			msgs = new LinkedList<Element>();
 
 			DomBuilderHandler domHandler = new DomBuilderHandler();
 
-			parser.parse(domHandler, results.toCharArray(), 0, results.length());
+			Item item = null;
+			while ((item = results.poll()) != null) {
+				parser.parse(domHandler, item.message.toCharArray(), 0, item.message.length());
 
-			Queue<Element> queue = domHandler.getParsedElements();
-			String ownerStr      = owner.toString();
-			Element msg          = null;
+				Queue<Element> queue = domHandler.getParsedElements();
+				String ownerStr = owner.toString();
+				Element msg = null;
 
-			while ((msg = queue.poll()) != null) {
-				Element item =
-					new Element(msg.getAttributeStaticStr(Packet.FROM_ATT).startsWith(ownerStr)
-											? Packet.TO_ATT
-											: Packet.FROM_ATT);
-
-				// Now we should send all elements of a message so as we can store not only <body/> 
-				// element. If we will store only <body/> element then only this element will 
-				// be available in store
-				//item.addChild(msg.getChild("body"));
-				item.addChildren(msg.getChildren());	
-				item.setAttribute(
-						"secs",
-						String.valueOf(
-							(Long.valueOf(msg.getAttributeStaticStr("time")) - startTimestamp.getTime()) /
-							1000));
-				msgs.add(item);
+				while ((msg = queue.poll()) != null) {
+					addMessageToResults(msgs, startTimestamp, msg, item.timestamp, item.direction);
+				}			
 			}
+
 			// no point in sorting messages by secs attribute as messages are already
 			// sorted in SQL query and also this sorting is incorrect
 //			Collections.sort(msgs, new Comparator<Element>() {
@@ -889,35 +851,13 @@ public class MessageArchiveDB {
 		}
 	}
 	
-	private Timestamp parseTimestamp(String tmp) throws ParseException {
-		Date date = null;
+	private class Item {
 		
-		if (tmp.endsWith("Z")) {
-			if (tmp.contains(".")) {
-				synchronized(formatter4) {
-					date = formatter4.parse(tmp);
-				}
-			}
-			else {
-				synchronized(formatter) {
-					date = formatter.parse(tmp);
-				}
-			}
-		}
-		else if (tmp.contains(".")) {
-			synchronized(formatter3) {
-				date = formatter3.parse(tmp);
-			}			
-		}
-		else {
-			synchronized(formatter2) {
-				date = formatter2.parse(tmp);
-			}			
-		}
+		String message;
+		Date timestamp;
+		Direction direction;
 		
-		return new Timestamp(date.getTime());
 	}
-	
 }
 
 
