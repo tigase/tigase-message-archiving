@@ -712,7 +712,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				parser.parse(domHandler, item.message.toCharArray(), 0, item.message.length());
 
 				Queue<Element> queue = domHandler.getParsedElements();
-				String ownerStr = owner.toString();
 				Element msg = null;
 
 				while ((msg = queue.poll()) != null) {
