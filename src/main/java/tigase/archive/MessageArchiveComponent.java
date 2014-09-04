@@ -125,6 +125,16 @@ public class MessageArchiveComponent
 		}
 	}
 
+	@Override
+	public void release() {
+		super.release();
+		
+		if (msg_repo != null) {
+			msg_repo.destroy();
+			msg_repo = null;
+		}
+	}
+	
 	//~--- get methods ----------------------------------------------------------
 
 	/**
@@ -205,8 +215,14 @@ public class MessageArchiveComponent
 				if (repoCls == null && repoClsName == null) {
 					throw new ConfigurationException("Not found implementation of MessageArchive repository for URI = " + uri);
 				}
+				MessageArchiveRepository old_msg_repo = msg_repo;
 				msg_repo = repoCls.newInstance();
 				msg_repo.initRepository(uri, repoProps);
+				if (old_msg_repo != null) {
+					// if we have old instance and new is initialized then
+					// destroy the old one to release resources
+					old_msg_repo.destroy();
+				}
 			} else {
 				log.log(Level.SEVERE, "repository uri is NULL!");
 			}

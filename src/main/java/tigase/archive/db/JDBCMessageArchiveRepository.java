@@ -351,6 +351,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 
+	@Override
+	public void destroy() {
+		// here we use cached instance of repository pool cached by RepositoryFactory
+		// so we should not close it
+	}
+	
 	/**
 	 * Method description
 	 *

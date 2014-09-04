@@ -74,6 +74,11 @@ public interface MessageArchiveRepository extends Repository {
 	
 	void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg);
 	
+	/**
+	 * Destroys instance of this repository and releases resources allocated if possible
+	 */
+	void destroy();
+	
 	List<Element> getCollections(BareJID owner, String withJid, Date start, Date end, RSM rsm) throws TigaseDBException;
 	
 	List<Element> getItems(BareJID owner, String withJid, Date start, Date end, RSM rsm) throws TigaseDBException;
