@@ -144,11 +144,19 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 //																								" order by date(" + MSGS_TIMESTAMP + ")";
 	private static final String GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + " from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
+			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
+	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
+	private static final String MSSQL2005_GET_COLLECTIONS_SELECT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
+			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
 			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
 	private static final String GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + " from " 
 			+ MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
+	private static final String GENERIC_GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
+	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
+	private static final String MSSQL2005_GET_COLLECTIONS_COUNT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ") x";
+	private static final String MSSQL2008_GET_COLLECTIONS_COUNT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ") x";
 	private static final String GENERIC_LIMIT = " limit ? offset ?";
 	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";
 	private static final String[][] GET_COLLECTIONS_WHERES = { 
@@ -319,8 +327,18 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						count += where[1];
 					}
 				}
-				select += GET_COLLECTIONS_SELECT_GROUP;
-				count += GET_COLLECTIONS_COUNT_GROUP;
+				
+				switch ( data_repo.getDatabaseType() ) {
+					case sqlserver:
+						select += MSSQL2008_GET_COLLECTIONS_SELECT_GROUP;
+						count += MSSQL2008_GET_COLLECTIONS_COUNT_GROUP;
+						break;
+					default:
+						select += GENERIC_GET_COLLECTIONS_SELECT_GROUP;
+						count += GENERIC_GET_COLLECTIONS_COUNT_GROUP;
+						break;
+				}
+				
 				switch ( data_repo.getDatabaseType() ) {
 					case derby:
 						select += DERBY_LIMIT;
