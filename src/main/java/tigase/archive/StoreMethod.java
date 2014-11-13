@@ -50,7 +50,7 @@ public enum StoreMethod {
 	}
 	
 	public static StoreMethod valueof(String v) {
-		if (v == null) {
+		if (v == null || v.isEmpty()) {
 			return False;
 		}
 		StoreMethod result = values.get(v);

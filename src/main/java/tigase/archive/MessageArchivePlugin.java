@@ -80,6 +80,7 @@ public class MessageArchivePlugin
 	public static final String  XEP0136NS = "urn:xmpp:archive";
 	private static final String ARCHIVE   = "message-archive";
 	private static final String AUTO      = "auto";
+	private static final String EXPIRE    = "expire";
 	private static final String ID        = "message-archive-xep-0136";
 	private static final Logger log = Logger.getLogger(MessageArchivePlugin.class
 			.getCanonicalName());
@@ -109,8 +110,8 @@ public class MessageArchivePlugin
 
 	//~--- fields ---------------------------------------------------------------
 
-	private StoreMethod defaultStoreMethod = StoreMethod.Body;
-	private StoreMethod requiredStoreMethod = StoreMethod.False;
+	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
+	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
 	
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
@@ -128,6 +129,8 @@ public class MessageArchivePlugin
 	@Override
 	public void init(Map<String, Object> settings) throws TigaseDBException {
 		super.init(settings);
+		
+		VHostItemHelper.register();
 
 		String componentJidStr = (String) settings.get("component-jid");
 
@@ -145,13 +148,13 @@ public class MessageArchivePlugin
 		
 		// setting required and default level of archiving
 		if (settings.containsKey(REQUIRED_STORE_METHOD_KEY)) {
-			requiredStoreMethod = StoreMethod.valueof((String) settings.get(REQUIRED_STORE_METHOD_KEY));
+			globalRequiredStoreMethod = StoreMethod.valueof((String) settings.get(REQUIRED_STORE_METHOD_KEY));
 		}
 		if (settings.containsKey(DEFAULT_STORE_METHOD_KEY)) {
-			defaultStoreMethod = StoreMethod.valueof((String) settings.get(DEFAULT_STORE_METHOD_KEY));
+			globalDefaultStoreMethod = StoreMethod.valueof((String) settings.get(DEFAULT_STORE_METHOD_KEY));
 		}
-		if (defaultStoreMethod.ordinal() < requiredStoreMethod.ordinal()) {
-			defaultStoreMethod  = requiredStoreMethod;
+		if (globalDefaultStoreMethod.ordinal() < globalRequiredStoreMethod.ordinal()) {
+			globalDefaultStoreMethod  = globalRequiredStoreMethod;
 		}
 	}
 
@@ -240,6 +243,7 @@ public class MessageArchivePlugin
 
 				Element auto = packet.getElement().getChild("auto");
 				Element pref = packet.getElement().getChild("pref");
+				StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
 
 				if ((auto == null) && (pref == null)) {
 
@@ -264,6 +268,16 @@ public class MessageArchivePlugin
 						Element defaultEl = new Element("default");
 
 						defaultEl.setAttribute("otr", "forbid");
+						try {
+							String expire = session.getData(SETTINGS, EXPIRE, null);
+							if (expire != null) {
+								defaultEl.setAttribute(EXPIRE, expire);
+							}
+						} catch (TigaseDBException ex) {
+							log.log(Level.WARNING, "could not retrieve expire setting for message archive for user {0}", 
+									session.getjid());
+						}
+
 								
 						StoreMethod storeMethod = getStoreMethod(session);
 						defaultEl.setAttribute("save", storeMethod.toString());
@@ -288,6 +302,7 @@ public class MessageArchivePlugin
 						StoreMethod storeMethod = null;
 						Boolean autoSave = null;
 						String errorMsg = null;
+						String expire = null;
 						for (Element elem : pref.getChildren()) {
 							switch (elem.getName()) {
 								case "default":
@@ -307,6 +322,21 @@ public class MessageArchivePlugin
 										error = Authorization.FEATURE_NOT_IMPLEMENTED;
 										errorMsg = "Value " + otr + " of otr attribute is not supported";
 									}
+									expire = elem.getAttributeStaticStr(EXPIRE);
+									if (expire != null) {
+										try {
+											long val = Long.parseLong(expire);
+											if (val <= 0) {
+												error = Authorization.NOT_ACCEPTABLE;
+												errorMsg = "Value of expire attribute must be bigger than 0";
+												break;
+											}
+										} catch (NumberFormatException ex) {
+											error = Authorization.BAD_REQUEST;
+											errorMsg = "Value of expire attribute must be a number";
+											break;
+										}
+									}
 									break;
 								case "auto":
 									autoSave = Boolean.valueOf(elem.getAttributeStaticStr("save"));
@@ -314,6 +344,10 @@ public class MessageArchivePlugin
 										error = Authorization.NOT_ACCEPTABLE;
 										errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString() 
 												+ " and that requires automatic archiving to be enabled";
+									}
+									if (autoSave && !VHostItemHelper.isEnabled(session.getDomain())) {
+										error = Authorization.NOT_ALLOWED;
+										errorMsg = "Message archiving is not allowed for domain " + session.getDomainAsJID().toString();
 									}
 									break;
 								default: 
@@ -332,6 +366,9 @@ public class MessageArchivePlugin
 								}
 								if (storeMethod != null) {
 									this.setStoreMethod(session, storeMethod);
+								}
+								if (expire != null) {
+									session.setData(SETTINGS, EXPIRE, expire);
 								}
 								results.offer(packet.okResult((String) null, 0));
 								
@@ -369,6 +406,11 @@ public class MessageArchivePlugin
 						results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet, 
 								"Required minimal message archiving level is " + requiredStoreMethod.toString() 
 								+ " and that requires automatic archiving to be enabled", false));
+						return;
+					}
+					if (save && !VHostItemHelper.isEnabled(session.getDomain())) {
+						results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet, 
+								"Message archiving is not allowed for domain " + session.getDomainAsJID().toString(), false));
 						return;
 					}
 					
@@ -462,6 +504,8 @@ public class MessageArchivePlugin
 
 	private boolean getAutoSave(final XMPPResourceConnection session)
 					throws NotAuthorizedException {
+		StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
+
 		if (requiredStoreMethod != StoreMethod.False)
 			return true;
 		
@@ -472,6 +516,14 @@ public class MessageArchivePlugin
 				String data = session.getData(SETTINGS, AUTO, "false");
 
 				auto = Boolean.parseBoolean(data);
+				
+				// if message archive is enabled but it is not allowed for domain
+				// then we should disable it
+				if (!VHostItemHelper.isEnabled(session.getDomain()) && auto) {
+					auto = false;
+					session.setData(SETTINGS, AUTO, String.valueOf(auto));
+				}
+				
 				session.putCommonSessionData(ID + "/" + AUTO, auto);
 			} catch (TigaseDBException ex) {
 				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
@@ -483,13 +535,20 @@ public class MessageArchivePlugin
 		return auto;
 	}
 
+	private StoreMethod getRequiredStoreMethod(XMPPResourceConnection session) {
+		return StoreMethod.valueof(VHostItemHelper.getRequiredStoreMethod(session.getDomain(), globalRequiredStoreMethod.toString()));
+	}
+	
 	private StoreMethod getStoreMethod(XMPPResourceConnection session) 
 					throws NotAuthorizedException {
 		StoreMethod save = (StoreMethod) session.getCommonSessionData(ID + "/" + DEFAULT_SAVE);
 		
 		if (save == null) {
 			try {
-				String data = session.getData(SETTINGS, DEFAULT_SAVE, defaultStoreMethod.toString());
+				String data = session.getData(SETTINGS, DEFAULT_SAVE, null);
+				if (data == null) {
+					data = VHostItemHelper.getDefaultStoreMethod(session.getDomain(), globalDefaultStoreMethod.toString());
+				}
 
 				save = StoreMethod.valueof(data);
 				session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
@@ -497,16 +556,17 @@ public class MessageArchivePlugin
 				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
 						.getMessage());
 				save = StoreMethod.False;
-			}			
-		}
-
-		if (save.ordinal() < requiredStoreMethod.ordinal()) {
-			save = requiredStoreMethod;
-			session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
-			try {
-				setStoreMethod(session, save);
-			} catch (TigaseDBException ex) {
-				log.log(Level.WARNING, "Error updating message archiving level to required level {0}", ex.getMessage());
+			}		
+			
+			StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
+			if (save.ordinal() < requiredStoreMethod.ordinal()) {
+				save = requiredStoreMethod;
+				session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
+				try {
+					setStoreMethod(session, save);
+				} catch (TigaseDBException ex) {
+					log.log(Level.WARNING, "Error updating message archiving level to required level {0}", ex.getMessage());
+				}
 			}
 		}
 		
@@ -528,11 +588,13 @@ public class MessageArchivePlugin
 	public void setAutoSave(XMPPResourceConnection session, Boolean auto)
 					throws NotAuthorizedException, TigaseDBException {
 		session.setData(SETTINGS, AUTO, String.valueOf(auto));
+		session.putCommonSessionData(ID + "/" + AUTO, auto);
 	}
 	
 	public void setStoreMethod(XMPPResourceConnection session, StoreMethod save) 
 					throws NotAuthorizedException, TigaseDBException {
 		session.setData(SETTINGS, DEFAULT_SAVE, (save == null ? StoreMethod.False : save).toString());
+		session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
 	}
 }
 
