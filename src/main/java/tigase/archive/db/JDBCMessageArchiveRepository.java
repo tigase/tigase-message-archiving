@@ -26,6 +26,7 @@ package tigase.archive.db;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -67,8 +68,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
 	private static final long MILIS_PER_DAY          = 24 * 60 * 60 * 1000;
+	
+	private static final String[] MSG_BODY_PATH = { "message", "body" };
 
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
+	private static final String MSGS_BODY      = "body";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
 	private static final String MSGS_OWNER_ID  = "owner_id";
@@ -176,8 +180,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
-																						", " + MSGS_TYPE + ", " + MSGS_MSG + ")" +
-																						" values (?, ?, ?, ?, ?, ?)";
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG + ")" +
+																						" values (?, ?, ?, ?, ?, ?, ?)";
 	private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE + " where " +
 																						MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID +
 																						" = ?" + " and " + MSGS_TIMESTAMP +
@@ -188,6 +192,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									+ MSGS_TIMESTAMP + " timestamp, "
 																									+ MSGS_DIRECTION + " smallint, "
 																									+ MSGS_TYPE + " varchar(10), "
+																									+ MSGS_BODY + " varchar(32672), "
 																									+ MSGS_MSG + " varchar(32672));"
 																									+ "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_index on " + MSGS_TABLE
 																									+ " (" + MSGS_OWNER_ID + ");"
@@ -201,7 +206,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_BUDDY_ID + " bigint, " +
 																									MSGS_TIMESTAMP + " timestamp, " +
 																									MSGS_DIRECTION + " smallint, " +
-																									MSGS_TYPE + " varchar(10)," +
+																									MSGS_TYPE + " varchar(10), " +
+																									MSGS_BODY + " text, " +
 																									MSGS_MSG + " text," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -228,6 +234,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TIMESTAMP + " datetime, " +
 																									MSGS_DIRECTION + " smallint, " +
 																									MSGS_TYPE + " nvarchar(10)," +
+																									MSGS_BODY + " ntext, " +
 																									MSGS_MSG + " ntext," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -254,6 +261,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TIMESTAMP + " timestamp, " +
 																									MSGS_DIRECTION + " smallint, " +
 																									MSGS_TYPE + " varchar(10)," +
+																									MSGS_BODY + " text, " + 
 																									MSGS_MSG + " text," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -266,9 +274,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + 
 																									", " + MSGS_BUDDY_ID + "));";
 
+	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
+	
 	//~--- fields ---------------------------------------------------------------
 
 	private DataRepository data_repo = null;
+	private boolean storePlaintextBody = true;
 
 	//~--- methods --------------------------------------------------------------
 
@@ -286,6 +297,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					throws DBInitException {
 		try {
 			data_repo = RepositoryFactory.getDataRepository( null, conn_str, params );
+			if (params.containsKey(STORE_PLAINTEXT_BODY_KEY)) {
+				storePlaintextBody = Boolean.parseBoolean(params.get(STORE_PLAINTEXT_BODY_KEY));
+			} else {
+				storePlaintextBody = true;
+			}
 
 			// create tables if not exist
 			switch ( data_repo.getDatabaseType() ) {
@@ -307,6 +323,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					data_repo.checkTable( MSGS_TABLE, SQLSERVER_CREATE_MSGS );
 					break;
 			}
+			
+			checkDB();
+			
 			data_repo.initPreparedStatement(ADD_JID_QUERY, ADD_JID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
@@ -375,6 +394,41 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		// so we should not close it
 	}
 	
+	private void checkDB() {
+		Statement stmt = null;
+		try {
+			try {
+				stmt = data_repo.createStatement(null);
+				stmt.executeQuery("select " + MSGS_BODY + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = 0");
+			} catch (SQLException ex) {
+				// if this happens then we have issue with old database schema and missing body columns in MSGS_TABLE
+				String alterTable = null;
+				switch (data_repo.getDatabaseType()) {
+					case derby:
+						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " varchar(32672)";
+						break;
+					case mysql:
+						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " text";
+						break;
+					case postgresql:
+						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " text";
+						break;
+					case jtds:
+					case sqlserver:
+						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " ntext";
+						break;
+				}
+				try {
+					stmt.execute(alterTable);
+				} catch (SQLException ex1) {
+					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
+				}
+			}
+		} finally {
+			data_repo.release(stmt, null);
+		}
+	}
+	
 	/**
 	 * Method description
 	 *
@@ -402,6 +456,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
+			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
@@ -411,7 +466,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				add_message_st.setTimestamp(3, mtime);
 				add_message_st.setShort(4, direction.getValue());
 				add_message_st.setString(5, type);
-				add_message_st.setString(6, msgStr);
+				add_message_st.setString(6, body);
+				add_message_st.setString(7, msgStr);
 				add_message_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
