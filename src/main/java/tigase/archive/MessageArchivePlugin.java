@@ -88,9 +88,9 @@ public class MessageArchivePlugin
 	private static final String    SETTINGS = ARCHIVE + "/settings";
 	private static final String    XMLNS    = "jabber:client";
 	private static final String[][]  ELEMENT_PATHS = { {MESSAGE}, {Iq.ELEM_NAME, AUTO}, 
-		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, "pref"} };
+		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, REMOVE}, {Iq.ELEM_NAME, "pref"} };
 	private static final String[] XMLNSS = { Packet.CLIENT_XMLNS, XEP0136NS, 
-		XEP0136NS, XEP0136NS, XEP0136NS };
+		XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS };
 	private static final Set<StanzaType> TYPES;
 	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
