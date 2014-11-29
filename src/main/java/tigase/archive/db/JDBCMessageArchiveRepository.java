@@ -129,16 +129,25 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 //																						 " and date(" + MSGS_TIMESTAMP +
 //																						 ") = ?" + " order by " +
 //																						 MSGS_TIMESTAMP + " offset ? rows fetch next ? rows only";
-	private static final String GET_MESSAGES = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
+	private static final String GENERIC_GET_MESSAGES = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
 			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? order by " + MSGS_TIMESTAMP;
-	private static final String GET_MESSAGES_END = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
+	private static final String MSSQL2008_GET_MESSAGES = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
+			+ "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION + ", ROW_NUMBER() over (order by " + MSGS_TIMESTAMP + ") as rn"
 			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ? order by " + MSGS_TIMESTAMP;
-	private static final String GET_MESSAGES_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " + MSGS_OWNER_ID 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?) x";
+	private static final String GENERIC_GET_MESSAGES_END = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
+			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
+	private static final String MSSQL2008_GET_MESSAGES_END = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
+			+ "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION + ", ROW_NUMBER() over (order by " + MSGS_TIMESTAMP + ") as rn"
+			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
+			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?) x";
+	private static final String GENERIC_GET_MESSAGES_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " + MSGS_OWNER_ID 
 			+ " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
-	private static final String GET_MESSAGES_END_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " 
+	private static final String GENERIC_GET_MESSAGES_END_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " 
 			+ MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
+	private static final String GENERIC_GET_MESSAGES_ORDER_BY = " order by " + MSGS_TIMESTAMP;
 //	private static final String GET_COLLECTIONS = "select distinct date(" +
 //																								MSGS_TIMESTAMP + ")" + " from " +
 //																								MSGS_TABLE + " where " + MSGS_OWNER_ID +
@@ -146,23 +155,26 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 //																								" = ? and " + MSGS_TIMESTAMP + " <= ?" +
 //																								" and " + MSGS_TIMESTAMP + " >= ?" +
 //																								" order by date(" + MSGS_TIMESTAMP + ")";
-	private static final String GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + " from " + MSGS_TABLE + " m "
+	private static final String GENERIC_GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + ") as ts, j." + JIDS_JID + " from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
-			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT = "select x." + MSGS_TIMESTAMP + ", x." + JIDS_JID + " from ( "
+			+ "select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", j." + JIDS_JID + ", ROW_NUMBER() over (order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + ") as rn from " + MSGS_TABLE + " m "
+			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
 	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
-	private static final String MSSQL2005_GET_COLLECTIONS_SELECT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
-			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
-	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID 
-			+ " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
-	private static final String GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + " from " 
+	//private static final String MSSQL2005_GET_COLLECTIONS_SELECT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ") x ";
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_ORDER = " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_ORDER = " order by x." + MSGS_TIMESTAMP + ", x." + JIDS_JID;
+	private static final String GENERIC_GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", m." + MSGS_BUDDY_ID + " from " 
 			+ MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String GENERIC_GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
 	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
-	private static final String MSSQL2005_GET_COLLECTIONS_COUNT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ") x";
+	///private static final String MSSQL2005_GET_COLLECTIONS_COUNT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ") x";
 	private static final String MSSQL2008_GET_COLLECTIONS_COUNT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ") x";
-	private static final String GENERIC_LIMIT = " limit ? offset ?";
-	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";
+	private static final String GENERIC_LIMIT = " limit ? offset ?";					// limit, offset
+	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";	// offset, limit
+	private static final String MSSQL2008_LIMIT = " where x.rn > ? and x.rn < ?";				// offset, limit + offset
 	private static final String[][] GET_COLLECTIONS_WHERES = { 
 			{ "FROM", "and m." + MSGS_TIMESTAMP + " >= ? " },
 			{ "TO", "and m." + MSGS_TIMESTAMP + " <= ? " },
@@ -335,8 +347,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			
 			for (String combination : GET_COLLECTIONS_COMBINATIONS) {
 				String[] whereParts = combination.split("_");
-				String select = GET_COLLECTIONS_SELECT;
-				String count = GET_COLLECTIONS_COUNT;
+				String select = null;//GET_COLLECTIONS_SELECT;
+				String count = GENERIC_GET_COLLECTIONS_COUNT;
+				switch ( data_repo.getDatabaseType() ) {
+					case sqlserver:
+						select = MSSQL2008_GET_COLLECTIONS_SELECT;
+						break;
+					default:
+						select = GENERIC_GET_COLLECTIONS_SELECT;
+				}
 				for (String part : whereParts) {
 					for (String[] where : GET_COLLECTIONS_WHERES) {
 						if (!part.equals(where[0]))
@@ -353,7 +372,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						count += MSSQL2008_GET_COLLECTIONS_COUNT_GROUP;
 						break;
 					default:
-						select += GENERIC_GET_COLLECTIONS_SELECT_GROUP;
+						select += GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER;
 						count += GENERIC_GET_COLLECTIONS_COUNT_GROUP;
 						break;
 				}
@@ -361,6 +380,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				switch ( data_repo.getDatabaseType() ) {
 					case derby:
 						select += DERBY_LIMIT;
+						break;
+					case sqlserver:
+						select += MSSQL2008_LIMIT + MSSQL2008_GET_COLLECTIONS_SELECT_ORDER;
 						break;
 					default:
 						select += GENERIC_LIMIT;
@@ -372,16 +394,20 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			
 			switch ( data_repo.getDatabaseType() ) {
 				case derby:
-					data_repo.initPreparedStatement( GET_MESSAGES, GET_MESSAGES + DERBY_LIMIT );
-					data_repo.initPreparedStatement( GET_MESSAGES_END, GET_MESSAGES_END + DERBY_LIMIT);
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, GENERIC_GET_MESSAGES + GENERIC_GET_MESSAGES_ORDER_BY + DERBY_LIMIT );
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, GENERIC_GET_MESSAGES_END + GENERIC_GET_MESSAGES_ORDER_BY + DERBY_LIMIT);
+					break;
+				case sqlserver:
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, MSSQL2008_GET_MESSAGES + MSSQL2008_LIMIT + GENERIC_GET_MESSAGES_ORDER_BY );
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, MSSQL2008_GET_MESSAGES_END + MSSQL2008_LIMIT + GENERIC_GET_MESSAGES_ORDER_BY);
 					break;
 				default:
-					data_repo.initPreparedStatement( GET_MESSAGES, GET_MESSAGES + GENERIC_LIMIT );
-					data_repo.initPreparedStatement( GET_MESSAGES_END, GET_MESSAGES_END + GENERIC_LIMIT );
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, GENERIC_GET_MESSAGES + GENERIC_GET_MESSAGES_ORDER_BY + GENERIC_LIMIT );
+					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, GENERIC_GET_MESSAGES_END + GENERIC_GET_MESSAGES_ORDER_BY + GENERIC_LIMIT );
 					break;
 			}
-			data_repo.initPreparedStatement(GET_MESSAGES_COUNT, GET_MESSAGES_COUNT);
-			data_repo.initPreparedStatement(GET_MESSAGES_END_COUNT, GET_MESSAGES_END_COUNT);
+			data_repo.initPreparedStatement(GENERIC_GET_MESSAGES_COUNT, GENERIC_GET_MESSAGES_COUNT);
+			data_repo.initPreparedStatement(GENERIC_GET_MESSAGES_END_COUNT, GENERIC_GET_MESSAGES_END_COUNT);
 			data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
@@ -692,6 +718,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						get_collections_st.setInt(i++, index);						
 						get_collections_st.setInt(i++, limit);
 						break;
+					case sqlserver:
+						get_collections_st.setInt(i++, index);
+						get_collections_st.setInt(i++, index + limit);
+						break;
 					default:
 						get_collections_st.setInt(i++, limit);
 						get_collections_st.setInt(i++, index);
@@ -747,7 +777,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		int i=1;
 		try {
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
-					? GET_MESSAGES_END : GET_MESSAGES);
+					? GENERIC_GET_MESSAGES_END : GENERIC_GET_MESSAGES);
 			synchronized (get_messages_st) {
 				get_messages_st.setLong(i++, ownerId);
 				get_messages_st.setLong(i++, withId);
@@ -760,6 +790,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					case derby:
 						get_messages_st.setInt(i++, offset);
 						get_messages_st.setInt(i++, limit);
+						break;
+					case sqlserver:
+						get_messages_st.setInt(i++, offset);
+						get_messages_st.setInt(i++, offset+limit);
 						break;
 					default:
 						get_messages_st.setInt(i++, limit);
@@ -820,7 +854,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		int i=1;
 		try {
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
-					? GET_MESSAGES_END_COUNT : GET_MESSAGES_COUNT);
+					? GENERIC_GET_MESSAGES_END_COUNT : GENERIC_GET_MESSAGES_COUNT);
 			synchronized (get_messages_st) {
 				get_messages_st.setLong(i++, ownerId);
 				get_messages_st.setLong(i++, withId);
