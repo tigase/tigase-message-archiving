@@ -23,6 +23,7 @@ package tigase.archive.db;
 
 import java.util.Date;
 import java.util.List;
+import tigase.archive.AbstractCriteria;
 import tigase.archive.RSM;
 import tigase.db.Repository;
 import tigase.db.TigaseDBException;
@@ -33,7 +34,7 @@ import tigase.xmpp.BareJID;
  *
  * @author andrzej
  */
-public interface MessageArchiveRepository extends Repository {
+public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends Repository {
 	
 	enum Direction {
 		incoming((short) 1, "from"),
@@ -79,9 +80,11 @@ public interface MessageArchiveRepository extends Repository {
 	 */
 	void destroy();
 	
-	List<Element> getCollections(BareJID owner, String withJid, Date start, Date end, RSM rsm) throws TigaseDBException;
+	AbstractCriteria newCriteriaInstance();
 	
-	List<Element> getItems(BareJID owner, String withJid, Date start, Date end, RSM rsm) throws TigaseDBException;
+	List<Element> getCollections(BareJID owner, Crit criteria) throws TigaseDBException;
+	
+	List<Element> getItems(BareJID owner, Crit criteria) throws TigaseDBException;
 	
 	public void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
 }

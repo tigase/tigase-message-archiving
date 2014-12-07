@@ -31,13 +31,16 @@ import java.sql.Timestamp;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tigase.archive.AbstractCriteria;
 import tigase.archive.RSM;
+import tigase.archive.db.JDBCMessageArchiveRepository.Criteria;
 import tigase.db.DBInitException;
 import tigase.db.DataRepository;
 import static tigase.db.DataRepository.dbTypes.derby;
@@ -58,7 +61,7 @@ import tigase.xmpp.BareJID;
  * @author         Enter your name here...
  */
 @Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" } )
-public class JDBCMessageArchiveRepository extends AbstractMessageArchiveRepository {
+public class JDBCMessageArchiveRepository extends AbstractMessageArchiveRepository<Criteria> {
 	private static final String JIDS_ID  = "jid_id";
 	private static final String JIDS_JID = "jid";
 
@@ -117,78 +120,50 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 															"create table " + JIDS_TABLE + " ( " + JIDS_ID
 															+ " bigint unsigned NOT NULL auto_increment, " + JIDS_JID
 															+ " varchar(2049), primary key (" + JIDS_ID + ")); ";
-//	private static final String GET_MESSAGES = "select " + MSGS_MSG + " from " +
-//																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
-//																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
-//																						 " and date(" + MSGS_TIMESTAMP +
-//																						 ") = date(?)" + " order by " +
-//																						 MSGS_TIMESTAMP + " limit ? offset ?";
-//	private static final String DERBY_GET_MESSAGES = "select " + MSGS_MSG + " from " +
-//																						 MSGS_TABLE + " where " + MSGS_OWNER_ID +
-//																						 " = ? and " + MSGS_BUDDY_ID + " = ?" +
-//																						 " and date(" + MSGS_TIMESTAMP +
-//																						 ") = ?" + " order by " +
-//																						 MSGS_TIMESTAMP + " offset ? rows fetch next ? rows only";
-	private static final String GENERIC_GET_MESSAGES = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
-			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
-	private static final String MSSQL2008_GET_MESSAGES = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
-			+ "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION + ", ROW_NUMBER() over (order by " + MSGS_TIMESTAMP + ") as rn"
-			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?) x";
+	private static final String GENERIC_GET_MESSAGES_START = "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION 
+			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String MSSQL2008_GET_MESSAGES_START = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
+			+ "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn"
+			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String GENERIC_GET_MESSAGES_START_WITH = "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", b." + JIDS_JID
+			+ " from " + MSGS_TABLE + " m inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = m." + MSGS_BUDDY_ID + " where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String MSSQL2008_GET_MESSAGES_START_WITH = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + ", b." + JIDS_JID + " FROM ( "
+			+ "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn,"
+			+ " m." + MSGS_BUDDY_ID
+			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String MSSQL2008_GET_MESSAGES_END = ") x";
+	private static final String MSSQL2008_GET_MESSAGES_END_WITH = ") x inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = x." + MSGS_BUDDY_ID;
 	private static final String GENERIC_GET_MESSAGES_END = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
 			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
 			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
-	private static final String MSSQL2008_GET_MESSAGES_END = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
-			+ "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION + ", ROW_NUMBER() over (order by " + MSGS_TIMESTAMP + ") as rn"
-			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?) x";
-	private static final String GENERIC_GET_MESSAGES_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " + MSGS_OWNER_ID 
-			+ " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ?";
-	private static final String GENERIC_GET_MESSAGES_END_COUNT = "select count(" + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " where " 
-			+ MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
+	private static final String GENERIC_GET_MESSAGES_COUNT = "select count(m." + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID 
+			+ " = ?";
 	private static final String GENERIC_GET_MESSAGES_ORDER_BY = " order by " + MSGS_TIMESTAMP;
-//	private static final String GET_COLLECTIONS = "select distinct date(" +
-//																								MSGS_TIMESTAMP + ")" + " from " +
-//																								MSGS_TABLE + " where " + MSGS_OWNER_ID +
-//																								" = ?" + " and " + MSGS_BUDDY_ID +
-//																								" = ? and " + MSGS_TIMESTAMP + " <= ?" +
-//																								" and " + MSGS_TIMESTAMP + " >= ?" +
-//																								" order by date(" + MSGS_TIMESTAMP + ")";
 	private static final String GENERIC_GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + ") as ts, j." + JIDS_JID + " from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String MSSQL2008_GET_COLLECTIONS_SELECT = "select x." + MSGS_TIMESTAMP + ", x." + JIDS_JID + " from ( "
 			+ "select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", j." + JIDS_JID + ", ROW_NUMBER() over (order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + ") as rn from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
-	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
-	//private static final String MSSQL2005_GET_COLLECTIONS_SELECT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
-	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ") x ";
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = " group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = " group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ") x ";
 	private static final String GENERIC_GET_COLLECTIONS_SELECT_ORDER = " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
 	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_ORDER = " order by x." + MSGS_TIMESTAMP + ", x." + JIDS_JID;
 	private static final String GENERIC_GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", m." + MSGS_BUDDY_ID + " from " 
 			+ MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String GENERIC_GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
-	// here we have also query for MSSQL2005 but we have 2014 so I suppose it would not be used but I will leave it here for now
-	///private static final String MSSQL2005_GET_COLLECTIONS_COUNT_GROUP = "group by cast(CONVERT(char(20), m." + MSGS_TIMESTAMP + ", 112) as datetime), m." + MSGS_BUDDY_ID + ") x";
 	private static final String MSSQL2008_GET_COLLECTIONS_COUNT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ") x";
 	private static final String GENERIC_LIMIT = " limit ? offset ?";					// limit, offset
 	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";	// offset, limit
 	private static final String MSSQL2008_LIMIT = " where x.rn > ? and x.rn < ?";				// offset, limit + offset
 	private static final String[][] GET_COLLECTIONS_WHERES = { 
-			{ "FROM", "and m." + MSGS_TIMESTAMP + " >= ? " },
-			{ "TO", "and m." + MSGS_TIMESTAMP + " <= ? " },
-			{ "WITH", "and m." + MSGS_BUDDY_ID + " = ? " }
+			{ "FROM", " and m." + MSGS_TIMESTAMP + " >= ? " },
+			{ "TO", " and m." + MSGS_TIMESTAMP + " <= ? " },
+			{ "WITH", " and m." + MSGS_BUDDY_ID + " = ? " }
 	};
 	private static final String[] GET_COLLECTIONS_COMBINATIONS = {
-		"FROM", "FROM_TO", "FROM_TO_WITH", "FROM_WITH",
+		"", "FROM", "FROM_TO", "FROM_TO_WITH", "FROM_WITH",
 		"TO", "TO_WITH", "WITH"
 	};
-//	private static final String GET_COLLECTIONS_PGSQL = "select min(ts),j.jid from tig_ma_msgs m inner join tig_ma_jids j on m.buddy_id = j.jid_id "
-//			+ "where owner_id = 4 and ts >= '2013-11-13' "
-//			+ "group by floor(EXTRACT(EPOCH FROM (ts - cast('2013-11-12T22:00:00-0000' as timestamp with time zone)))/(60*60*24)), buddy_id, j.jid;"
-//	private static final String GET_COLLECTIONS_MYSQL = "select min(ts), j.jid from tig_ma_msgs m "
-//			+ "inner join tig_ma_jids j on m.buddy_id = j.jid_id where owner_id = 4 group by datediff(ts,'2013-11-01T00:00:00'), buddy_id"
 	private static final String ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -345,69 +320,147 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE);
 			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
 			
+			Map<String,String> combinations = new HashMap<String,String>();
 			for (String combination : GET_COLLECTIONS_COMBINATIONS) {
-				String[] whereParts = combination.split("_");
-				String select = null;//GET_COLLECTIONS_SELECT;
-				String count = GENERIC_GET_COLLECTIONS_COUNT;
-				switch ( data_repo.getDatabaseType() ) {
-					case sqlserver:
-						select = MSSQL2008_GET_COLLECTIONS_SELECT;
-						break;
-					default:
-						select = GENERIC_GET_COLLECTIONS_SELECT;
-				}
-				for (String part : whereParts) {
-					for (String[] where : GET_COLLECTIONS_WHERES) {
-						if (!part.equals(where[0]))
-							continue;
-						
-						select += where[1];
-						count += where[1];
+				StringBuilder sbMain = new StringBuilder();
+
+				if (!combination.isEmpty()) {
+					String[] whereParts = combination.split("_");
+
+					for (String part : whereParts) {
+						for (String[] where : GET_COLLECTIONS_WHERES) {
+							if (!part.equals(where[0])) {
+								continue;
+							}
+
+							sbMain.append(where[1]);
+						}
 					}
 				}
 				
+				for (int i=0; i<6; i++) {
+					StringBuilder combinationSb = new StringBuilder().append(combination);
+					StringBuilder querySb = new StringBuilder().append(sbMain);
+
+					if (i > 0) {
+						if (combinationSb.length() > 0) {
+							combinationSb.append("_");
+						}
+						combinationSb.append("CONTAINS[").append(i).append("]");
+						for (int x=0; x<i; x++) {
+							querySb.append(" and m.").append(MSGS_BODY).append(" like ? ");
+						}
+					}
+					
+					combinations.put(combinationSb.toString(), querySb.toString());
+				}
+			}	
+			
+			for (Map.Entry<String,String> entry : combinations.entrySet()) {
+				StringBuilder select = new StringBuilder();
+				StringBuilder count = new StringBuilder().append(GENERIC_GET_COLLECTIONS_COUNT);
+				
 				switch ( data_repo.getDatabaseType() ) {
+					case jtds:
 					case sqlserver:
-						select += MSSQL2008_GET_COLLECTIONS_SELECT_GROUP;
-						count += MSSQL2008_GET_COLLECTIONS_COUNT_GROUP;
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
 						break;
 					default:
-						select += GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER;
-						count += GENERIC_GET_COLLECTIONS_COUNT_GROUP;
+						select.append(GENERIC_GET_COLLECTIONS_SELECT);
+						break;
+				}
+				
+				select.append(entry.getValue());
+				count.append(entry.getValue());
+				
+				switch ( data_repo.getDatabaseType() ) {
+					case jtds:
+					case sqlserver:
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
+						count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
+						break;
+					default:
+						select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
+						count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
 						break;
 				}
 				
 				switch ( data_repo.getDatabaseType() ) {
 					case derby:
-						select += DERBY_LIMIT;
+						select.append(DERBY_LIMIT);
 						break;
+					case jtds:
 					case sqlserver:
-						select += MSSQL2008_LIMIT + MSSQL2008_GET_COLLECTIONS_SELECT_ORDER;
+						select.append(MSSQL2008_LIMIT).append(MSSQL2008_GET_COLLECTIONS_SELECT_ORDER);
 						break;
 					default:
-						select += GENERIC_LIMIT;
+						select.append(GENERIC_LIMIT);
 						break;
 				}
-				data_repo.initPreparedStatement("GET_COLLECTIONS_" + combination + "_SELECT", select);
-				data_repo.initPreparedStatement("GET_COLLECTIONS_" + combination + "_COUNT", count);
+				
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "prepared collection select query for " + entry.getKey() + " as '" + select.toString() + "'");
+					log.log(Level.FINEST, "prepared collection count query for " + entry.getKey() + " as '" + count.toString() + "'");
+				}
+					
+				data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_SELECT", select.toString());
+				data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_COUNT", count.toString());						
 			}
 			
-			switch ( data_repo.getDatabaseType() ) {
-				case derby:
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, GENERIC_GET_MESSAGES + GENERIC_GET_MESSAGES_ORDER_BY + DERBY_LIMIT );
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, GENERIC_GET_MESSAGES_END + GENERIC_GET_MESSAGES_ORDER_BY + DERBY_LIMIT);
-					break;
-				case sqlserver:
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, MSSQL2008_GET_MESSAGES + MSSQL2008_LIMIT + GENERIC_GET_MESSAGES_ORDER_BY );
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, MSSQL2008_GET_MESSAGES_END + MSSQL2008_LIMIT + GENERIC_GET_MESSAGES_ORDER_BY);
-					break;
-				default:
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES, GENERIC_GET_MESSAGES + GENERIC_GET_MESSAGES_ORDER_BY + GENERIC_LIMIT );
-					data_repo.initPreparedStatement( GENERIC_GET_MESSAGES_END, GENERIC_GET_MESSAGES_END + GENERIC_GET_MESSAGES_ORDER_BY + GENERIC_LIMIT );
-					break;
-			}
-			data_repo.initPreparedStatement(GENERIC_GET_MESSAGES_COUNT, GENERIC_GET_MESSAGES_COUNT);
-			data_repo.initPreparedStatement(GENERIC_GET_MESSAGES_END_COUNT, GENERIC_GET_MESSAGES_END_COUNT);
+			for (Map.Entry<String,String> entry : combinations.entrySet()) {
+				StringBuilder select = new StringBuilder();
+				StringBuilder count = new StringBuilder().append(GENERIC_GET_MESSAGES_COUNT);
+				
+				boolean containsWith = entry.getKey().contains("WITH");
+				
+				switch ( data_repo.getDatabaseType() ) {
+					case jtds:
+					case sqlserver:
+						if (containsWith) {
+							select.append(MSSQL2008_GET_MESSAGES_START);
+						} else {
+							select.append(MSSQL2008_GET_MESSAGES_START_WITH);
+						}
+						break;
+					default:
+						if (containsWith) {
+							select.append(GENERIC_GET_MESSAGES_START);						
+						} else {
+							select.append(GENERIC_GET_MESSAGES_START_WITH);							
+						}
+						break;
+				}
+				
+				select.append(entry.getValue());
+				count.append(entry.getValue());
+
+				switch (data_repo.getDatabaseType()) {
+					case derby:
+						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(DERBY_LIMIT);
+						break;
+					case jtds:
+					case sqlserver:
+						if (containsWith) {
+							select.append(MSSQL2008_GET_MESSAGES_END);
+						} else {
+							select.append(MSSQL2008_GET_MESSAGES_END_WITH);
+						}
+						select.append(MSSQL2008_LIMIT).append(GENERIC_GET_MESSAGES_ORDER_BY);
+						break;
+					default:
+						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(GENERIC_LIMIT);
+						break;
+				}			
+				
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "prepared messages select query for " + entry.getKey() + " as '" + select.toString() + "'");
+					log.log(Level.FINEST, "prepared messages count query for " + entry.getKey() + " as '" + count.toString() + "'");
+				}
+
+				data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_SELECT", select.toString());
+				data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_COUNT", count.toString());
+			}			
+			
 			data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
@@ -511,74 +564,33 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 *
 	 *
 	 * @param owner
-	 * @param withJid
-	 * @param start
-	 * @param end
-	 * @param rsm
+	 * @param crit
 	 *
 	 * @return
 	 * @throws tigase.db.TigaseDBException
 	 */
 	@Override
-	public List<Element> getCollections(BareJID owner, String withJid, Date start,
-					Date end, RSM rsm)
+	public List<Element> getCollections(BareJID owner, Criteria crit)
 					 throws TigaseDBException {
 		try {
-			long[] jids_ids = withJid == null ? getJidsIds(owner.toString()) : getJidsIds(owner.toString(), withJid);
+			long[] jids_ids = crit.getWith() == null ? getJidsIds(owner.toString()) : getJidsIds(owner.toString(), crit.getWith());
 
-			Long buddyId = jids_ids.length > 1 ? jids_ids[1] : null;
-			java.sql.Timestamp start_ = start != null ? new java.sql.Timestamp(start.getTime()) : null;
-			java.sql.Timestamp end_ = end != null ? new java.sql.Timestamp(end.getTime()) : null;
+			crit.setOwnerId(jids_ids[0]);
+			if (jids_ids.length > 1)
+				crit.setBuddyId(jids_ids[1]);
 
-			StringBuilder query = new StringBuilder(20);
-			if (start_ != null) {
-				query.append("FROM");
-			}
-			if (end_ != null) {
-				if (query.length() > 0) {
-					query.append("_");
-				}
-				query.append("TO");
-			}
-			if (buddyId != null) {
-				if (query.length() > 0) {
-					query.append("_");
-				}
-				query.append("WITH");
-			} else {
-				// not supported
-			}
-			String queryStr = query.toString();
+			Integer count = getCollectionsCount(owner, crit);
+			if (count == null)
+				count = 0;
+			crit.setSize(count);
 
-			Integer count = getCollectionsCount(owner, jids_ids[0], buddyId, start_, end_, queryStr);
-			int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
-			int limit = rsm.getMax();
-			if (rsm.getAfter() != null) {
-				int after = Integer.parseInt(rsm.getAfter());
-				// it is ok, if we go out of range we will return empty result
-				index = after + 1;
-			} else if (rsm.getBefore() != null) {
-				int before = Integer.parseInt(rsm.getBefore());
-				index = before - rsm.getMax();
-			// if we go out of range we need to set index to 0 and reduce limit
-				// to return proper results
-				if (index < 0) {
-					index = 0;
-					limit = before;
-				}
-			} else if (rsm.hasBefore()) {
-				index = count - rsm.getMax();
-				if (index < 0) {
-					index = 0;
-				}
-			}
+			List<Element> results = getCollectionsItems(owner, crit);
 
-			List<Element> results = getCollections(owner, jids_ids[0], buddyId, start_, end_, index, limit, queryStr);
-
-			rsm.setResults(count, index);
+			RSM rsm = crit.getRSM();
+			rsm.setResults(count, crit.getOffset());
 			if (!results.isEmpty()) {
-				rsm.setFirst(String.valueOf(index));
-				rsm.setLast(String.valueOf(index + (results.size() - 1)));
+				rsm.setFirst(String.valueOf(crit.getOffset()));
+				rsm.setLast(String.valueOf(crit.getOffset() + (results.size() - 1)));
 			}
 
 			return results;
@@ -592,53 +604,35 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 *
 	 *
 	 * @param owner
-	 * @param withJid
-	 * @param start
-	 * @param end
-	 * @param rsm
+	 * @param crit
 	 *
 	 * @return
 	 * @throws tigase.db.TigaseDBException
 	 */
 	@Override
-	public List<Element> getItems(BareJID owner, String withJid, Date start, Date end, RSM rsm)
+	public List<Element> getItems(BareJID owner, Criteria crit)
 					 throws TigaseDBException {
 		try {
-			long[] jids_ids = getJidsIds(owner.toString(), withJid);
+			long[] jids_ids = crit.getWith() != null ? getJidsIds(owner.toString(), crit.getWith()) : getJidsIds(owner.toString());
 
-			Timestamp startTimestamp = new Timestamp(start.getTime());
-			Timestamp endTimestamp = end != null ? new Timestamp(end.getTime()) : null;
+			crit.setOwnerId(jids_ids[0]);
+			if (jids_ids.length > 1)
+				crit.setBuddyId(jids_ids[1]);
 
-			int count = getItemsCount(owner, jids_ids[0], jids_ids[1], startTimestamp, endTimestamp);
-			int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
-			int limit = rsm.getMax();
-			if (rsm.getAfter() != null) {
-				int after = Integer.parseInt(rsm.getAfter());
-				// it is ok, if we go out of range we will return empty result
-				index = after + 1;
-			} else if (rsm.getBefore() != null) {
-				int before = Integer.parseInt(rsm.getBefore());
-				index = before - rsm.getMax();
-			// if we go out of range we need to set index to 0 and reduce limit
-				// to return proper results
-				if (index < 0) {
-					index = 0;
-					limit = before;
-				}
-			} else if (rsm.hasBefore()) {
-				index = count - rsm.getMax();
-				if (index < 0) {
-					index = 0;
-				}
+
+			Integer count = getItemsCount(owner, crit);
+			if (count == null) {
+				count = 0;
 			}
+			crit.setSize(count);
 
-			List<Element> items = getItems(owner, jids_ids[0], jids_ids[1], startTimestamp,
-					endTimestamp, index, limit);
+			List<Element> items = getItemsItems(owner, crit);
 
-			rsm.setResults(count, index);
-			if (!items.isEmpty()) {
-				rsm.setFirst(String.valueOf(index));
-				rsm.setLast(String.valueOf(index + (items.size() - 1)));
+			RSM rsm = crit.getRSM();
+			rsm.setResults(count, crit.getOffset());
+			if (items!= null && !items.isEmpty()) {
+				rsm.setFirst(String.valueOf(crit.getOffset()));
+				rsm.setLast(String.valueOf(crit.getOffset() + (items.size() - 1)));
 			}
 
 			return items;
@@ -691,42 +685,18 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 
-	private List<Element> getCollections(BareJID owner,long ownerId, Long buddyId, Timestamp start,
-					Timestamp end, int index, int limit, String queryStr)
+	private List<Element> getCollectionsItems(BareJID owner, Criteria crit)
 					throws SQLException {
 		List<Element> results = new LinkedList<Element>();
 		ResultSet selectRs   = null;
 		try {
 			PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
-					+ queryStr + "_SELECT");
+					+ crit.getQueryName() + "_SELECT");
 
 			int i=2;
 			synchronized (get_collections_st) {
-				get_collections_st.setLong(1, ownerId);
-				if (start != null) {
-					get_collections_st.setTimestamp(i++, start);
-				}
-				if (end != null) {
-					get_collections_st.setTimestamp(i++, end);
-				}
-				if (buddyId != null) {
-					get_collections_st.setLong(i++, buddyId);
-				}
-				
-				switch (data_repo.getDatabaseType()) {
-					case derby:
-						get_collections_st.setInt(i++, index);						
-						get_collections_st.setInt(i++, limit);
-						break;
-					case sqlserver:
-						get_collections_st.setInt(i++, index);
-						get_collections_st.setInt(i++, index + limit);
-						break;
-					default:
-						get_collections_st.setInt(i++, limit);
-						get_collections_st.setInt(i++, index);
-						break;
-				}
+				crit.setItemsQueryParams(get_collections_st, data_repo.getDatabaseType());
+
 				selectRs = get_collections_st.executeQuery();
 				while (selectRs.next()) {
 					Timestamp startTs = selectRs.getTimestamp(1);
@@ -740,25 +710,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		return results;
 	}	
 	
-	private Integer getCollectionsCount(BareJID owner, long ownerId, Long buddyId, Timestamp start_, 
-			Timestamp end_, String queryStr) throws SQLException {
+	private Integer getCollectionsCount(BareJID owner, Criteria crit) throws SQLException {
 		ResultSet countRs = null;		
 		Integer count = null;
 		try {
 			PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
-					+ queryStr + "_COUNT");
+					+ crit.getQueryName() + "_COUNT");
 			int i=2;
 			synchronized (get_collections_count) {
-				get_collections_count.setLong(1, ownerId);
-				if (start_ != null) {
-					get_collections_count.setTimestamp(i++, start_);
-				}
-				if (end_ != null) {
-					get_collections_count.setTimestamp(i++, end_);
-				}
-				if (buddyId != null) {
-					get_collections_count.setLong(i++, buddyId);
-				}				
+				crit.setCountQueryParams(get_collections_count, data_repo.getDatabaseType());
 				countRs = get_collections_count.executeQuery();
 				if (countRs.next()) {
 					count = countRs.getInt(1);
@@ -770,36 +730,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		return count;
 	}
 	
-	private List<Element> getItems(BareJID owner, long ownerId, long withId, Timestamp startTimestamp, 
-			Timestamp endTimestamp, int offset, int limit) throws SQLException {
+	private List<Element> getItemsItems(BareJID owner, Criteria crit) throws SQLException {
 		ResultSet rs      = null;		
 		Queue<Item> results = new ArrayDeque<Item>();
 		int i=1;
 		try {
-			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
-					? GENERIC_GET_MESSAGES_END : GENERIC_GET_MESSAGES);
+			boolean containsWith = crit.getQueryName().contains("WITH");
+			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_SELECT");
 			synchronized (get_messages_st) {
-				get_messages_st.setLong(i++, ownerId);
-				get_messages_st.setLong(i++, withId);
-				get_messages_st.setTimestamp(i++, startTimestamp);
-
-				if (endTimestamp != null) {
-					get_messages_st.setTimestamp(i++, endTimestamp);
-				}
-				switch (data_repo.getDatabaseType()) {
-					case derby:
-						get_messages_st.setInt(i++, offset);
-						get_messages_st.setInt(i++, limit);
-						break;
-					case sqlserver:
-						get_messages_st.setInt(i++, offset);
-						get_messages_st.setInt(i++, offset+limit);
-						break;
-					default:
-						get_messages_st.setInt(i++, limit);
-						get_messages_st.setInt(i++, offset);
-						break;
-				}
+				crit.setItemsQueryParams(get_messages_st, data_repo.getDatabaseType());
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
@@ -807,6 +746,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					item.message = rs.getString(1);
 					item.timestamp = rs.getTimestamp(2);
 					item.direction = Direction.getDirection(rs.getShort(3));
+					if (!containsWith) {
+						item.with = rs.getString(4);
+					}
 					results.offer(item);
 				}
 			}
@@ -814,25 +756,30 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.release(null, rs);
 		}
 
-		List<Element> msgs = null;
+		List<Element> msgs = new LinkedList<Element>();
 
 		if (!results.isEmpty()) {
-			msgs = new LinkedList<Element>();
-
 			DomBuilderHandler domHandler = new DomBuilderHandler();
 
+			Date startTimestamp = crit.getStart();
 			Item item = null;
 			while ((item = results.poll()) != null) {
+				// workaround for case in which start was not specified
+				if (startTimestamp == null)
+					startTimestamp = item.timestamp;
+				
 				parser.parse(domHandler, item.message.toCharArray(), 0, item.message.length());
 
 				Queue<Element> queue = domHandler.getParsedElements();
 				Element msg = null;
 
 				while ((msg = queue.poll()) != null) {
-					addMessageToResults(msgs, startTimestamp, msg, item.timestamp, item.direction);
+					addMessageToResults(msgs, startTimestamp, msg, item.timestamp, item.direction, item.with);
 				}			
 			}
 
+			crit.setStart(startTimestamp);
+			
 			// no point in sorting messages by secs attribute as messages are already
 			// sorted in SQL query and also this sorting is incorrect
 //			Collections.sort(msgs, new Comparator<Element>() {
@@ -847,22 +794,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		return msgs;		
 	}
 
-	private Integer getItemsCount(BareJID owner, long ownerId, long withId, Timestamp startTimestamp, 
-			Timestamp endTimestamp) throws SQLException {
+	private Integer getItemsCount(BareJID owner, Criteria crit) throws SQLException {
 		ResultSet rs      = null;		
 		Integer count = null;
-		int i=1;
 		try {
-			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, endTimestamp != null 
-					? GENERIC_GET_MESSAGES_END_COUNT : GENERIC_GET_MESSAGES_COUNT);
+			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_COUNT");
 			synchronized (get_messages_st) {
-				get_messages_st.setLong(i++, ownerId);
-				get_messages_st.setLong(i++, withId);
-				get_messages_st.setTimestamp(i++, startTimestamp);
-
-				if (endTimestamp != null) {
-					get_messages_st.setTimestamp(i++, endTimestamp);
-				}
+				crit.setCountQueryParams(get_messages_st, data_repo.getDatabaseType());
 
 				rs = get_messages_st.executeQuery();
 				if (rs.next()) {
@@ -963,13 +901,119 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			return LONG_NULL;
 		}
 	}
+
+	@Override
+	public AbstractCriteria newCriteriaInstance() {
+		return new Criteria();
+	}
 	
 	private class Item {
 		
 		String message;
 		Date timestamp;
 		Direction direction;
+		String with;
 		
+	}
+	
+	public static class Criteria extends AbstractCriteria<Timestamp> {
+
+		private long ownerId;
+		private long buddyId;
+		private String queryName;
+		
+		@Override
+		protected Timestamp convertTimestamp(Date date) {
+			if (date == null)
+				return null;
+			return new Timestamp(date.getTime());
+		}
+		
+		public String getQueryName() {
+			if (queryName == null)
+				return updateQueryName();
+			return queryName;
+		}
+		
+		public String updateQueryName() {
+			StringBuilder query = new StringBuilder(20);
+			if (getStart() != null) {
+				query.append("FROM");
+			}
+			if (getEnd() != null) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("TO");
+			}
+			if (getWith() != null) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("WITH");
+			} else {
+				// not supported
+			}
+			if (!getContains().isEmpty()) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("CONTAINS[").append(getContains().size()).append("]");
+			}
+			queryName = query.toString();
+			return queryName;
+		}
+		
+		public void setOwnerId(Long id) {
+			if (id == null)
+				ownerId = 0;
+			else
+				ownerId = id;
+		}
+		
+		public void setBuddyId(Long id) {
+			if (id == null)
+				buddyId = 0;
+			else
+				buddyId = id;
+		}
+		
+		public int setCountQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType) throws SQLException {
+			int i=1;
+			stmt.setLong(i++, ownerId);
+			if (getStart() != null) {
+				stmt.setTimestamp(i++, getStart());
+			}
+			if (getEnd() != null) {
+				stmt.setTimestamp(i++, getEnd());
+			}
+			if (getWith() != null) {
+				stmt.setLong(i++, buddyId);
+			}
+			for (String contains : getContains()) {
+				stmt.setString(i++, "%" + contains + "%");
+			}
+			return i;
+		}
+		
+		public void setItemsQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType) throws SQLException {
+			int i = setCountQueryParams(stmt, dbType);
+			switch (dbType) {
+				case derby:
+					stmt.setInt(i++, getOffset());
+					stmt.setInt(i++, getLimit());
+					break;
+				case jtds:
+				case sqlserver:
+					stmt.setInt(i++, getOffset());
+					stmt.setInt(i++, getOffset() + getLimit());
+					break;
+				default:
+					stmt.setInt(i++, getLimit());
+					stmt.setInt(i++, getOffset());
+					break;
+			}
+		}
 	}
 }
 

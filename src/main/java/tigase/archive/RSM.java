@@ -60,33 +60,13 @@ public class RSM {
 	 *
 	 * @param e
 	 */
-	public RSM(Element e, int defaultMax) {
+	public RSM(int defaultMax) {
 		this.max = defaultMax;
-		if (e == null) {
-			return;
-		}
-
-		Element param = e.getChild("max");
-
-		if (param != null) {
-			max = Integer.parseInt(param.getCData());
-		}
-		after  = e.getCDataStaticStr(SET_AFTER_PATH);
-		Element beforeEl = e.findChildStaticStr(SET_BEFORE_PATH);
-		if (beforeEl != null) {
-			hasBefore = true;
-			before = beforeEl.getCData();
-		}
-		String indexStr = e.getCDataStaticStr(SET_INDEX_PATH);
-		if (indexStr != null) {
-			index = Integer.parseInt(indexStr);
-		}
 	}
 	
-	public RSM(Element e) {
-		this(e, 100);
+	public RSM() {
 	}
-
+	
 	//~--- get methods ----------------------------------------------------------
 
 	/**
@@ -181,6 +161,34 @@ public class RSM {
 	
 	//~--- methods --------------------------------------------------------------
 
+	public RSM fromElement(Element e) {
+		if (e == null) {
+			return this;
+		}
+		if (e.getXMLNS() != XMLNS) {
+			Element x = e.getChild("set", RSM.XMLNS);
+			return fromElement(x);
+		}
+
+		Element param = e.getChild("max");
+
+		if (param != null) {
+			max = Integer.parseInt(param.getCData());
+		}
+		after  = e.getCDataStaticStr(SET_AFTER_PATH);
+		Element beforeEl = e.findChildStaticStr(SET_BEFORE_PATH);
+		if (beforeEl != null) {
+			hasBefore = true;
+			before = beforeEl.getCData();
+		}
+		String indexStr = e.getCDataStaticStr(SET_INDEX_PATH);
+		if (indexStr != null) {
+			index = Integer.parseInt(indexStr);
+		}
+		
+		return this;
+	}
+	
 	/**
 	 * Method description
 	 *
@@ -224,9 +232,7 @@ public class RSM {
 	 * @return
 	 */
 	public static RSM parseRootElement(Element e, int defaultMax) {
-		Element x = e.getChild("set", RSM.XMLNS);
-		
-		return new RSM(x, defaultMax);
+		return new RSM(defaultMax).fromElement(e);
 	}
 	
 	/**

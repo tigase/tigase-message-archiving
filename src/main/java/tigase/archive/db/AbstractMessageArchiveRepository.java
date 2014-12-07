@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import tigase.archive.AbstractCriteria;
 import tigase.xml.Element;
 
 /**
@@ -33,7 +34,7 @@ import tigase.xml.Element;
  * 
  * @author andrzej
  */
-public abstract class AbstractMessageArchiveRepository implements MessageArchiveRepository {
+public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCriteria> implements MessageArchiveRepository<Crit> {
 	
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssZ");
@@ -51,7 +52,7 @@ public abstract class AbstractMessageArchiveRepository implements MessageArchive
 				new String[] { with, formattedStart }));		
 	}
 	
-	protected void addMessageToResults(List<Element> results, Date collectionStart, Element msg, Date timestamp, Direction direction) {
+	protected void addMessageToResults(List<Element> results, Date collectionStart, Element msg, Date timestamp, Direction direction, String with) {
 		Element item = new Element(direction.toElementName());
 
 		// Now we should send all elements of a message so as we can store not only <body/> 
@@ -60,6 +61,9 @@ public abstract class AbstractMessageArchiveRepository implements MessageArchive
 		//item.addChild(msg.getChild("body"));
 		item.addChildren(msg.getChildren());
 		item.setAttribute("secs", String.valueOf((timestamp.getTime() - collectionStart.getTime()) / 1000));
+		if (with != null) {
+			item.setAttribute("with", with);
+		}
 		results.add(item);
 	}
 }

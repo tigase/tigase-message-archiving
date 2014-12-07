@@ -60,21 +60,7 @@ public class MessageArchiveComponent
 			"archive-repo-class";
 	private static final String           MSG_ARCHIVE_REPO_URI_PROP_KEY =
 			"archive-repo-uri";
-	private final static SimpleDateFormat formatter4 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-	private final static SimpleDateFormat formatter3 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ssZ");
-	private final static SimpleDateFormat formatter = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-	static {
-		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter4.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}	
 	//~--- fields ---------------------------------------------------------------
 
 	private MessageArchiveRepository msg_repo = null;
@@ -87,7 +73,6 @@ public class MessageArchiveComponent
 	 */
 	public MessageArchiveComponent() {
 		super();
-		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setName("message-archive");
 	}
 
@@ -296,16 +281,11 @@ public class MessageArchiveComponent
 
 	private void listCollections(Packet packet, Element list) throws XMPPException {
 		try {
-			RSM rsm = RSM.parseRootElement(list);
+			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
+			criteria.fromElement(list);
 
-			String with     = list.getAttributeStaticStr("with");
-			String startStr = list.getAttributeStaticStr("start");
-			String stopStr  = list.getAttributeStaticStr("end");
+			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(), criteria);
 
-			Date          start = startStr != null ? parseTimestamp(startStr) : null;
-			Date          stop  = stopStr != null ? parseTimestamp(stopStr) : null;
-			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(),
-					with, start, stop, rsm);
 			Element retList = new Element(LIST);
 			retList.setXMLNS(XEP0136NS);
 
@@ -313,6 +293,7 @@ public class MessageArchiveComponent
 				retList.addChildren(chats);
 			}
 			
+			RSM rsm = criteria.getRSM();
 			if (rsm.getCount() == null || rsm.getCount() != 0)
 				retList.addChild(rsm.toElement());
 			
@@ -327,33 +308,6 @@ public class MessageArchiveComponent
 		}
 	}
 
-	private Date parseTimestamp(String tmp) throws ParseException {
-		Date date = null;
-
-		if (tmp.endsWith("Z")) {
-			if (tmp.contains(".")) {
-				synchronized (formatter4) {
-					date = formatter4.parse(tmp);
-				}
-			}
-			else {
-				synchronized (formatter) {
-					date = formatter.parse(tmp);
-				}
-			}
-		} else if (tmp.contains(".")) {
-			synchronized (formatter3) {
-				date = formatter3.parse(tmp);
-			}
-		} else {
-			synchronized (formatter2) {
-				date = formatter2.parse(tmp);
-			}
-		}
-
-		return date;
-	}
-
 	private void removeMessages(Packet packet, Element remove) throws XMPPException {
 		if ((remove.getAttributeStaticStr("with") == null) || (remove.getAttributeStaticStr(
 				"start") == null) || (remove.getAttributeStaticStr("end") == null)) {
@@ -363,13 +317,11 @@ public class MessageArchiveComponent
 			return;
 		}
 		try {
-			String startStr = remove.getAttributeStaticStr("start");
-			String stopStr  = remove.getAttributeStaticStr("end");
-			Date   start    = parseTimestamp(startStr);
-			Date   stop     = parseTimestamp(stopStr);
+			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
+			criteria.fromElement(remove);
 
-			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), remove
-					.getAttributeStaticStr("with"), start, stop);
+			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), criteria.getWith(), 
+					criteria.getStart(), criteria.getEnd());
 			addOutPacket(packet.okResult((Element) null, 0));
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
@@ -399,7 +351,7 @@ public class MessageArchiveComponent
 			if (delay != null) {
 				try {
 					String stamp = delay.getAttributeStaticStr("stamp");
-					timestamp = parseTimestamp(stamp);
+					timestamp = TimestampHelper.parseTimestamp(stamp);
 				} catch (ParseException e1) {}
 			} else {
 				timestamp = new java.util.Date();
@@ -415,29 +367,25 @@ public class MessageArchiveComponent
 
 	private void getMessages(Packet packet, Element retrieve) throws XMPPException {
 		try {
-			RSM rsm = RSM.parseRootElement(
-					retrieve);    // new RSM(retrieve.findChild("/retrieve/set"), 30);
+			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
+			criteria.fromElement(retrieve);
 
-			Date          start = parseTimestamp(retrieve.getAttributeStaticStr("start"));
-			Date		  end = null;
-			if (retrieve.getAttributeStaticStr("end") != null)
-				end = parseTimestamp(retrieve.getAttributeStaticStr("end"));
 			List<Element> items = msg_repo.getItems(packet.getStanzaFrom().getBareJID(),
-					retrieve.getAttributeStaticStr("with"), start, end, rsm);
-			String startStr = null;
+					criteria);
 
-			synchronized (formatter2) {
-				startStr = formatter2.format(start);
-			}
+			Element retList = new Element("chat");
 
-			Element retList = new Element("chat", new String[] { "with", "start" },
-					new String[] { retrieve.getAttributeStaticStr("with"),
-					startStr });
-
+			if (criteria.getWith() != null)
+				retList.setAttribute("with", criteria.getWith());
+			if (criteria.getStart() != null)
+				retList.setAttribute("start", TimestampHelper.format(criteria.getStart()));
+			
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {
 				retList.addChildren(items);
 			}
+			
+			RSM rsm = criteria.getRSM();
 			if (rsm.getCount() == null || rsm.getCount() != 0)
 				retList.addChild(rsm.toElement());
 			addOutPacket(packet.okResult(retList, 0));
