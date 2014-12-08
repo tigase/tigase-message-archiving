@@ -46,6 +46,7 @@ import tigase.xmpp.StanzaType;
  *
  * @author andrzej
  */
+@Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AbstractMessageArchiveRepositoryTest {
 	
