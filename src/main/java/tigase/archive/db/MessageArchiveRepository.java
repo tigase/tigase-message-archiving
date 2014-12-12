@@ -23,6 +23,7 @@ package tigase.archive.db;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import tigase.archive.AbstractCriteria;
 import tigase.archive.RSM;
 import tigase.db.Repository;
@@ -73,7 +74,7 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 		
 	}
 	
-	void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg);
+	void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
 	
 	/**
 	 * Destroys instance of this repository and releases resources allocated if possible

@@ -32,10 +32,12 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tigase.archive.AbstractCriteria;
@@ -341,6 +343,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + 
 																									", " + MSGS_BUDDY_ID + "));";
 
+	private static final String ADD_TAG = "insert into " + TAGS_TABLE + " (" + TAGS_OWNER_ID + ", " + TAGS_TAG + ") values (?,?)";
+	private static final String ADD_MESSAGE_TAG = "insert into " + MSGS_TAGS_TABLE + " (" + MSGS_ID + ", " + TAGS_ID + ") values (?,?)";
+	private static final String GET_TAG_IDS = "select " + TAGS_ID + ", " + TAGS_TAG + " from " + TAGS_TABLE + " WHERE " + TAGS_OWNER_ID + " = ? ";
+	private static final String GET_TAG_IDS_WHERE_PART = " AND " + TAGS_TAG + " = ? ";
+	
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
 	
 	//~--- fields ---------------------------------------------------------------
@@ -562,6 +569,17 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}			
 			
 			data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
+			
+			for (int i=0; i<=5; i++) {
+				StringBuilder select = new StringBuilder().append(GET_TAG_IDS);
+				for (int j=1; j<=i; j++) {
+					select.append(GET_TAG_IDS_WHERE_PART);
+				}
+				data_repo.initPreparedStatement(GET_TAG_IDS + "_" + i, select.toString());
+			}
+			data_repo.initPreparedStatement(ADD_TAG, ADD_TAG);
+			data_repo.initPreparedStatement(ADD_MESSAGE_TAG, ADD_MESSAGE_TAG);
+			
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
 		}
@@ -653,9 +671,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 * @param direction
 	 * @param timestamp
 	 * @param msg
+	 * @param tags
 	 */
 	@Override
-	public void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg) {
+	public void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags) {
+		ResultSet rs = null;
 		try {
 			String owner_str         = owner.toString();
 			String buddy_str         = buddy.toString();
@@ -675,6 +695,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
+			long msgId = 0;
+			
 			synchronized (add_message_st) {
 				add_message_st.setLong(1, owner_id);
 				add_message_st.setLong(2, buddy_id);
@@ -684,15 +706,86 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				add_message_st.setString(6, body);
 				add_message_st.setString(7, msgStr);
 				add_message_st.executeUpdate();
+				
+				if (tags != null) {
+					rs = add_message_st.getGeneratedKeys();
+					if (rs.next()) {
+						msgId = rs.getLong(1);
+					}
+				}
+			}
+			
+			if (tags != null && !tags.isEmpty()) {
+				Map<String,Long> tagsMap = ensureTags(owner, owner_id, tags);
+				PreparedStatement add_message_tag_st = data_repo.getPreparedStatement(owner, ADD_MESSAGE_TAG);
+				synchronized (add_message_tag_st) {
+					for (Long tagId : tagsMap.values()) {
+						add_message_tag_st.setLong(1, msgId);
+						add_message_tag_st.setLong(2, tagId);
+						add_message_tag_st.addBatch();
+					}
+					add_message_tag_st.executeBatch();
+				}
 			}
 		} catch (SQLException ex) {
 			log.log(Level.WARNING, "Problem adding new entry to DB: {0}", msg);
 		} finally {
-
-//    data_repo.release(null, rs);
+		   data_repo.release(null, rs);
 		}
 	}
 
+	private Map<String,Long> ensureTags(BareJID owner, long owner_id, Set<String> tags) throws SQLException {
+		Map<String,Long> tagsMap = new HashMap<String,Long>();
+		ResultSet rs = null;
+		try {
+			Iterator<String> it = tags.iterator();
+			int iters = (tags.size()/5)+1;
+			for (int i = 0; i < iters; i++) {
+				int params = (i == (iters - 1)) ? tags.size() % 5 : 5;
+				PreparedStatement get_tag_ids_st = data_repo.getPreparedStatement(owner, GET_TAG_IDS + "_" + params);
+				synchronized (get_tag_ids_st) {
+					get_tag_ids_st.setLong(1, owner_id);
+					for (int j=0; j<params; j++) {
+						String tag = it.next();
+						get_tag_ids_st.setString(j+2, tag);
+					}
+					rs = get_tag_ids_st.executeQuery();
+					while (rs.next()) {
+						long id = rs.getLong(1);
+						String tag = rs.getString(2);
+						tagsMap.put(tag, id);
+					}
+					data_repo.release(null, rs);
+					rs = null;
+				}
+			}
+			
+			if (tagsMap.size() < tags.size()) {
+				PreparedStatement add_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG);
+				for (String tag : tags) {
+					if (tagsMap.containsKey(tag))
+						continue;
+					
+					synchronized (add_tag_st) {
+						add_tag_st.setLong(1, owner_id);
+						add_tag_st.setString(2, tag);
+						add_tag_st.executeUpdate();
+						rs = add_tag_st.getGeneratedKeys();
+						if (rs.next()) {
+							tagsMap.put(tag, rs.getLong(1));
+						}
+						data_repo.release(null, rs);
+						rs = null;						
+					}
+				}
+			}
+		} finally {
+			data_repo.release(null, rs);
+		}
+		
+		return tagsMap;
+	}
+	
 	//~--- get methods ----------------------------------------------------------
 
 	/**

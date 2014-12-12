@@ -61,9 +61,13 @@ public class MessageArchiveComponent
 	private static final String           MSG_ARCHIVE_REPO_URI_PROP_KEY =
 			"archive-repo-uri";
 
+	private static final boolean			  DEF_TAGS_SUPPORT_PROP_VAL = false;
+	private static final String			  TAGS_SUPPORT_PROP_KEY = "tags-support";
+	
 	//~--- fields ---------------------------------------------------------------
 
 	private MessageArchiveRepository msg_repo = null;
+	private boolean tagsSupport = false;
 
 	//~--- constructors ---------------------------------------------------------
 
@@ -135,6 +139,8 @@ public class MessageArchiveComponent
 		Map<String, Object> defs   = super.getDefaults(params);
 		String              db_uri = (String) params.get(Configurable.USER_REPO_URL_PROP_KEY);
 
+		defs.put(TAGS_SUPPORT_PROP_KEY, DEF_TAGS_SUPPORT_PROP_VAL);
+		
 		if (db_uri == null) {
 			db_uri = (String) params.get(Configurable.GEN_USER_DB_URI);
 		}
@@ -169,6 +175,11 @@ public class MessageArchiveComponent
 	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		try {
 			super.setProperties(props);
+			
+			if (props.containsKey(TAGS_SUPPORT_PROP_KEY)) {
+				tagsSupport = (Boolean) props.get(TAGS_SUPPORT_PROP_KEY);
+			}
+			
 			if (props.size() == 1) {
 				return;
 			}
@@ -282,7 +293,7 @@ public class MessageArchiveComponent
 	private void listCollections(Packet packet, Element list) throws XMPPException {
 		try {
 			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
-			criteria.fromElement(list);
+			criteria.fromElement(list, tagsSupport);
 
 			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(), criteria);
 
@@ -318,7 +329,7 @@ public class MessageArchiveComponent
 		}
 		try {
 			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
-			criteria.fromElement(remove);
+			criteria.fromElement(remove, tagsSupport);
 
 			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), criteria.getWith(), 
 					criteria.getStart(), criteria.getEnd());
@@ -357,7 +368,11 @@ public class MessageArchiveComponent
 				timestamp = new java.util.Date();
 			}			
 			
-			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg);
+			Set<String> tags = null;
+			if (tagsSupport) 
+				tags = TagsHelper.extractTags(msg);
+			
+			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, tags);
 		} else {
 			log.log(Level.INFO, "Owner attribute missing from packet: {0}", packet);
 		}
@@ -368,7 +383,7 @@ public class MessageArchiveComponent
 	private void getMessages(Packet packet, Element retrieve) throws XMPPException {
 		try {
 			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
-			criteria.fromElement(retrieve);
+			criteria.fromElement(retrieve, tagsSupport);
 
 			List<Element> items = msg_repo.getItems(packet.getStanzaFrom().getBareJID(),
 					criteria);

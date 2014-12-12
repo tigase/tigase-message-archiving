@@ -25,7 +25,9 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import tigase.xml.Element;
 
 /**
@@ -35,6 +37,7 @@ import tigase.xml.Element;
 public abstract class AbstractCriteria<D extends Date> {
 	
 	private static final String CONTAINS = "contains";
+	private static final String TAG = "tag";
 	private static final String NAME = "query";
 	public static final String ARCHIVE_XMLNS = MessageArchivePlugin.XEP0136NS;
 	public static final String QUERTY_XMLNS = "http://tigase.org/protocol/archive#query";
@@ -46,9 +49,10 @@ public abstract class AbstractCriteria<D extends Date> {
 	private int index = 0;
 	private int limit = 0;
 	
-	private List<String> contains = new ArrayList<String>();
+	private Set<String> contains = new HashSet<String>();
+	private Set<String> tags = new HashSet<String>();
 	
-	public AbstractCriteria fromElement(Element el) throws IllegalArgumentException, ParseException {
+	public AbstractCriteria fromElement(Element el, boolean tagsSupport) throws IllegalArgumentException, ParseException {
 		if (el.getXMLNS() != ARCHIVE_XMLNS)
 			throw new IllegalArgumentException("Not supported XMLNS of element");
 
@@ -64,8 +68,28 @@ public abstract class AbstractCriteria<D extends Date> {
 			List<Element> children = query.getChildren();
 			if (children != null) {
 				for (Element child : children) {
-					if (child.getName() == CONTAINS) {
-						contains.add(child.getCData());
+					String cdata = null;
+					switch (child.getName()) {
+						case CONTAINS:
+							cdata = child.getCData();
+							
+							if (cdata == null)
+								break;
+							
+							contains.add(cdata);
+							if (tagsSupport) {
+								TagsHelper.extractTags(tags, cdata);
+							}
+							break;
+						case TAG:
+							cdata = child.getCData();
+							
+							if (cdata == null)
+								break;
+							
+							tags.add(cdata.trim());
+						default:
+							break;
 					}
 				}
 			}
@@ -74,8 +98,8 @@ public abstract class AbstractCriteria<D extends Date> {
 		return this;
 	}
 	
-	public List<String> getContains() {
-		return Collections.unmodifiableList(contains);
+	public Set<String> getContains() {
+		return Collections.unmodifiableSet(contains);
 	}
 	
 	public void addContains(String contain) {
