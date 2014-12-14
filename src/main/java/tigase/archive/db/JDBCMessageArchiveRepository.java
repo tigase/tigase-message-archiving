@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -347,6 +348,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String ADD_MESSAGE_TAG = "insert into " + MSGS_TAGS_TABLE + " (" + MSGS_ID + ", " + TAGS_ID + ") values (?,?)";
 	private static final String GET_TAG_IDS = "select " + TAGS_ID + ", " + TAGS_TAG + " from " + TAGS_TABLE + " WHERE " + TAGS_OWNER_ID + " = ? ";
 	private static final String GET_TAG_IDS_WHERE_PART = " AND " + TAGS_TAG + " = ? ";
+
+	private static final String GET_TAGS_FOR_USER = "select t." + TAGS_TAG + " from " + TAGS_TABLE + " t inner join " + JIDS_TABLE 
+			+ " j on t." + TAGS_OWNER_ID + " = j." + JIDS_ID + " where j." + JIDS_JID + " = ? and t." + TAGS_TAG + " like ? ";
+	private static final String GET_TAGS_FOR_USER_COUNT = "select count(t." + TAGS_ID + ") from " + TAGS_TABLE + " t inner join " + JIDS_TABLE 
+			+ " j on t." + TAGS_OWNER_ID + " = j." + JIDS_ID + " where j." + JIDS_JID + " = ? and t." + TAGS_TAG + " like ? ";
+	private static final String GET_TAGS_FOR_USER_ORDER = " order by " + TAGS_TAG;
+	private static final String SQLSERVER_GET_TAGS_FOR_USER = "select x." + TAGS_TAG + " from ("
+			+ " select t." + TAGS_TAG + ", ROW_NUMBER() over (order by t." + TAGS_TAG + ") as rn from " + TAGS_TABLE + " t inner join " + JIDS_TABLE 
+			+ " j on t." + TAGS_OWNER_ID + " = j." + JIDS_ID + " where j." + JIDS_JID + " = ? and t." + TAGS_TAG + " like ? ) x ";
 	
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
 	
@@ -580,6 +590,19 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.initPreparedStatement(ADD_TAG, ADD_TAG);
 			data_repo.initPreparedStatement(ADD_MESSAGE_TAG, ADD_MESSAGE_TAG);
 			
+			data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT, GET_TAGS_FOR_USER_COUNT);
+			switch (data_repo.getDatabaseType()) {
+				case derby:
+					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + DERBY_LIMIT);
+					break;
+				case jtds:
+				case sqlserver:
+					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, SQLSERVER_GET_TAGS_FOR_USER + MSSQL2008_LIMIT + GET_TAGS_FOR_USER_ORDER);
+					break;
+				default:
+					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + GENERIC_LIMIT);					
+					break;
+			}
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
 		}
@@ -912,6 +935,79 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Cound not remove items", ex);
 		}
+	}
+
+	/**
+	 * Method description
+	 * 
+	 * @param owner
+	 * @param startsWith
+	 * @param crit
+	 * @return
+	 * @throws TigaseDBException 
+	 */
+	@Override
+	public List<String> getTags(BareJID owner, String startsWith, Criteria crit) throws TigaseDBException {
+		List<String> results = new ArrayList<String>();
+		ResultSet rs = null;
+		try {
+			int count = 0;
+			startsWith = startsWith + "%";
+			
+			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT);
+			synchronized (get_tags_count_st) {
+				get_tags_count_st.setString(1, owner.toString());
+				get_tags_count_st.setString(2, startsWith);
+				
+				rs = get_tags_count_st.executeQuery();
+				if (rs.next()) {
+					count = rs.getInt(1);
+				}
+				data_repo.release(null, rs);
+			}
+			crit.setSize(count);
+
+			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER);
+			synchronized (get_tags_st) {
+				int i=1;
+				get_tags_st.setString(i++, owner.toString());
+				get_tags_st.setString(i++, startsWith);
+
+				switch (data_repo.getDatabaseType()) {
+					case derby:
+						get_tags_st.setInt(i++, crit.getOffset());
+						get_tags_st.setInt(i++, crit.getLimit());
+						break;
+					case jtds:
+					case sqlserver:
+						get_tags_st.setInt(i++, crit.getOffset());
+						get_tags_st.setInt(i++, crit.getOffset() + crit.getLimit());
+						break;
+					default:
+						get_tags_st.setInt(i++, crit.getLimit());
+						get_tags_st.setInt(i++, crit.getOffset());
+						break;
+				}				
+				
+				rs = get_tags_st.executeQuery();
+				while (rs.next()) {
+					results.add(rs.getString(1));
+				}
+			}
+			
+			RSM rsm = crit.getRSM();
+			rsm.setResults(count, crit.getOffset());
+			if (results!= null && !results.isEmpty()) {
+				rsm.setFirst(String.valueOf(crit.getOffset()));
+				rsm.setLast(String.valueOf(crit.getOffset() + (results.size() - 1)));
+			}			
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Could not retrieve known tags from database", ex);
+		} finally {
+			data_repo.release(null, rs);
+		}
+		
+		return results;
 	}
 
 	private List<Element> getCollectionsItems(BareJID owner, Criteria crit)

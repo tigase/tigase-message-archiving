@@ -88,4 +88,7 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 	List<Element> getItems(BareJID owner, Crit criteria) throws TigaseDBException;
 	
 	public void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
+	
+	public List<String> getTags(BareJID owner, String startsWith, Crit criteria) throws TigaseDBException;
+	
 }

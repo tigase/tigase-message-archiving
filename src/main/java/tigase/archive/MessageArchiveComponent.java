@@ -286,6 +286,15 @@ public class MessageArchiveComponent
 
 					break;
 				}
+			} else if (child.getName() == "tags") {
+				switch (packet.getType()) {
+				case set :
+					queryTags(packet, child);
+					break;
+				default:
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+						"Request type is incorrect", false));						
+				}
 			}
 		}
 	}
@@ -407,6 +416,34 @@ public class MessageArchiveComponent
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Date parsing error", true));
+		} catch (TigaseDBException e) {
+			log.log(Level.SEVERE, "Error retrieving messages", e);
+			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
+					"Database error occured", true));
+		}
+	}
+	
+	private void queryTags(Packet packet, Element tagsEl) throws XMPPException {
+		try {
+			AbstractCriteria criteria = msg_repo.newCriteriaInstance();
+			criteria.getRSM().fromElement(tagsEl);
+			
+			String startsWith = tagsEl.getAttributeStaticStr("like");
+			if (startsWith == null)
+				startsWith = "";
+			
+			List<String> tags = msg_repo.getTags(packet.getStanzaFrom().getBareJID(), startsWith, criteria);
+			
+			tagsEl = new Element("tags", new String[] {"xmlns" }, new String[] { AbstractCriteria.QUERTY_XMLNS});
+			for (String tag : tags) {
+				tagsEl.addChild(new Element("tag", tag));
+			}
+			
+			RSM rsm = criteria.getRSM();
+			if (rsm.getCount() == null || rsm.getCount() != 0)
+				tagsEl.addChild(rsm.toElement());			
+			
+			addOutPacket(packet.okResult(tagsEl, 0));
 		} catch (TigaseDBException e) {
 			log.log(Level.SEVERE, "Error retrieving messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
