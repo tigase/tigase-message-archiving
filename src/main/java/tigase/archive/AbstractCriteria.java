@@ -49,8 +49,8 @@ public abstract class AbstractCriteria<D extends Date> {
 	private int index = 0;
 	private int limit = 0;
 	
-	private Set<String> contains = new HashSet<String>();
-	private Set<String> tags = new HashSet<String>();
+	private final Set<String> contains = new HashSet<String>();
+	private final Set<String> tags = new HashSet<String>();
 	
 	public AbstractCriteria fromElement(Element el, boolean tagsSupport) throws IllegalArgumentException, ParseException {
 		if (el.getXMLNS() != ARCHIVE_XMLNS)
@@ -104,6 +104,14 @@ public abstract class AbstractCriteria<D extends Date> {
 	
 	public void addContains(String contain) {
 		this.contains.add(contain);
+	}
+	
+	public Set<String> getTags() {
+		return Collections.unmodifiableSet(tags);
+	}
+	
+	public void addTag(String tag) {
+		tags.add(tag);
 	}
 	
 	public RSM getRSM() {

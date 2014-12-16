@@ -24,7 +24,9 @@ package tigase.archive.db;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import org.junit.After;
 import org.junit.Assert;
@@ -103,13 +105,15 @@ public class AbstractMessageArchiveRepositoryTest {
 	}
 	
 	@Test
-	public void test2_archiveMessage2() throws InterruptedException, TigaseDBException {
+	public void test2_archiveMessage2withTags() throws InterruptedException, TigaseDBException {
 		Thread.sleep(2000);
 		Date date = new Date();
-		String body = "Test 2";
+		String body = "Test 2 with #Test123";
 		Element msg = new Element("message", new String[] { "from", "to", "type"}, new String[] { owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy.getBareJID(), MessageArchiveRepository.Direction.incoming, date, msg, null);
+		Set<String> tags = new HashSet<String>();
+		tags.add("#Test123");
+		repo.archiveMessage(owner.getBareJID(), buddy.getBareJID(), MessageArchiveRepository.Direction.incoming, date, msg, tags);
 		
 		AbstractCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
@@ -137,7 +141,22 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
 		Assert.assertEquals("Incorrect timestamp", formatter2.format(testStart), chat.getAttribute("start"));
 	}
-			
+
+	@Test
+	public void test3_getCollectionsByTag() throws TigaseDBException {
+		AbstractCriteria crit = repo.newCriteriaInstance();
+		crit.setWith(buddy.getBareJID().toString());
+		crit.setStart(testStart);
+		crit.addTag("#Test123");
+		
+		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
+		List<Element> chats = repo.getCollections(owner.getBareJID(), crit);
+		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
+		
+		Element chat = chats.get(0);
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
+	}
+	
 	@Test
 	public void test4_getItems() throws InterruptedException, TigaseDBException {
 		AbstractCriteria crit = repo.newCriteriaInstance();
@@ -153,7 +172,22 @@ public class AbstractMessageArchiveRepositoryTest {
 		
 		res = msgs.get(1);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 2", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+	}
+
+	@Test
+	public void test4_getItemsWithTag() throws InterruptedException, TigaseDBException {
+		AbstractCriteria crit = repo.newCriteriaInstance();
+		crit.setWith(buddy.getBareJID().toString());
+		crit.setStart(testStart);
+		crit.addTag("#Test123");
+		
+		List<Element> msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertEquals("Incorrect number of message", 1, msgs.size());
+		
+		Element res = msgs.get(0);
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
 	}
 	
 	@Test

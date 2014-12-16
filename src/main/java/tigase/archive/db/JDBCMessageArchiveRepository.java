@@ -346,9 +346,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 	private static final String ADD_TAG = "insert into " + TAGS_TABLE + " (" + TAGS_OWNER_ID + ", " + TAGS_TAG + ") values (?,?)";
 	private static final String ADD_MESSAGE_TAG = "insert into " + MSGS_TAGS_TABLE + " (" + MSGS_ID + ", " + TAGS_ID + ") values (?,?)";
-	private static final String GET_TAG_IDS = "select " + TAGS_ID + ", " + TAGS_TAG + " from " + TAGS_TABLE + " WHERE " + TAGS_OWNER_ID + " = ? ";
-	private static final String GET_TAG_IDS_WHERE_PART = " AND " + TAGS_TAG + " = ? ";
-
+	private static final String GET_TAG_IDS = "select " + TAGS_ID + ", " + TAGS_TAG + " from " + TAGS_TABLE + " WHERE " + TAGS_OWNER_ID + " = ? AND ( ";
+	private static final String GET_TAG_IDS_WHERE_PART = TAGS_TAG + " = ? ";
+	private static final String GET_TAG_IDS_END = " )";
+	
 	private static final String GET_TAGS_FOR_USER = "select t." + TAGS_TAG + " from " + TAGS_TABLE + " t inner join " + JIDS_TABLE 
 			+ " j on t." + TAGS_OWNER_ID + " = j." + JIDS_ID + " where j." + JIDS_JID + " = ? and t." + TAGS_TAG + " like ? ";
 	private static final String GET_TAGS_FOR_USER_COUNT = "select count(t." + TAGS_ID + ") from " + TAGS_TABLE + " t inner join " + JIDS_TABLE 
@@ -434,7 +435,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
 
-			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE);
+			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
 			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
 			
 			Map<String,String> combinations = new HashMap<String,String>();
@@ -455,21 +456,44 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					}
 				}
 				
-				for (int i=0; i<6; i++) {
-					StringBuilder combinationSb = new StringBuilder().append(combination);
-					StringBuilder querySb = new StringBuilder().append(sbMain);
+				for (int j = 0; j < 6; j++) {
+					StringBuilder combinationSb1 = new StringBuilder().append(combination);
+					StringBuilder querySb1 = new StringBuilder().append(sbMain);
 
-					if (i > 0) {
-						if (combinationSb.length() > 0) {
-							combinationSb.append("_");
+					if (j > 0) {
+						if (combinationSb1.length() > 0) {
+							combinationSb1.append("_");
 						}
-						combinationSb.append("CONTAINS[").append(i).append("]");
-						for (int x=0; x<i; x++) {
-							querySb.append(" and m.").append(MSGS_BODY).append(" like ? ");
+						combinationSb1.append("TAGS[").append(j).append("]");
+						querySb1.append(" and EXISTS( select 1 from ").append(TAGS_TABLE)
+								.append(" t inner join ").append(MSGS_TAGS_TABLE).append(" tm on t.")
+								.append(TAGS_ID).append(" = tm.").append(TAGS_ID).append(" where m.")
+								.append(MSGS_ID).append(" = tm.").append(MSGS_ID).append(" and (");
+						for (int x = 0; x < j; x++) {
+							if (x > 0) {
+								querySb1.append(" or ");
+							}
+							querySb1.append("t.").append(TAGS_TAG).append(" = ?");
 						}
+						querySb1.append(" )) ");
 					}
 					
-					combinations.put(combinationSb.toString(), querySb.toString());
+					for (int i = 0; i < 6; i++) {
+						StringBuilder combinationSb = new StringBuilder().append(combinationSb1);
+						StringBuilder querySb = new StringBuilder().append(querySb1);
+
+						if (i > 0) {
+							if (combinationSb.length() > 0) {
+								combinationSb.append("_");
+							}
+							combinationSb.append("CONTAINS[").append(i).append("]");
+							for (int x = 0; x < i; x++) {
+								querySb.append(" and m.").append(MSGS_BODY).append(" like ? ");
+							}
+						}
+
+						combinations.put(combinationSb.toString(), querySb.toString());
+					}				
 				}
 			}	
 			
@@ -583,11 +607,17 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			for (int i=0; i<=5; i++) {
 				StringBuilder select = new StringBuilder().append(GET_TAG_IDS);
 				for (int j=1; j<=i; j++) {
+					if (j > 1)
+						select.append(" or ");
 					select.append(GET_TAG_IDS_WHERE_PART);
 				}
+				if (i==0) {
+					select.append("1=1");
+				}
+				select.append(")");
 				data_repo.initPreparedStatement(GET_TAG_IDS + "_" + i, select.toString());
 			}
-			data_repo.initPreparedStatement(ADD_TAG, ADD_TAG);
+			data_repo.initPreparedStatement(ADD_TAG, ADD_TAG, Statement.RETURN_GENERATED_KEYS);
 			data_repo.initPreparedStatement(ADD_MESSAGE_TAG, ADD_MESSAGE_TAG);
 			
 			data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT, GET_TAGS_FOR_USER_COUNT);
@@ -718,7 +748,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
-			long msgId = 0;
+			Long msgId = null;
 			
 			synchronized (add_message_st) {
 				add_message_st.setLong(1, owner_id);
@@ -733,7 +763,14 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				if (tags != null) {
 					rs = add_message_st.getGeneratedKeys();
 					if (rs.next()) {
-						msgId = rs.getLong(1);
+						switch (data_repo.getDatabaseType()) {
+							case postgresql:
+								msgId = rs.getLong(MSGS_ID);
+								break;
+							default:
+								msgId = rs.getLong(1);
+								break;
+						}
 					}
 				}
 			}
@@ -751,7 +788,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				}
 			}
 		} catch (SQLException ex) {
-			log.log(Level.WARNING, "Problem adding new entry to DB: {0}", msg);
+			log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
 		} finally {
 		   data_repo.release(null, rs);
 		}
@@ -1279,6 +1316,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			} else {
 				// not supported
 			}
+			if (!getTags().isEmpty()) {
+				if (query.length() > 0) {
+					query.append("_");
+				}
+				query.append("TAGS[").append(getTags().size()).append("]");
+			}
 			if (!getContains().isEmpty()) {
 				if (query.length() > 0) {
 					query.append("_");
@@ -1314,6 +1357,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}
 			if (getWith() != null) {
 				stmt.setLong(i++, buddyId);
+			}
+			for (String tag : getTags()) {
+				stmt.setString(i++, tag);
 			}
 			for (String contains : getContains()) {
 				stmt.setString(i++, "%" + contains + "%");
