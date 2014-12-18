@@ -1243,9 +1243,14 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private long addJidId(String jid) throws SQLException {
 		PreparedStatement add_jid_st = data_repo.getPreparedStatement(null, ADD_JID_QUERY);
 
-		synchronized (add_jid_st) {
-			add_jid_st.setString(1, jid);
-			add_jid_st.executeUpdate();
+		try {
+			synchronized (add_jid_st) {
+				add_jid_st.setString(1, jid);
+				add_jid_st.executeUpdate();
+			}
+		} catch (SQLException ex) {
+			log.log(Level.FINEST, "Exception adding jid to tig_ma_jids table, it may occur "
+					+ "if other thread added this jid in the meantime", ex);
 		}
 
 		// This is not the most effective solution but this method shouldn't be
