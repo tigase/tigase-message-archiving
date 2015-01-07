@@ -270,7 +270,21 @@ public class MessageArchivePlugin
 
 						defaultEl.setAttribute("otr", "forbid");
 						try {
-							String expire = session.getData(SETTINGS, EXPIRE, null);
+							RetentionType retentionType = VHostItemHelper.getRetentionType(session.getDomain());
+							String expire = null;
+							switch (retentionType) {
+								case userDefined:
+									expire = session.getData(SETTINGS, EXPIRE, null);
+									break;
+								case numberOfDays:
+									Integer retention = VHostItemHelper.getRetentionDays(session.getDomain());
+									if (retention != null) {
+										expire = String.valueOf(retention.longValue() * 1000 * 60 * 60 * 24);
+									}
+									break;
+								case unlimited:
+									break;
+							}
 							if (expire != null) {
 								defaultEl.setAttribute(EXPIRE, expire);
 							}
@@ -325,17 +339,23 @@ public class MessageArchivePlugin
 									}
 									expire = elem.getAttributeStaticStr(EXPIRE);
 									if (expire != null) {
-										try {
-											long val = Long.parseLong(expire);
-											if (val <= 0) {
-												error = Authorization.NOT_ACCEPTABLE;
-												errorMsg = "Value of expire attribute must be bigger than 0";
+										if (RetentionType.userDefined != VHostItemHelper.getRetentionType(session.getDomain())) {
+											error = Authorization.NOT_ALLOWED;
+											errorMsg = "Expire value is not allowed to be changed by user";
+										}
+										else {
+											try {
+												long val = Long.parseLong(expire);
+												if (val <= 0) {
+													error = Authorization.NOT_ACCEPTABLE;
+													errorMsg = "Value of expire attribute must be bigger than 0";
+													break;
+												}
+											} catch (NumberFormatException ex) {
+												error = Authorization.BAD_REQUEST;
+												errorMsg = "Value of expire attribute must be a number";
 												break;
 											}
-										} catch (NumberFormatException ex) {
-											error = Authorization.BAD_REQUEST;
-											errorMsg = "Value of expire attribute must be a number";
-											break;
 										}
 									}
 									break;
