@@ -279,7 +279,7 @@ public class MessageArchivePlugin
 								case numberOfDays:
 									Integer retention = VHostItemHelper.getRetentionDays(session.getDomain());
 									if (retention != null) {
-										expire = String.valueOf(retention.longValue() * 1000 * 60 * 60 * 24);
+										expire = String.valueOf(retention.longValue() * 60 * 60 * 24);
 									}
 									break;
 								case unlimited:
