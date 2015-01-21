@@ -277,6 +277,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TYPE + " varchar(10), " +
 																									MSGS_BODY + " text, " +
 																									MSGS_MSG + " text," +
+																									" primary key (" + MSGS_ID + ")," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
 																									JIDS_ID + ")," + " foreign key (" +
