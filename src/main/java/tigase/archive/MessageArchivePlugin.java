@@ -63,6 +63,7 @@ public class MessageArchivePlugin
 				implements XMPPProcessorIfc {
 	
 	public static final String DEFAULT_SAVE = "default-save";
+	public static final String MUC_SAVE = "muc-save";
 	
 	/** Field description */
 	public static final String LIST = "list";
@@ -92,7 +93,7 @@ public class MessageArchivePlugin
 		{Iq.ELEM_NAME, "tags"} };
 	private static final String[] XMLNSS = { Packet.CLIENT_XMLNS, XEP0136NS, 
 		XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, AbstractCriteria.QUERTY_XMLNS };
-	private static final Set<StanzaType> TYPES;
+	//private static final Set<StanzaType> TYPES;
 	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
 			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
@@ -100,19 +101,21 @@ public class MessageArchivePlugin
 	
 	private static final String DEFAULT_STORE_METHOD_KEY = "default-store-method";
 	private static final String REQUIRED_STORE_METHOD_KEY = "required-store-method";
+	private static final String STORE_MUC_MESSAGES_KEY = "store-muc-messages";
 	
-	static {
-		HashSet tmpTYPES = new HashSet<StanzaType>();
-		tmpTYPES.add(null);
-		tmpTYPES.addAll(EnumSet.of(StanzaType.normal, StanzaType.chat, 
-			StanzaType.get, StanzaType.set, StanzaType.error, StanzaType.result));
-		TYPES = Collections.unmodifiableSet(tmpTYPES);
-	}
+//	static {
+//		HashSet tmpTYPES = new HashSet<StanzaType>();
+//		tmpTYPES.add(null);
+//		tmpTYPES.addAll(EnumSet.of(StanzaType.normal, StanzaType.chat, 
+//			StanzaType.get, StanzaType.set, StanzaType.error, StanzaType.result));
+//		TYPES = Collections.unmodifiableSet(tmpTYPES);
+//	}
 
 	//~--- fields ---------------------------------------------------------------
 
 	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
+	private StoreMuc globalStoreMucMessages = StoreMuc.User;
 	
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
@@ -157,6 +160,9 @@ public class MessageArchivePlugin
 		if (globalDefaultStoreMethod.ordinal() < globalRequiredStoreMethod.ordinal()) {
 			globalDefaultStoreMethod  = globalRequiredStoreMethod;
 		}
+		if (settings.containsKey(STORE_MUC_MESSAGES_KEY)) {
+			globalStoreMucMessages = StoreMuc.valueof((String) settings.get(STORE_MUC_MESSAGES_KEY));
+		}
 	}
 
 	/**
@@ -183,21 +189,48 @@ public class MessageArchivePlugin
 				
 				// ignoring packets resent from c2s for redelivery as processing
 				// them would create unnecessary duplication of messages in archive
-				if (C2SDeliveryErrorProcessor.isDeliveryError(packet))
+				if (C2SDeliveryErrorProcessor.isDeliveryError(packet)) {
+					log.log(Level.FINEST, "not processong packet as it is delivery error = {0}", packet);
 					return;
+				}
 				
 				StanzaType type = packet.getType();
+				Element body = packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH);
 
-				if ((packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH) ==
-						null) || ((type != null) && (type != StanzaType.chat) && (type != StanzaType
-						.normal))) {
+				if ((body == null) || (
+						(type != null) 
+						&& (type != StanzaType.chat) 
+						&& (type != StanzaType.normal))) {
+						//&& ((!isStoreMucMessages(session)) && type == StanzaType.groupchat) )) {
+					if (type != StanzaType.groupchat || body == null || !isStoreMucMessages(session)) {
+						if (log.isLoggable(Level.FINEST)) {
+							log.log(Level.FINEST, "not logging packet as type is {0}, {1}, {2}, {3}, {4}",
+									new Object[]{type, type != StanzaType.chat, type != StanzaType.normal,
+										!isStoreMucMessages(session), type != StanzaType.groupchat});
+						}
+						return;
+					}
+				}
+				
+				// we need to log groupchat messages only sent from MUC to user as MUC needs to confirm
+				// message delivery by sending message back
+				if (type == StanzaType.groupchat && session.isUserId(packet.getStanzaFrom().getBareJID())) {
+					if (log.isLoggable(Level.FINEST)) {
+						log.log(Level.FINEST, "not storing message sent to MUC room from user = {0}", packet.toString());
+					}
 					return;
 				}
 
 				boolean auto = getAutoSave(session);
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "got state of automatic storage of messages as {0}", auto);
+				}
 
-				if (auto && (packet.getElemCDataStaticStr(Message.MESSAGE_BODY_PATH) != null)) {
+				if (auto && body != null) {
 					StoreMethod storeMethod = getStoreMethod(session);
+					if (log.isLoggable(Level.FINEST)) {
+						log.log(Level.FINEST, "store method is {0}", storeMethod);
+					}
 					if (storeMethod == StoreMethod.False) {
 						// ignoring as False means we should not store anything
 						return;
@@ -216,8 +249,13 @@ public class MessageArchivePlugin
 								switch (elem.getName()) {
 									case "body":
 										break;
+									case "delay":
+										// we need to keep delay as well to have 
+										// a proper timestamp of a messages
+										break;
 									default:
 										message.removeChild(elem);
+										break;
 								}
 							}
 							break;
@@ -293,6 +331,8 @@ public class MessageArchivePlugin
 									session.getjid());
 						}
 
+						boolean isStoreMuc = isStoreMucMessages(session);
+						defaultEl.setAttribute(MUC_SAVE, Boolean.toString(isStoreMuc));
 								
 						StoreMethod storeMethod = getStoreMethod(session);
 						defaultEl.setAttribute("save", storeMethod.toString());
@@ -318,19 +358,29 @@ public class MessageArchivePlugin
 						Boolean autoSave = null;
 						String errorMsg = null;
 						String expire = null;
+						String storeMuc = null;
 						for (Element elem : pref.getChildren()) {
 							switch (elem.getName()) {
 								case "default":
-									storeMethod = StoreMethod.valueof(elem.getAttributeStaticStr("save"));
-									if (storeMethod == StoreMethod.Stream) {
-										error = Authorization.FEATURE_NOT_IMPLEMENTED;
-										errorMsg = "Value stream of save attribute is not supported";
-										break;
-									}
-									if (storeMethod.ordinal() < requiredStoreMethod.ordinal()) {
-										error = Authorization.NOT_ACCEPTABLE;
-										errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString();
-										break;
+									String storeMethodStr = elem.getAttributeStaticStr("save");
+									if (storeMethodStr != null) {
+										try {
+											storeMethod = StoreMethod.valueof(storeMethodStr);
+											if (storeMethod == StoreMethod.Stream) {
+												error = Authorization.FEATURE_NOT_IMPLEMENTED;
+												errorMsg = "Value stream of save attribute is not supported";
+												break;
+											}
+											if (storeMethod.ordinal() < requiredStoreMethod.ordinal()) {
+												error = Authorization.NOT_ACCEPTABLE;
+												errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString();
+												break;
+											}
+										} catch (IllegalArgumentException ex) {
+											error = Authorization.BAD_REQUEST;
+											errorMsg = "Value " + storeMethodStr + " of save attribute is valid";
+											break;
+										}
 									}
 									String otr = elem.getAttributeStaticStr("otr");
 									if (otr != null && !"forbid".equals(otr)) {
@@ -355,6 +405,22 @@ public class MessageArchivePlugin
 												error = Authorization.BAD_REQUEST;
 												errorMsg = "Value of expire attribute must be a number";
 												break;
+											}
+										}
+									}
+									storeMuc = elem.getAttributeStaticStr(MUC_SAVE);
+									if (storeMuc != null) {
+										if (StoreMuc.User != VHostItemHelper.getStoreMucMessages(session.getDomain(), globalStoreMucMessages)) {
+											error = Authorization.NOT_ALLOWED;
+											errorMsg = "Store MUC value is not allowed to be changed by user";	
+										} else if ((!"true".equals(storeMuc)) && (!"false".equals(storeMuc))) {
+											error = Authorization.BAD_REQUEST;
+											errorMsg = "Value of muc-save attribute must be 'true' or 'false'";
+										} else {
+											StoreMethod sm = storeMethod == null ? getStoreMethod(session) : storeMethod;
+											if (sm == StoreMethod.False) {
+												error = Authorization.NOT_ACCEPTABLE;
+												errorMsg = "Can not change MUC message storage configuration as Message Archiving is disabled";										
 											}
 										}
 									}
@@ -390,6 +456,10 @@ public class MessageArchivePlugin
 								}
 								if (expire != null) {
 									session.setData(SETTINGS, EXPIRE, expire);
+								}
+								if (storeMuc != null) {
+									session.setData(SETTINGS, MUC_SAVE, storeMuc);
+									session.putCommonSessionData(ID + "/" + MUC_SAVE, Boolean.parseBoolean(storeMuc) ? StoreMuc.True : StoreMuc.False);
 								}
 								results.offer(packet.okResult((String) null, 0));
 								
@@ -510,16 +580,16 @@ public class MessageArchivePlugin
 		return DISCO_FEATURES;
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
-	@Override
-	public Set<StanzaType> supTypes() {
-		return TYPES;
-	}
+//	/**
+//	 * Method description
+//	 *
+//	 *
+//	 * @return
+//	 */
+//	@Override
+//	public Set<StanzaType> supTypes() {
+//		return TYPES;
+//	}
 	
 	//~--- get methods ----------------------------------------------------------
 
@@ -592,6 +662,27 @@ public class MessageArchivePlugin
 		}
 		
 		return save;
+	}
+	
+	private boolean isStoreMucMessages(XMPPResourceConnection session) 
+			throws NotAuthorizedException {
+		StoreMuc save = (StoreMuc) session.getCommonSessionData(ID + "/" + MUC_SAVE);
+		if (save == null) {
+			try {
+				String val = session.getData(SETTINGS, MUC_SAVE, null);
+				if (val == null) {
+					save = VHostItemHelper.getStoreMucMessages(session.getDomain(), globalStoreMucMessages);
+				} else {
+					save = StoreMuc.valueof(val);
+				}		
+			} catch (TigaseDBException ex) {
+				log.log(Level.WARNING, "Error getting Message Archive state of storage of MUC messages: {0}", ex
+						.getMessage());
+				save = StoreMuc.User;
+			}	
+			session.putCommonSessionData(ID + "/" + MUC_SAVE, save);
+		}
+		return save == StoreMuc.True;
 	}
 	
 	//~--- set methods ----------------------------------------------------------

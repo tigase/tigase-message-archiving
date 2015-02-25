@@ -50,6 +50,7 @@ import static tigase.db.DataRepository.dbTypes.derby;
 import tigase.db.Repository;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
+import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
@@ -75,14 +76,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final long LONG_NULL              = 0;
 	private static final long MILIS_PER_DAY          = 24 * 60 * 60 * 1000;
 	
-	private static final String[] MSG_BODY_PATH = { "message", "body" };
-	
 	private static final String MSGS_ID	        = "msg_id";
 	private static final String MSGS_BUDDY_ID  = "buddy_id";
 	private static final String MSGS_BODY      = "body";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
 	private static final String MSGS_OWNER_ID  = "owner_id";
+	private static final String MSGS_HASH	   = "stanza_hash";
 
 //+ "create unique index " + JIDS_TABLE + "_" + JIDS_JID + " on "
 //+ JIDS_TABLE + " ( " + JIDS_JID + "(765));";
@@ -246,8 +246,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
-																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG + ")" +
-																						" values (?, ?, ?, ?, ?, ?, ?)";
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
+																						", " + MSGS_HASH + ")" +
+																						" values (?, ?, ?, ?, ?, ?, ?, ?)";
 	private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE + " where " +
 																						MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID +
 																						" = ?" + " and " + MSGS_TIMESTAMP +
@@ -260,14 +261,18 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									+ MSGS_DIRECTION + " smallint, "
 																									+ MSGS_TYPE + " varchar(10), "
 																									+ MSGS_BODY + " varchar(32672), "
-																									+ MSGS_MSG + " varchar(32672));"
+																									+ MSGS_MSG + " varchar(32672),"
+																									+ MSGS_HASH + " varchar(50));"
 																									+ "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_index on " + MSGS_TABLE
 																									+ " (" + MSGS_OWNER_ID + ");"
 																									+ "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_BUDDY_ID
 																									+ "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ");"
 																									+ "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP + "_"
 																									+ MSGS_BUDDY_ID + "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", "
-																									+ MSGS_TIMESTAMP + ", " + MSGS_BUDDY_ID + ");";
+																									+ MSGS_TIMESTAMP + ", " + MSGS_BUDDY_ID + ");"
+																									+ "create unique index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP + "_"
+																									+ MSGS_BUDDY_ID + "_" + MSGS_HASH + "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", "
+																									+ MSGS_TIMESTAMP + ", " + MSGS_BUDDY_ID + ", " + MSGS_HASH + ");";
 	private static final String PGSQL_CREATE_MSGS = "create table " + MSGS_TABLE + " (" +
 																									MSGS_ID + " bigserial, " +
 																									MSGS_OWNER_ID + " bigint, " +
@@ -277,6 +282,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TYPE + " varchar(10), " +
 																									MSGS_BODY + " text, " +
 																									MSGS_MSG + " text," +
+																									MSGS_HASH + " varchar(50)," +
 																									" primary key (" + MSGS_ID + ")," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -296,7 +302,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									"_" + MSGS_BUDDY_ID + "_index on " +
 																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
 																									", " + MSGS_TIMESTAMP + ", " + 
-																									MSGS_BUDDY_ID + "); ";
+																									MSGS_BUDDY_ID + "); " +
+																									"create unique index " + MSGS_TABLE + "_" +
+																									MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP +
+																									"_" + MSGS_BUDDY_ID + "_" + MSGS_HASH + "_index on " +
+																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
+																									", " + MSGS_TIMESTAMP + ", " + 
+																									MSGS_HASH + ", " + MSGS_BUDDY_ID + "); ";
 	private static final String SQLSERVER_CREATE_MSGS = "create table " + MSGS_TABLE + " (" +
 																									MSGS_ID + " bigint IDENTITY(1,1) NOT NULL, " +
 																									MSGS_OWNER_ID + " bigint, " +
@@ -306,6 +318,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TYPE + " nvarchar(10)," +
 																									MSGS_BODY + " ntext, " +
 																									MSGS_MSG + " ntext," +
+																									MSGS_HASH + " varchar(50), " + 
 																									" primary key (" + MSGS_ID + ")," +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -325,7 +338,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									"_" + MSGS_BUDDY_ID + "_index on " +
 																									MSGS_TABLE + " ( " + MSGS_OWNER_ID +
 																									", " + MSGS_TIMESTAMP + ", " +
-																									MSGS_BUDDY_ID + "); ";
+																									MSGS_BUDDY_ID + "); " + 
+																									"create unique index " + MSGS_TABLE + "_" +
+																									MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP + "_" +
+																									MSGS_BUDDY_ID + "_" + MSGS_HASH + "_index on " + 
+																									MSGS_TABLE + " (" + 
+																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + ", " +
+																									MSGS_BUDDY_ID + ", " + MSGS_HASH + ");";
 	private static final String MYSQL_CREATE_MSGS = "create table " + MSGS_TABLE + " (" +
 																									MSGS_ID + " bigint unsigned NOT NULL auto_increment, " + 
 																									MSGS_OWNER_ID + " bigint unsigned, " +
@@ -335,6 +354,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_TYPE + " varchar(10)," +
 																									MSGS_BODY + " text, " + 
 																									MSGS_MSG + " text," +
+																									MSGS_HASH + " varchar(50), " +
 																									" primary key (" + MSGS_ID + "), " +
 																									" foreign key (" + MSGS_BUDDY_ID +
 																									") references " + JIDS_TABLE + " (" +
@@ -345,7 +365,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									"key (" + MSGS_OWNER_ID + ", " + 
 																									MSGS_BUDDY_ID + "), key (" + 
 																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + 
-																									", " + MSGS_BUDDY_ID + "));";
+																									", " + MSGS_BUDDY_ID + ")," +
+																									" unique index using hash (" +
+																									MSGS_OWNER_ID + ", " + MSGS_TIMESTAMP + ", " +
+																									MSGS_BUDDY_ID + ", " + MSGS_HASH +	"));";
 
 	private static final String ADD_TAG = "insert into " + TAGS_TABLE + " (" + TAGS_OWNER_ID + ", " + TAGS_TAG + ") values (?,?)";
 	private static final String ADD_MESSAGE_TAG = "insert into " + MSGS_TAGS_TABLE + " (" + MSGS_ID + ", " + TAGS_ID + ") values (?,?)";
@@ -677,6 +700,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
 				}
 			}
+			data_repo.release(stmt, null);
 			try {
 				stmt = data_repo.createStatement(null);
 				stmt.executeQuery("select " + MSGS_ID + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = 0");
@@ -708,6 +732,40 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 							alterTable = "alter table " + MSGS_TABLE + " add primary key (" + MSGS_ID + ")";
 							stmt.execute(alterTable);
 							break;
+					}
+				} catch (SQLException ex1) {
+					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
+				}
+			}		
+			data_repo.release(stmt, null);
+			try {
+				stmt = data_repo.createStatement(null);
+				stmt.executeQuery("select " + MSGS_HASH + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = 0");
+			} catch (SQLException ex) {
+				// if this happens then we have issue with old database schema and missing hash column in MSGS_TABLE
+				String alterTable = null;
+				try {
+					switch (data_repo.getDatabaseType()) {
+						case jtds:
+						case sqlserver:
+							alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_HASH + " varchar(50)";
+							stmt.execute(alterTable);
+//							// on SQL Server unique index assumes that two null values are the same!
+//							alterTable = "update " + MSGS_TABLE + " set " + MSGS_HASH + " = " + MSGS_ID;
+//							stmt.execute(alterTable);
+							alterTable = "create unique index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP + "_" 
+									+ MSGS_BUDDY_ID + "_" + MSGS_HASH + "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", "
+									+ MSGS_TIMESTAMP + ", " + MSGS_BUDDY_ID + ", " + MSGS_HASH + ") WHERE " + MSGS_HASH + " is not null";
+							stmt.execute(alterTable);
+							break;
+						default:
+							alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_HASH + " varchar(50)";
+							stmt.execute(alterTable);
+							alterTable = "create unique index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_TIMESTAMP + "_" 
+									+ MSGS_BUDDY_ID + "_" + MSGS_HASH + "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", "
+									+ MSGS_TIMESTAMP + ", " + MSGS_BUDDY_ID + ", " + MSGS_HASH + ")";
+							stmt.execute(alterTable);
+							break;							
 					}
 				} catch (SQLException ex1) {
 					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
@@ -748,6 +806,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
 			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
+			String hash						 = generateHashOfMessageAsString(direction, msg);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
@@ -761,6 +820,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				add_message_st.setString(5, type);
 				add_message_st.setString(6, body);
 				add_message_st.setString(7, msgStr);
+				add_message_st.setString(8, hash);
 				add_message_st.executeUpdate();
 				
 				if (tags != null) {
@@ -1270,6 +1330,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 			return LONG_NULL;
 		}
+	}
+	
+	private String generateHashOfMessageAsString(Direction direction, Element msg) {
+		byte[] result = generateHashOfMessage(direction, msg);
+		return result != null ? Base64.encode(result) : null;
 	}
 
 	@Override

@@ -21,12 +21,18 @@
  */
 package tigase.archive.db;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import tigase.archive.AbstractCriteria;
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * AbstractMessageArchiveRepository contains methods commonly used by other implementations
@@ -38,6 +44,8 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 	
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssZ");
+	
+	protected static final String[] MSG_BODY_PATH = { "message", "body" };	
 	
 	static {
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -64,6 +72,36 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		if (with != null) {
 			item.setAttribute("with", with);
 		}
+		if ("groupchat".equals(msg.getAttributeStaticStr("type"))) {
+			JID from = JID.jidInstanceNS(msg.getAttributeStaticStr("from"));
+			if (from != null && from.getResource() != null) {
+				item.setAttribute("name", from.getResource());
+			}
+		}
+			
 		results.add(item);
+	}
+	
+	protected byte[] generateHashOfMessage(Direction direction, Element msg) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+			String peer = direction == Direction.incoming ? msg.getAttributeStaticStr("from") : msg.getAttributeStaticStr("to");
+			if (peer != null) {
+				md.update(peer.getBytes());
+			}
+			String id = msg.getAttributeStaticStr("id");
+			if (id != null) {
+				md.update(id.getBytes());
+			}
+			String body = msg.getChildCData(MSG_BODY_PATH);
+			if (body != null) {
+				md.update(body.getBytes());
+			}
+			
+			return md.digest();
+		} catch (NoSuchAlgorithmException ex) {
+			return null;
+		}
 	}
 }

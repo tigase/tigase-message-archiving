@@ -40,6 +40,8 @@ public class VHostItemHelper {
 	public static final String RETENTION_TYPE_KEY = "xep0136Retention";
 	public static final String RETENTION_PERIOD_KEY = "xep0136RetentionPerion";
 	
+	public static final String MUC_SAVE_KEY = "xep0136SaveMuc";
+	
 	private static final DataType[] types = {
 		new DataType(ENABLED_KEY, "XEP-0136 - Message Archiving enabled", Boolean.class, true),
 		new DataType(DEFAULT_STORE_METHOD_KEY, "XEP-0136 - default store method", String.class, null, new Object[] {
@@ -65,7 +67,12 @@ public class VHostItemHelper {
 			"Unlimited",
 			"Number of days"
 		}),
-		new DataType(RETENTION_PERIOD_KEY, "XEP-0136 - retention perion (in days)", Integer.class, null)
+		new DataType(RETENTION_PERIOD_KEY, "XEP-0136 - retention perion (in days)", Integer.class, null),
+		new DataType(MUC_SAVE_KEY, "XEP-0136 - store MUC messages", String.class, null, new Object[] {
+			StoreMuc.User.toString(),
+			StoreMuc.False.toString(),
+			StoreMuc.True.toString()
+		})
 	};
 	
 	public static void register() {
@@ -99,6 +106,14 @@ public class VHostItemHelper {
 	
 	public static Integer getRetentionDays(VHostItem item) {
 		return item.getData(RETENTION_PERIOD_KEY);
+	}
+	
+	public static StoreMuc getStoreMucMessages(VHostItem item, StoreMuc defValue) {
+		String val = item.getData(MUC_SAVE_KEY);
+		if (val == null || val.isEmpty()) {
+			return StoreMuc.User;
+		}
+		return StoreMuc.valueOf(val);		
 	}
 	
 }
