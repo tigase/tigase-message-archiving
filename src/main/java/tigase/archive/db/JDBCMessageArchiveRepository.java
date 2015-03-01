@@ -243,12 +243,38 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		"", "FROM", "FROM_TO", "FROM_TO_WITH", "FROM_WITH",
 		"TO", "TO_WITH", "WITH"
 	};
-	private static final String ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+	private static final String ADD_MESSAGE_1 = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
 																						", " + MSGS_HASH + ")" +
 																						" values (?, ?, ?, ?, ?, ?, ?, ?)";
+	private static final String PGSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
+																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
+																						", " + MSGS_HASH + ")" +
+																						" select ?, ?, ?, ?, ?, ?, ?, ?" +
+																						//" from " + MSGS_TABLE +
+																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
+																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
+																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
+	private static final String /*MYSQL_*/ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
+																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
+																						", " + MSGS_HASH + ")" +
+																						" select tmp." + MSGS_OWNER_ID + ", tmp." + MSGS_BUDDY_ID + ", tmp." +
+																						MSGS_TIMESTAMP + ", tmp." + MSGS_DIRECTION +
+																						", tmp." + MSGS_TYPE + ", tmp." + MSGS_BODY + ", " + MSGS_MSG +
+																						", tmp." + MSGS_HASH + " from (select ? as " + MSGS_OWNER_ID + 
+																						", ? as " + MSGS_BUDDY_ID + ", ? as " + MSGS_TIMESTAMP + 
+																						", ? as " + MSGS_DIRECTION + ", ? as " + MSGS_TYPE + 
+																						", ? as " + MSGS_BODY + ", ? as " + MSGS_MSG + ", ? as " + MSGS_HASH + ") as tmp" +
+																						//" from " + MSGS_TABLE +
+																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
+																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
+																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";	
 	private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE + " where " +
 																						MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID +
 																						" = ?" + " and " + MSGS_TIMESTAMP +
@@ -461,7 +487,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
 
-			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+			switch ( data_repo.getDatabaseType() ) {
+				case postgresql:
+					data_repo.initPreparedStatement(ADD_MESSAGE, PGSQL_ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+					break;
+				default:
+					data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+					break;
+			}
+			
 			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
 			
 			Map<String,String> combinations = new HashMap<String,String>();
@@ -821,6 +855,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				add_message_st.setString(6, body);
 				add_message_st.setString(7, msgStr);
 				add_message_st.setString(8, hash);
+				
+				add_message_st.setLong(9, owner_id);
+				add_message_st.setLong(10, buddy_id);
+				add_message_st.setTimestamp(11, mtime);
+				add_message_st.setString(12, hash);
+				
 				add_message_st.executeUpdate();
 				
 				if (tags != null) {
@@ -837,6 +877,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					}
 				}
 			}
+			
+			// in case we tried to archive message which was already archived (ie. by other 
+			// session or cluster node) server may ignore insert so it will not return id of inserted
+			// record as insert was not executed 
+			// in this case we need to exit from this function
+			if (msgId == null)
+				return;
 			
 			if (tags != null && !tags.isEmpty()) {
 				Map<String,Long> tagsMap = ensureTags(owner, owner_id, tags);
