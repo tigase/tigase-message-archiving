@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import tigase.archive.AbstractCriteria;
-import tigase.archive.RSM;
 import tigase.db.Repository;
 import tigase.db.TigaseDBException;
 import tigase.xml.Element;

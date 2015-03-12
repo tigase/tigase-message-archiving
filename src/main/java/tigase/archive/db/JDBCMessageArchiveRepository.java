@@ -41,21 +41,27 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import tigase.archive.AbstractCriteria;
-import tigase.archive.RSM;
 import tigase.archive.db.JDBCMessageArchiveRepository.Criteria;
+
 import tigase.db.DBInitException;
 import tigase.db.DataRepository;
+
 import static tigase.db.DataRepository.dbTypes.derby;
+
 import tigase.db.Repository;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
+
 import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
+
 import tigase.xmpp.BareJID;
+import tigase.xmpp.RSM;
 
 /**
  * Class description
