@@ -71,6 +71,14 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 			}
 		}
 		
+		public static Direction getDirection(String val) {
+			if ("from".equals(incoming.toElementName()))
+				return incoming;
+			if ("to".equals(outgoing.toElementName()))
+				return outgoing;
+			return null;
+		}
+				
 	}
 	
 	void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);

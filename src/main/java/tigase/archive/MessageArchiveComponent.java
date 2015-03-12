@@ -45,6 +45,7 @@ import tigase.osgi.ModulesManagerImpl;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Message;
 import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.*;
 
@@ -286,6 +287,15 @@ public class MessageArchiveComponent
 
 					break;
 				}
+			} else if (child.getName() == "save") {
+				switch (packet.getType()) {
+				case set :
+					saveMessages(packet, child);
+					break;
+				default:
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet, "Request type is incorrect", false));
+					break;
+				}
 			} else if (child.getName() == "tags") {
 				switch (packet.getType()) {
 				case set :
@@ -448,6 +458,91 @@ public class MessageArchiveComponent
 			log.log(Level.SEVERE, "Error retrieving messages", e);
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
 					"Database error occured", true));
+		}
+	}
+	
+	private void saveMessages(Packet packet, Element save) throws XMPPException {
+		try {
+			List<Element> chats = save.getChildren();
+			Element saveResult = new Element("save");
+			saveResult.setAttributes(save.getAttributes());
+			if (chats != null) {
+				for (Element chat : chats) {
+					if ("chat" != chat.getName()) {
+						continue;
+					}
+
+					Date start = TimestampHelper.parseTimestamp(chat.getAttributeStaticStr("start"));
+					BareJID owner = packet.getStanzaFrom().getBareJID();
+					String with = chat.getAttributeStaticStr("with");
+					if (with == null) {
+						// maybe we should ignore this??
+						addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet, "Missing 'with' attribute", true));
+						return;
+					}
+					JID buddy = JID.jidInstance(with);
+
+					List<Element> children = chat.getChildren();
+					if (children != null) {
+						for (Element child : children) {
+							Direction direction = Direction.getDirection(child.getName());
+							// should we do something about this?
+							if (direction == null) {
+								continue;
+							}
+
+							Date timestamp = null;
+							String secsAttr = child.getAttributeStaticStr("secs");
+							String utcAttr = child.getAttributeStaticStr("utc");
+							if (secsAttr != null) {
+								long secs = Long.parseLong(secsAttr);
+								timestamp = new Date(start.getTime() + (secs * 1000));
+							} else if (utcAttr != null) {
+								timestamp = TimestampHelper.parseTimestamp(utcAttr);
+							}
+							if (timestamp == null) {
+								// if timestamp is not set assume that secs was 0
+								timestamp = start;
+							}
+							Element msg = child.clone();
+							msg.setName("message");
+							msg.removeAttribute("secs");
+							msg.removeAttribute("utc");
+
+							switch (direction) {
+								case incoming:
+									msg.setAttribute("from", buddy.toString());
+									msg.setAttribute("to", owner.toString());
+									break;
+								case outgoing:
+									msg.setAttribute("from", owner.toString());
+									msg.setAttribute("to", buddy.toString());
+									break;
+							}
+
+							Set<String> tags = null;
+							if (tagsSupport) {
+								tags = TagsHelper.extractTags(msg);
+							}
+
+							msg_repo.archiveMessage(owner, buddy.getBareJID(), direction, timestamp, msg, tags);
+						}
+					}
+					Element chatResult = new Element("chat");
+					chatResult.setAttributes(chat.getAttributes());
+					saveResult.addChild(chatResult);
+				}
+			}
+			Packet result = packet.okResult(saveResult, 0);
+			addOutPacket(result);
+		} catch (ParseException e) {
+			log.log(Level.SEVERE, "Error parsing timestamp", e);
+			addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+					"Invalid format of timestamp", true));			
+		} catch (TigaseStringprepException ex) {
+			log.log(Level.SEVERE, "Error parsing with attribute as jid", ex);
+			addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+					"Invalid JID as with attribute", true));			
 		}
 	}
 }
