@@ -51,16 +51,18 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 	
-	protected void addCollectionToResults(List<Element> results, String with, Date start) {
+	protected Element addCollectionToResults(List<Element> results, Crit criteria, String with, Date start) {
 		String formattedStart = null;
 		synchronized (formatter2) {
 			formattedStart = formatter2.format(start);
 		}
-		results.add(new Element("chat", new String[] { "with", "start" },
-				new String[] { with, formattedStart }));		
+		Element elem = new Element("chat", new String[] { "with", "start" },
+				new String[] { with, formattedStart });
+		results.add(elem);
+		return elem;
 	}
 	
-	protected void addMessageToResults(List<Element> results, Date collectionStart, Element msg, Date timestamp, Direction direction, String with) {
+	protected Element addMessageToResults(List<Element> results, Crit criteria, Date collectionStart, Element msg, Date timestamp, Direction direction, String with) {
 		Element item = new Element(direction.toElementName());
 
 		// Now we should send all elements of a message so as we can store not only <body/> 
@@ -80,6 +82,7 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		}
 			
 		results.add(item);
+		return item;
 	}
 	
 	protected byte[] generateHashOfMessage(Direction direction, Element msg) {

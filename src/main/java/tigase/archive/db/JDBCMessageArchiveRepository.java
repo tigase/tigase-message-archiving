@@ -47,6 +47,7 @@ import tigase.archive.db.JDBCMessageArchiveRepository.Criteria;
 
 import tigase.db.DBInitException;
 import tigase.db.DataRepository;
+import tigase.db.DataRepository.dbTypes;
 
 import static tigase.db.DataRepository.dbTypes.derby;
 
@@ -87,13 +88,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String MSGS_BODY      = "body";
 	private static final String MSGS_DIRECTION = "direction";
 	private static final String MSGS_MSG       = "msg";
-	private static final String MSGS_OWNER_ID  = "owner_id";
+	protected static final String MSGS_OWNER_ID  = "owner_id";
 	private static final String MSGS_HASH	   = "stanza_hash";
 
 //+ "create unique index " + JIDS_TABLE + "_" + JIDS_JID + " on "
 //+ JIDS_TABLE + " ( " + JIDS_JID + "(765));";
 	// messages table
-	private static final String MSGS_TABLE        = "tig_ma_msgs";
+	protected static final String MSGS_TABLE        = "tig_ma_msgs";
 	private static final String MSGS_TIMESTAMP    = "ts";
 	private static final String MSGS_TYPE         = "type";
 	
@@ -138,22 +139,72 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 															"create table " + JIDS_TABLE + " ( " + JIDS_ID
 															+ " bigint unsigned NOT NULL auto_increment, " + JIDS_JID
 															+ " varchar(2049), primary key (" + JIDS_ID + ")); ";
-	private static final String GENERIC_GET_MESSAGES_START = "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION 
-			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String MSSQL2008_GET_MESSAGES_START = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + " FROM ( "
-			+ "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn"
-			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String GENERIC_GET_MESSAGES_START_WITH = "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", b." + JIDS_JID
-			+ " from " + MSGS_TABLE + " m inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = m." + MSGS_BUDDY_ID + " where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String MSSQL2008_GET_MESSAGES_START_WITH = "select x." + MSGS_MSG + ", x." + MSGS_TIMESTAMP + ", x." + MSGS_DIRECTION + ", b." + JIDS_JID + " FROM ( "
-			+ "select m." + MSGS_MSG + ", m." + MSGS_TIMESTAMP + ", m." + MSGS_DIRECTION + ", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn,"
-			+ " m." + MSGS_BUDDY_ID
-			+ " from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
-	private static final String MSSQL2008_GET_MESSAGES_END = ") x";
-	private static final String MSSQL2008_GET_MESSAGES_END_WITH = ") x inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = x." + MSGS_BUDDY_ID;
-	private static final String GENERIC_GET_MESSAGES_END = "select " + MSGS_MSG + ", " + MSGS_TIMESTAMP + "," + MSGS_DIRECTION 
-			+ " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = ? and " 
-			+ MSGS_BUDDY_ID + " = ? and " + MSGS_TIMESTAMP + " >= ? and " + MSGS_TIMESTAMP + " <= ?";
+
+	private static final String[] GET_MESSAGE_FIELDS = { MSGS_MSG, MSGS_TIMESTAMP, MSGS_DIRECTION };
+	private static String getMessagesSelectQuery(dbTypes dbType, List<String> fields, String where) {
+		StringBuilder sb = new StringBuilder("select ");
+		
+		int idx = fields.indexOf(JIDS_JID);
+		
+		switch (dbType) {
+			case sqlserver:
+			case jtds:
+				addFieldsToMessagesStartBuilder(sb, "x", fields);
+				sb.append(" from (select ");
+				List<String> subqueryFields = new ArrayList<String>(fields);
+				if (idx > -1) {
+					subqueryFields.remove(idx);
+					subqueryFields.add(idx, MSGS_BUDDY_ID);
+				}
+				addFieldsToMessagesStartBuilder(sb, "m", fields);
+				sb.append(", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn");
+				break;
+			default:
+				addFieldsToMessagesStartBuilder(sb, "m", fields);
+				if (idx > -1)
+					sb.append(" inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = m." + MSGS_BUDDY_ID);
+				break;
+		}
+		sb.append(" from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ");
+		
+		sb.append(where);
+		
+		switch (dbType) {
+			case derby:
+				sb.append(GENERIC_GET_MESSAGES_ORDER_BY).append(DERBY_LIMIT);
+				break;
+			case jtds:
+			case sqlserver:
+				sb.append(") x");
+				if (idx > -1) {
+					sb.append(" inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = x." + MSGS_BUDDY_ID);
+				}
+				sb.append(MSSQL2008_LIMIT).append(GENERIC_GET_MESSAGES_ORDER_BY);
+				break;
+			default:
+				sb.append(GENERIC_GET_MESSAGES_ORDER_BY).append(GENERIC_LIMIT);
+				break;
+		}		
+		
+		return sb.toString();
+	}
+	
+	private static void addFieldsToMessagesStartBuilder(StringBuilder sb, String tablePrefix, List<String> fields) {
+		for (int i=0; i<fields.size(); i++) {
+			String field = fields.get(i);
+			if (i > 0)
+				sb.append(", "); 
+			if (JIDS_JID.equals(field))
+				sb.append("b.").append(JIDS_JID);
+			else
+				sb.append(tablePrefix).append(".").append(field);
+		}		
+	}
+	
+	private static String getMessagesCountQuery(dbTypes dbType, String where) {
+		return GENERIC_GET_MESSAGES_COUNT + where;
+	}
+	
 	private static final String GENERIC_GET_MESSAGES_COUNT = "select count(m." + MSGS_TIMESTAMP + ") from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID 
 			+ " = ?";
 	private static final String GENERIC_GET_MESSAGES_ORDER_BY = " order by " + MSGS_TIMESTAMP;
@@ -265,7 +316,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
 																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
-	private static final String /*MYSQL_*/ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+	private static final String /*MYSQL_*/SQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
@@ -421,9 +472,19 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	
 	//~--- fields ---------------------------------------------------------------
 
-	private DataRepository data_repo = null;
+	protected String ADD_MESSAGE;
+	
+	protected DataRepository data_repo = null;
 	private boolean storePlaintextBody = true;
 
+	protected String[] getCollectionsCombinations() {
+		return GET_COLLECTIONS_COMBINATIONS;
+	}
+	
+	protected String[][] getCollectionsWheres() {
+		return GET_COLLECTIONS_WHERES;
+	}
+	
 	//~--- methods --------------------------------------------------------------
 
 	/**
@@ -446,264 +507,235 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				storePlaintextBody = true;
 			}
 
-			// create tables if not exist
-			switch ( data_repo.getDatabaseType() ) {
-				case mysql:
-					data_repo.checkTable( JIDS_TABLE, MYSQL_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, MYSQL_CREATE_MSGS );
-					break;
-				case derby:
-					data_repo.checkTable( JIDS_TABLE, DERBY_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, DERBY_CREATE_MSGS );
-					break;
-				case postgresql:
-					data_repo.checkTable( JIDS_TABLE, PGSQL_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, PGSQL_CREATE_MSGS );
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.checkTable( JIDS_TABLE, SQLSERVER_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, SQLSERVER_CREATE_MSGS );
-					break;
-			}
-			
-			checkDB();
-			
-			switch ( data_repo.getDatabaseType() ) {
-				case mysql:
-					data_repo.checkTable( TAGS_TABLE, MYSQL_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, MYSQL_CREATE_MSGS_TAGS );
-					break;
-				case derby:
-					data_repo.checkTable( TAGS_TABLE, DERBY_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, DERBY_CREATE_MSGS_TAGS );
-					break;
-				case postgresql:
-					data_repo.checkTable( TAGS_TABLE, PGSQL_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, PGSQL_CREATE_MSGS_TAGS );
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.checkTable( TAGS_TABLE, SQLSERVER_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, SQLSERVER_CREATE_MSGS_TAGS );
-					break;
-			}
-			
-			data_repo.initPreparedStatement(ADD_JID_QUERY, ADD_JID_QUERY);
-			data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
-			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
+			initRepositoryDbSchema();
 
 			switch ( data_repo.getDatabaseType() ) {
 				case postgresql:
-					data_repo.initPreparedStatement(ADD_MESSAGE, PGSQL_ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+					ADD_MESSAGE = PGSQL_ADD_MESSAGE;
 					break;
 				default:
-					data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+					ADD_MESSAGE = SQL_ADD_MESSAGE;
 					break;
 			}
 			
-			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
-			
-			Map<String,String> combinations = new HashMap<String,String>();
-			for (String combination : GET_COLLECTIONS_COMBINATIONS) {
-				StringBuilder sbMain = new StringBuilder();
-
-				if (!combination.isEmpty()) {
-					String[] whereParts = combination.split("_");
-
-					for (String part : whereParts) {
-						for (String[] where : GET_COLLECTIONS_WHERES) {
-							if (!part.equals(where[0])) {
-								continue;
-							}
-
-							sbMain.append(where[1]);
-						}
-					}
-				}
-				
-				for (int j = 0; j < 6; j++) {
-					StringBuilder combinationSb1 = new StringBuilder().append(combination);
-					StringBuilder querySb1 = new StringBuilder().append(sbMain);
-
-					if (j > 0) {
-						if (combinationSb1.length() > 0) {
-							combinationSb1.append("_");
-						}
-						combinationSb1.append("TAGS[").append(j).append("]");
-						querySb1.append(" and EXISTS( select 1 from ").append(TAGS_TABLE)
-								.append(" t inner join ").append(MSGS_TAGS_TABLE).append(" tm on t.")
-								.append(TAGS_ID).append(" = tm.").append(TAGS_ID).append(" where m.")
-								.append(MSGS_ID).append(" = tm.").append(MSGS_ID).append(" and (");
-						for (int x = 0; x < j; x++) {
-							if (x > 0) {
-								querySb1.append(" or ");
-							}
-							querySb1.append("t.").append(TAGS_TAG).append(" = ?");
-						}
-						querySb1.append(" )) ");
-					}
-					
-					for (int i = 0; i < 6; i++) {
-						StringBuilder combinationSb = new StringBuilder().append(combinationSb1);
-						StringBuilder querySb = new StringBuilder().append(querySb1);
-
-						if (i > 0) {
-							if (combinationSb.length() > 0) {
-								combinationSb.append("_");
-							}
-							combinationSb.append("CONTAINS[").append(i).append("]");
-							for (int x = 0; x < i; x++) {
-								querySb.append(" and m.").append(MSGS_BODY).append(" like ? ");
-							}
-						}
-
-						combinations.put(combinationSb.toString(), querySb.toString());
-					}				
-				}
-			}	
-			
-			for (Map.Entry<String,String> entry : combinations.entrySet()) {
-				StringBuilder select = new StringBuilder();
-				StringBuilder count = new StringBuilder().append(GENERIC_GET_COLLECTIONS_COUNT);
-				
-				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
-						break;
-					default:
-						select.append(GENERIC_GET_COLLECTIONS_SELECT);
-						break;
-				}
-				
-				select.append(entry.getValue());
-				count.append(entry.getValue());
-				
-				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
-						count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
-						break;
-					default:
-						select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
-						count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
-						break;
-				}
-				
-				switch ( data_repo.getDatabaseType() ) {
-					case derby:
-						select.append(DERBY_LIMIT);
-						break;
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_LIMIT).append(MSSQL2008_GET_COLLECTIONS_SELECT_ORDER);
-						break;
-					default:
-						select.append(GENERIC_LIMIT);
-						break;
-				}
-				
-				if (log.isLoggable(Level.FINEST)) {
-					log.log(Level.FINEST, "prepared collection select query for " + entry.getKey() + " as '" + select.toString() + "'");
-					log.log(Level.FINEST, "prepared collection count query for " + entry.getKey() + " as '" + count.toString() + "'");
-				}
-					
-				data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_SELECT", select.toString());
-				data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_COUNT", count.toString());						
-			}
-			
-			for (Map.Entry<String,String> entry : combinations.entrySet()) {
-				StringBuilder select = new StringBuilder();
-				StringBuilder count = new StringBuilder().append(GENERIC_GET_MESSAGES_COUNT);
-				
-				boolean containsWith = entry.getKey().contains("WITH");
-				
-				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						if (containsWith) {
-							select.append(MSSQL2008_GET_MESSAGES_START);
-						} else {
-							select.append(MSSQL2008_GET_MESSAGES_START_WITH);
-						}
-						break;
-					default:
-						if (containsWith) {
-							select.append(GENERIC_GET_MESSAGES_START);						
-						} else {
-							select.append(GENERIC_GET_MESSAGES_START_WITH);							
-						}
-						break;
-				}
-				
-				select.append(entry.getValue());
-				count.append(entry.getValue());
-
-				switch (data_repo.getDatabaseType()) {
-					case derby:
-						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(DERBY_LIMIT);
-						break;
-					case jtds:
-					case sqlserver:
-						if (containsWith) {
-							select.append(MSSQL2008_GET_MESSAGES_END);
-						} else {
-							select.append(MSSQL2008_GET_MESSAGES_END_WITH);
-						}
-						select.append(MSSQL2008_LIMIT).append(GENERIC_GET_MESSAGES_ORDER_BY);
-						break;
-					default:
-						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(GENERIC_LIMIT);
-						break;
-				}			
-				
-				if (log.isLoggable(Level.FINEST)) {
-					log.log(Level.FINEST, "prepared messages select query for " + entry.getKey() + " as '" + select.toString() + "'");
-					log.log(Level.FINEST, "prepared messages count query for " + entry.getKey() + " as '" + count.toString() + "'");
-				}
-
-				data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_SELECT", select.toString());
-				data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_COUNT", count.toString());
-			}			
-			
-			data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
-			
-			for (int i=0; i<=5; i++) {
-				StringBuilder select = new StringBuilder().append(GET_TAG_IDS);
-				for (int j=1; j<=i; j++) {
-					if (j > 1)
-						select.append(" or ");
-					select.append(GET_TAG_IDS_WHERE_PART);
-				}
-				if (i==0) {
-					select.append("1=1");
-				}
-				select.append(")");
-				data_repo.initPreparedStatement(GET_TAG_IDS + "_" + i, select.toString());
-			}
-			data_repo.initPreparedStatement(ADD_TAG, ADD_TAG, Statement.RETURN_GENERATED_KEYS);
-			data_repo.initPreparedStatement(ADD_MESSAGE_TAG, ADD_MESSAGE_TAG);
-			
-			data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT, GET_TAGS_FOR_USER_COUNT);
-			switch (data_repo.getDatabaseType()) {
-				case derby:
-					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + DERBY_LIMIT);
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, SQLSERVER_GET_TAGS_FOR_USER + MSSQL2008_LIMIT + GET_TAGS_FOR_USER_ORDER);
-					break;
-				default:
-					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + GENERIC_LIMIT);					
-					break;
-			}
+			initPreparedStatements();
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
 		}
 	}
 
+	protected void initRepositoryDbSchema() throws SQLException {
+		// create tables if not exist
+		switch (data_repo.getDatabaseType()) {
+			case mysql:
+				data_repo.checkTable(JIDS_TABLE, MYSQL_CREATE_JIDS);
+				data_repo.checkTable(MSGS_TABLE, MYSQL_CREATE_MSGS);
+				break;
+			case derby:
+				data_repo.checkTable(JIDS_TABLE, DERBY_CREATE_JIDS);
+				data_repo.checkTable(MSGS_TABLE, DERBY_CREATE_MSGS);
+				break;
+			case postgresql:
+				data_repo.checkTable(JIDS_TABLE, PGSQL_CREATE_JIDS);
+				data_repo.checkTable(MSGS_TABLE, PGSQL_CREATE_MSGS);
+				break;
+			case jtds:
+			case sqlserver:
+				data_repo.checkTable(JIDS_TABLE, SQLSERVER_CREATE_JIDS);
+				data_repo.checkTable(MSGS_TABLE, SQLSERVER_CREATE_MSGS);
+				break;
+		}
+
+		checkDB();
+
+		switch (data_repo.getDatabaseType()) {
+			case mysql:
+				data_repo.checkTable(TAGS_TABLE, MYSQL_CREATE_TAGS);
+				data_repo.checkTable(MSGS_TAGS_TABLE, MYSQL_CREATE_MSGS_TAGS);
+				break;
+			case derby:
+				data_repo.checkTable(TAGS_TABLE, DERBY_CREATE_TAGS);
+				data_repo.checkTable(MSGS_TAGS_TABLE, DERBY_CREATE_MSGS_TAGS);
+				break;
+			case postgresql:
+				data_repo.checkTable(TAGS_TABLE, PGSQL_CREATE_TAGS);
+				data_repo.checkTable(MSGS_TAGS_TABLE, PGSQL_CREATE_MSGS_TAGS);
+				break;
+			case jtds:
+			case sqlserver:
+				data_repo.checkTable(TAGS_TABLE, SQLSERVER_CREATE_TAGS);
+				data_repo.checkTable(MSGS_TAGS_TABLE, SQLSERVER_CREATE_MSGS_TAGS);
+				break;
+		}
+	}
+	
+	protected void initPreparedStatements() throws SQLException {
+		data_repo.initPreparedStatement(ADD_JID_QUERY, ADD_JID_QUERY);
+		data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
+		data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
+		data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
+
+			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
+		Map<String, String> combinations = new HashMap<String, String>();
+		for (String combination : getCollectionsCombinations()) {
+			StringBuilder sbMain = new StringBuilder();
+
+			if (!combination.isEmpty()) {
+				String[] whereParts = combination.split("_");
+
+				for (String part : whereParts) {
+					for (String[] where : getCollectionsWheres()) {
+						if (!part.equals(where[0])) {
+							continue;
+						}
+
+						sbMain.append(where[1]);
+					}
+				}
+			}
+
+			for (int j = 0; j < 6; j++) {
+				StringBuilder combinationSb1 = new StringBuilder().append(combination);
+				StringBuilder querySb1 = new StringBuilder().append(sbMain);
+
+				if (j > 0) {
+					if (combinationSb1.length() > 0) {
+						combinationSb1.append("_");
+					}
+					combinationSb1.append("TAGS[").append(j).append("]");
+					querySb1.append(" and EXISTS( select 1 from ").append(TAGS_TABLE)
+							.append(" t inner join ").append(MSGS_TAGS_TABLE).append(" tm on t.")
+							.append(TAGS_ID).append(" = tm.").append(TAGS_ID).append(" where m.")
+							.append(MSGS_ID).append(" = tm.").append(MSGS_ID).append(" and (");
+					for (int x = 0; x < j; x++) {
+						if (x > 0) {
+							querySb1.append(" or ");
+						}
+						querySb1.append("t.").append(TAGS_TAG).append(" = ?");
+					}
+					querySb1.append(" )) ");
+				}
+
+				for (int i = 0; i < 6; i++) {
+					StringBuilder combinationSb = new StringBuilder().append(combinationSb1);
+					StringBuilder querySb = new StringBuilder().append(querySb1);
+
+					if (i > 0) {
+						if (combinationSb.length() > 0) {
+							combinationSb.append("_");
+						}
+						combinationSb.append("CONTAINS[").append(i).append("]");
+						for (int x = 0; x < i; x++) {
+							querySb.append(" and m.").append(MSGS_BODY).append(" like ? ");
+						}
+					}
+
+					combinations.put(combinationSb.toString(), querySb.toString());
+				}
+			}
+		}
+
+		for (Map.Entry<String, String> entry : combinations.entrySet()) {
+			StringBuilder select = new StringBuilder();
+			StringBuilder count = new StringBuilder().append(GENERIC_GET_COLLECTIONS_COUNT);
+
+			switch (data_repo.getDatabaseType()) {
+				case jtds:
+				case sqlserver:
+					select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
+					break;
+				default:
+					select.append(GENERIC_GET_COLLECTIONS_SELECT);
+					break;
+			}
+
+			select.append(entry.getValue());
+			count.append(entry.getValue());
+
+			switch (data_repo.getDatabaseType()) {
+				case jtds:
+				case sqlserver:
+					select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
+					count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
+					break;
+				default:
+					select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
+					count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
+					break;
+			}
+
+			switch (data_repo.getDatabaseType()) {
+				case derby:
+					select.append(DERBY_LIMIT);
+					break;
+				case jtds:
+				case sqlserver:
+					select.append(MSSQL2008_LIMIT).append(MSSQL2008_GET_COLLECTIONS_SELECT_ORDER);
+					break;
+				default:
+					select.append(GENERIC_LIMIT);
+					break;
+			}
+
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "prepared collection select query for " + entry.getKey() + " as '" + select.toString() + "'");
+				log.log(Level.FINEST, "prepared collection count query for " + entry.getKey() + " as '" + count.toString() + "'");
+			}
+
+			data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_SELECT", select.toString());
+			data_repo.initPreparedStatement("GET_COLLECTIONS_" + entry.getKey() + "_COUNT", count.toString());
+		}
+
+		for (Map.Entry<String, String> entry : combinations.entrySet()) {
+			
+			List<String> fields = getMessageFields(entry.getKey());
+
+			String select = getMessagesSelectQuery(data_repo.getDatabaseType(), fields, entry.getValue());
+			String count = getMessagesCountQuery(data_repo.getDatabaseType(), entry.getValue());
+
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "prepared messages select query for " + entry.getKey() + " as '" + select + "'");
+				log.log(Level.FINEST, "prepared messages count query for " + entry.getKey() + " as '" + count + "'");
+			}
+
+			data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_SELECT", select);
+			data_repo.initPreparedStatement("GET_MESSAGES_" + entry.getKey() + "_COUNT", count);
+		}
+
+		data_repo.initPreparedStatement(REMOVE_MSGS, REMOVE_MSGS);
+
+		for (int i = 0; i <= 5; i++) {
+			StringBuilder select = new StringBuilder().append(GET_TAG_IDS);
+			for (int j = 1; j <= i; j++) {
+				if (j > 1) {
+					select.append(" or ");
+				}
+				select.append(GET_TAG_IDS_WHERE_PART);
+			}
+			if (i == 0) {
+				select.append("1=1");
+			}
+			select.append(")");
+			data_repo.initPreparedStatement(GET_TAG_IDS + "_" + i, select.toString());
+		}
+		data_repo.initPreparedStatement(ADD_TAG, ADD_TAG, Statement.RETURN_GENERATED_KEYS);
+		data_repo.initPreparedStatement(ADD_MESSAGE_TAG, ADD_MESSAGE_TAG);
+
+		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT, GET_TAGS_FOR_USER_COUNT);
+		switch (data_repo.getDatabaseType()) {
+			case derby:
+				data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + DERBY_LIMIT);
+				break;
+			case jtds:
+			case sqlserver:
+				data_repo.initPreparedStatement(GET_TAGS_FOR_USER, SQLSERVER_GET_TAGS_FOR_USER + MSSQL2008_LIMIT + GET_TAGS_FOR_USER_ORDER);
+				break;
+			default:
+				data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + GENERIC_LIMIT);
+				break;
+		}		
+	}
+	
 	@Override
 	public void destroy() {
 		// here we use cached instance of repository pool cached by RepositoryFactory
@@ -853,19 +885,22 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			Long msgId = null;
 			
 			synchronized (add_message_st) {
-				add_message_st.setLong(1, owner_id);
-				add_message_st.setLong(2, buddy_id);
-				add_message_st.setTimestamp(3, mtime);
-				add_message_st.setShort(4, direction.getValue());
-				add_message_st.setString(5, type);
-				add_message_st.setString(6, body);
-				add_message_st.setString(7, msgStr);
-				add_message_st.setString(8, hash);
+				int i=1;
+				add_message_st.setLong(i++, owner_id);
+				add_message_st.setLong(i++, buddy_id);
+				add_message_st.setTimestamp(i++, mtime);
+				add_message_st.setShort(i++, direction.getValue());
+				add_message_st.setString(i++, type);
+				add_message_st.setString(i++, body);
+				add_message_st.setString(i++, msgStr);
+				add_message_st.setString(i++, hash);
+
+				i = addMessageAdditionalInfo(add_message_st, i, msg);
 				
-				add_message_st.setLong(9, owner_id);
-				add_message_st.setLong(10, buddy_id);
-				add_message_st.setTimestamp(11, mtime);
-				add_message_st.setString(12, hash);
+				add_message_st.setLong(i++, owner_id);
+				add_message_st.setLong(i++, buddy_id);
+				add_message_st.setTimestamp(i++, mtime);
+				add_message_st.setString(i++, hash);
 				
 				add_message_st.executeUpdate();
 				
@@ -910,6 +945,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 
+	protected int addMessageAdditionalInfo(PreparedStatement stmt, int i, Element msg) throws SQLException {
+		return i;
+	}
+	
 	private Map<String,Long> ensureTags(BareJID owner, long owner_id, Set<String> tags) throws SQLException {
 		Map<String,Long> tagsMap = new HashMap<String,Long>();
 		ResultSet rs = null;
@@ -1179,7 +1218,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				while (selectRs.next()) {
 					Timestamp startTs = selectRs.getTimestamp(1);
 					String with = selectRs.getString(2);
-					addCollectionToResults(results, with, startTs);
+					addCollectionToResults(results, crit, with, startTs);
 				}
 			}
 		} finally {
@@ -1220,13 +1259,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
-					Item item = new Item();
-					item.message = rs.getString(1);
-					item.timestamp = rs.getTimestamp(2);
-					item.direction = Direction.getDirection(rs.getShort(3));
-					if (!containsWith) {
-						item.with = rs.getString(4);
-					}
+					Item item = newItemInstance();
+					item.read(rs, crit, containsWith);
 					results.offer(item);
 				}
 			}
@@ -1252,7 +1286,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				Element msg = null;
 
 				while ((msg = queue.poll()) != null) {
-					addMessageToResults(msgs, startTimestamp, msg, item.timestamp, item.direction, item.with);
+					addMessageToResults(msgs, crit, startTimestamp, item, msg);
 				}			
 			}
 
@@ -1270,6 +1304,24 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 
 		return msgs;		
+	}
+	
+	protected Element addMessageToResults(List<Element> msgs, Criteria crit, Date startTimestamp, Item item, Element msg) {
+		return addMessageToResults(msgs, crit, startTimestamp, msg, item.timestamp, item.direction, item.with);
+	}
+	
+	protected Item newItemInstance() {
+		return new Item();
+	}
+	
+	protected List<String> getMessageFields(String combination) {
+		List<String> fields = new ArrayList<String>();
+		fields.addAll(Arrays.asList(GET_MESSAGE_FIELDS));
+		
+		if (!combination.contains("WITH"))
+			fields.add(JIDS_JID);
+		
+		return fields;
 	}
 
 	private Integer getItemsCount(BareJID owner, Criteria crit) throws SQLException {
@@ -1395,20 +1447,29 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		return new Criteria();
 	}
 	
-	private class Item {
-		
+	protected static class Item<Crit extends Criteria> {
 		String message;
 		Date timestamp;
 		Direction direction;
 		String with;
 		
+		protected int read(ResultSet rs, Crit crit, boolean containsWith) throws SQLException {
+			int i = 1;
+			message = rs.getString(i++);
+			timestamp = rs.getTimestamp(i++);
+			direction = Direction.getDirection(rs.getShort(i++));
+			if (!containsWith) {
+				with = rs.getString(i++);
+			}
+			return i;
+		}
 	}
 	
 	public static class Criteria extends AbstractCriteria<Timestamp> {
 
 		private long ownerId;
 		private long buddyId;
-		private String queryName;
+		protected String queryName;
 		
 		@Override
 		protected Timestamp convertTimestamp(Date date) {
@@ -1475,6 +1536,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		public int setCountQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType) throws SQLException {
 			int i=1;
 			stmt.setLong(i++, ownerId);
+			return setCountQueryParams(stmt, dbType, i);
+		}
+		
+		protected int setCountQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType, int i) throws SQLException {	
 			if (getStart() != null) {
 				stmt.setTimestamp(i++, getStart());
 			}
@@ -1511,6 +1576,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					break;
 			}
 		}
+
 	}
 }
 

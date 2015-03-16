@@ -177,6 +177,13 @@ public abstract class AbstractCriteria<D extends Date> {
 		}	
 	}
 	
+	public void prepareResult(Element retList) {
+		RSM rsm = getRSM();
+		if (rsm.getCount() == null || rsm.getCount() != 0) {
+			retList.addChild(rsm.toElement());
+		}	
+	}
+	
 	protected abstract D convertTimestamp(Date date);
 	
 }

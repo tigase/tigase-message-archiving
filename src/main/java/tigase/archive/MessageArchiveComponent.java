@@ -323,9 +323,7 @@ public class MessageArchiveComponent
 				retList.addChildren(chats);
 			}
 			
-			RSM rsm = criteria.getRSM();
-			if (rsm.getCount() == null || rsm.getCount() != 0)
-				retList.addChild(rsm.toElement());
+			criteria.prepareResult(retList);
 			
 			addOutPacket(packet.okResult(retList, 0));
 		} catch (ParseException e) {
@@ -419,9 +417,8 @@ public class MessageArchiveComponent
 				retList.addChildren(items);
 			}
 			
-			RSM rsm = criteria.getRSM();
-			if (rsm.getCount() == null || rsm.getCount() != 0)
-				retList.addChild(rsm.toElement());
+			criteria.prepareResult(retList);
+
 			addOutPacket(packet.okResult(retList, 0));
 		} catch (ParseException e) {
 			addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
