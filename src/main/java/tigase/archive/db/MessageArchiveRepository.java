@@ -72,9 +72,9 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 		}
 		
 		public static Direction getDirection(String val) {
-			if ("from".equals(incoming.toElementName()))
+			if (incoming.toElementName().equals(val))
 				return incoming;
-			if ("to".equals(outgoing.toElementName()))
+			if (outgoing.toElementName().equals(val))
 				return outgoing;
 			return null;
 		}
