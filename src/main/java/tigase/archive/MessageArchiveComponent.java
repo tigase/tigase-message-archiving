@@ -530,8 +530,11 @@ public class MessageArchiveComponent
 					saveResult.addChild(chatResult);
 				}
 			}
-			Packet result = packet.okResult(saveResult, 0);
-			addOutPacket(result);
+			// if stanza from has null as resource we should not sent response
+			if (packet.getStanzaFrom().getResource() != null) {
+				Packet result = packet.okResult(saveResult, 0);
+				addOutPacket(result);
+			}
 		} catch (ParseException e) {
 			log.log(Level.SEVERE, "Error parsing timestamp", e);
 			addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
