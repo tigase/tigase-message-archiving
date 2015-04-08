@@ -369,9 +369,9 @@ public class MessageArchiveComponent
 
 			BareJID owner    = BareJID.bareJIDInstanceNS(ownerStr);
 			Direction direction = Direction.getDirection(owner, packet.getStanzaFrom().getBareJID());
-			BareJID buddy    = direction == Direction.outgoing
-					? packet.getStanzaTo().getBareJID()
-					: packet.getStanzaFrom().getBareJID();
+			JID buddy    = direction == Direction.outgoing
+					? packet.getStanzaTo()
+					: packet.getStanzaFrom();
 
 			Element msg = packet.getElement();
 			Date timestamp  = null;
@@ -522,7 +522,7 @@ public class MessageArchiveComponent
 								tags = TagsHelper.extractTags(msg);
 							}
 
-							msg_repo.archiveMessage(owner, buddy.getBareJID(), direction, timestamp, msg, tags);
+							msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, tags);
 						}
 					}
 					Element chatResult = new Element("chat");
@@ -530,8 +530,8 @@ public class MessageArchiveComponent
 					saveResult.addChild(chatResult);
 				}
 			}
-			// if stanza from has null as resource we should not sent response
-			if (packet.getStanzaFrom().getResource() != null) {
+			
+			if (!"true".equals(save.getAttributeStaticStr("auto"))) {
 				Packet result = packet.okResult(saveResult, 0);
 				addOutPacket(result);
 			}

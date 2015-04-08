@@ -90,7 +90,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		String body = "Test 1";
 		Element msg = new Element("message", new String[] { "from", "to", "type"}, new String[] { owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy.getBareJID(), MessageArchiveRepository.Direction.outgoing, date, msg, null);
+		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, null);
 	
 		AbstractCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
@@ -113,7 +113,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		msg.addChild(new Element("body", body));
 		Set<String> tags = new HashSet<String>();
 		tags.add("#Test123");
-		repo.archiveMessage(owner.getBareJID(), buddy.getBareJID(), MessageArchiveRepository.Direction.incoming, date, msg, tags);
+		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.incoming, date, msg, tags);
 		
 		AbstractCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());

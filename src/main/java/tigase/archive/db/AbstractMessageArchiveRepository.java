@@ -26,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -85,7 +86,7 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		return item;
 	}
 	
-	protected byte[] generateHashOfMessage(Direction direction, Element msg) {
+	protected byte[] generateHashOfMessage(Direction direction, Element msg, Map<String,Object> additionalData) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 

@@ -80,14 +80,14 @@ public class MessageArchivePlugin
 	/** Field description */
 	public static final String  XEP0136NS = "urn:xmpp:archive";
 	private static final String ARCHIVE   = "message-archive";
-	private static final String AUTO      = "auto";
+	protected static final String AUTO      = "auto";
 	private static final String EXPIRE    = "expire";
-	private static final String ID        = "message-archive-xep-0136";
+	protected static final String ID        = "message-archive-xep-0136";
 	private static final Logger log = Logger.getLogger(MessageArchivePlugin.class
 			.getCanonicalName());
 	private static final String    MESSAGE  = "message";
 	private static final String	   SAVE		= "save";
-	private static final String    SETTINGS = ARCHIVE + "/settings";
+	protected static final String    SETTINGS = ARCHIVE + "/settings";
 	private static final String    XMLNS    = "jabber:client";
 	private static final String[][]  ELEMENT_PATHS = { {MESSAGE}, {Iq.ELEM_NAME, AUTO}, 
 		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, REMOVE}, 
@@ -592,43 +592,15 @@ public class MessageArchivePlugin
 //		return TYPES;
 //	}
 	
-	//~--- get methods ----------------------------------------------------------
-
+	//~--- get methods ----------------------------------------------------------	
+	
 	private boolean getAutoSave(final XMPPResourceConnection session)
 					throws NotAuthorizedException {
-		StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
-
-		if (requiredStoreMethod != StoreMethod.False)
-			return true;
-		
-		Boolean auto = (Boolean) session.getCommonSessionData(ID + "/" + AUTO);
-
-		if (auto == null) {
-			try {
-				String data = session.getData(SETTINGS, AUTO, "false");
-
-				auto = Boolean.parseBoolean(data);
-				
-				// if message archive is enabled but it is not allowed for domain
-				// then we should disable it
-				if (!VHostItemHelper.isEnabled(session.getDomain()) && auto) {
-					auto = false;
-					session.setData(SETTINGS, AUTO, String.valueOf(auto));
-				}
-				
-				session.putCommonSessionData(ID + "/" + AUTO, auto);
-			} catch (TigaseDBException ex) {
-				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
-						.getMessage());
-				auto = false;
-			}
-		}
-
-		return auto;
+		return Settings.getAutoSave(session, globalRequiredStoreMethod);
 	}
 
 	private StoreMethod getRequiredStoreMethod(XMPPResourceConnection session) {
-		return StoreMethod.valueof(VHostItemHelper.getRequiredStoreMethod(session.getDomain(), globalRequiredStoreMethod.toString()));
+		return Settings.getRequiredStoreMethod(session, globalRequiredStoreMethod);
 	}
 	
 	private StoreMethod getStoreMethod(XMPPResourceConnection session) 

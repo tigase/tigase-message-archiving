@@ -29,6 +29,7 @@ import tigase.db.Repository;
 import tigase.db.TigaseDBException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  *
@@ -81,7 +82,7 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 				
 	}
 	
-	void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
+	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
 	
 	/**
 	 * Destroys instance of this repository and releases resources allocated if possible

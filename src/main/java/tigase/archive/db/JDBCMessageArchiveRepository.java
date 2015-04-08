@@ -62,6 +62,7 @@ import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
 
 import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
 
 /**
@@ -73,28 +74,29 @@ import tigase.xmpp.RSM;
  */
 @Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" } )
 public class JDBCMessageArchiveRepository extends AbstractMessageArchiveRepository<Criteria> {
-	private static final String JIDS_ID  = "jid_id";
-	private static final String JIDS_JID = "jid";
+	public static final String JIDS_ID  = "jid_id";
+	public static final String JIDS_JID = "jid";
 
 	// jids table
-	private static final String JIDS_TABLE = "tig_ma_jids";
+	public static final String JIDS_TABLE = "tig_ma_jids";
 	private static final Logger log        =
 		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
 	private static final long MILIS_PER_DAY          = 24 * 60 * 60 * 1000;
 	
-	private static final String MSGS_ID	        = "msg_id";
-	private static final String MSGS_BUDDY_ID  = "buddy_id";
+	public static final String MSGS_ID	        = "msg_id";
+	public static final String MSGS_BUDDY_ID  = "buddy_id";
+	public static final String MSGS_BUDDY_RESOURCE = "buddy_res";
 	private static final String MSGS_BODY      = "body";
 	private static final String MSGS_DIRECTION = "direction";
-	private static final String MSGS_MSG       = "msg";
-	protected static final String MSGS_OWNER_ID  = "owner_id";
+	public static final String MSGS_MSG       = "msg";
+	public static final String MSGS_OWNER_ID  = "owner_id";
 	private static final String MSGS_HASH	   = "stanza_hash";
 
 //+ "create unique index " + JIDS_TABLE + "_" + JIDS_JID + " on "
 //+ JIDS_TABLE + " ( " + JIDS_JID + "(765));";
 	// messages table
-	protected static final String MSGS_TABLE        = "tig_ma_msgs";
+	public static final String MSGS_TABLE        = "tig_ma_msgs";
 	private static final String MSGS_TIMESTAMP    = "ts";
 	private static final String MSGS_TYPE         = "type";
 	
@@ -307,25 +309,27 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						", " + MSGS_HASH + ")" +
 																						" values (?, ?, ?, ?, ?, ?, ?, ?)";
 	private static final String PGSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
-																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
 																						", " + MSGS_HASH + ")" +
-																						" select ?, ?, ?, ?, ?, ?, ?, ?" +
+																						" select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 																						//" from " + MSGS_TABLE +
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
 																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
 	private static final String /*MYSQL_*/SQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
-																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
 																						", " + MSGS_HASH + ")" +
 																						" select tmp." + MSGS_OWNER_ID + ", tmp." + MSGS_BUDDY_ID + ", tmp." +
+																						MSGS_BUDDY_RESOURCE + ", tmp." +
 																						MSGS_TIMESTAMP + ", tmp." + MSGS_DIRECTION +
 																						", tmp." + MSGS_TYPE + ", tmp." + MSGS_BODY + ", " + MSGS_MSG +
 																						", tmp." + MSGS_HASH + " from (select ? as " + MSGS_OWNER_ID + 
-																						", ? as " + MSGS_BUDDY_ID + ", ? as " + MSGS_TIMESTAMP + 
+																						", ? as " + MSGS_BUDDY_ID + ", ? as " + MSGS_BUDDY_RESOURCE + 
+																						", ? as " + MSGS_TIMESTAMP + 
 																						", ? as " + MSGS_DIRECTION + ", ? as " + MSGS_TYPE + 
 																						", ? as " + MSGS_BODY + ", ? as " + MSGS_MSG + ", ? as " + MSGS_HASH + ") as tmp" +
 																						//" from " + MSGS_TABLE +
@@ -842,6 +846,43 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				} catch (SQLException ex1) {
 					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
 				}
+			}	
+			data_repo.release(stmt, null);
+			try {
+				stmt = data_repo.createStatement(null);
+				stmt.executeQuery("select " + MSGS_BUDDY_RESOURCE + " from " + MSGS_TABLE + " where " + MSGS_OWNER_ID + " = 0");
+			} catch (SQLException ex) {
+				String alterTable = null;
+				try {
+					switch (data_repo.getDatabaseType()) {
+						case jtds:
+						case sqlserver:
+							alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BUDDY_RESOURCE + " nvarchar(1024)";
+							break;
+						default:
+							alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BUDDY_RESOURCE + " varchar(1024)";
+							break;
+					}
+					stmt.execute(alterTable);
+					switch (data_repo.getDatabaseType()) {
+						case mysql:
+							alterTable = "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_BUDDY_ID + "_" + MSGS_BUDDY_RESOURCE
+									+ "_index on " + MSGS_TABLE + " ("  + MSGS_OWNER_ID + "," + MSGS_BUDDY_ID + "," + MSGS_BUDDY_RESOURCE + "(255))";
+							break;
+						case jtds:
+						case sqlserver:
+							break;
+						default:
+							alterTable = "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_BUDDY_ID + "_" + MSGS_BUDDY_RESOURCE
+									+ "_index on " + MSGS_TABLE + " ("  + MSGS_OWNER_ID + "," + MSGS_BUDDY_ID + "," + MSGS_BUDDY_RESOURCE + ")";
+							break;
+					}
+					stmt.execute(alterTable);					
+				} catch (SQLException ex1) {
+					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
+				}
+			} finally {
+				data_repo.release(stmt, null);
 			}			
 		} finally {
 			data_repo.release(stmt, null);
@@ -860,11 +901,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 * @param tags
 	 */
 	@Override
-	public void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags) {
+	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags) {
+		archiveMessage(owner, buddy, direction, timestamp, msg, tags, null);
+	}
+		
+	protected void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags, Map<String,Object> additionalData) {
 		ResultSet rs = null;
 		try {
 			String owner_str         = owner.toString();
-			String buddy_str         = buddy.toString();
+			String buddy_str         = buddy.getBareJID().toString();
 			long[] jids_ids          = getJidsIds(owner_str, buddy_str);
 			long owner_id            = (jids_ids[0] != LONG_NULL)
 																 ? jids_ids[0]
@@ -878,7 +923,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
 			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
-			String hash						 = generateHashOfMessageAsString(direction, msg);
+			String hash						 = generateHashOfMessageAsString(direction, msg, additionalData);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
@@ -888,6 +933,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				int i=1;
 				add_message_st.setLong(i++, owner_id);
 				add_message_st.setLong(i++, buddy_id);
+				add_message_st.setString(i++, buddy.getResource());
 				add_message_st.setTimestamp(i++, mtime);
 				add_message_st.setShort(i++, direction.getValue());
 				add_message_st.setString(i++, type);
@@ -895,7 +941,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				add_message_st.setString(i++, msgStr);
 				add_message_st.setString(i++, hash);
 
-				i = addMessageAdditionalInfo(add_message_st, i, msg);
+				i = addMessageAdditionalInfo(add_message_st, i, additionalData);
 				
 				add_message_st.setLong(i++, owner_id);
 				add_message_st.setLong(i++, buddy_id);
@@ -945,7 +991,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 
-	protected int addMessageAdditionalInfo(PreparedStatement stmt, int i, Element msg) throws SQLException {
+	protected int addMessageAdditionalInfo(PreparedStatement stmt, int i, Map<String,Object> additionalData) throws SQLException {
 		return i;
 	}
 	
@@ -1437,8 +1483,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 	
-	private String generateHashOfMessageAsString(Direction direction, Element msg) {
-		byte[] result = generateHashOfMessage(direction, msg);
+	private String generateHashOfMessageAsString(Direction direction, Element msg, Map<String,Object> additionalData) {
+		byte[] result = generateHashOfMessage(direction, msg, additionalData);
 		return result != null ? Base64.encode(result) : null;
 	}
 
@@ -1447,7 +1493,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		return new Criteria();
 	}
 	
-	protected static class Item<Crit extends Criteria> {
+	public static class Item<Crit extends Criteria> {
 		String message;
 		Date timestamp;
 		Direction direction;
