@@ -67,7 +67,7 @@ public class MessageArchiveComponent
 	
 	//~--- fields ---------------------------------------------------------------
 
-	private MessageArchiveRepository msg_repo = null;
+	protected MessageArchiveRepository msg_repo = null;
 	private boolean tagsSupport = false;
 
 	//~--- constructors ---------------------------------------------------------

@@ -158,16 +158,24 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					subqueryFields.remove(idx);
 					subqueryFields.add(idx, MSGS_BUDDY_ID);
 				}
-				addFieldsToMessagesStartBuilder(sb, "m", fields);
+				addFieldsToMessagesStartBuilder(sb, "m", subqueryFields);
 				sb.append(", ROW_NUMBER() over (order by m." + MSGS_TIMESTAMP + ") as rn");
 				break;
 			default:
 				addFieldsToMessagesStartBuilder(sb, "m", fields);
+				break;
+		}
+		sb.append(" from " + MSGS_TABLE + " m");
+		switch (dbType) {
+			case sqlserver:
+			case jtds:
+				break;
+			default:
 				if (idx > -1)
 					sb.append(" inner join " + JIDS_TABLE + " b ON b." + JIDS_ID + " = m." + MSGS_BUDDY_ID);
 				break;
 		}
-		sb.append(" from " + MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ");
+		sb.append(" where m." + MSGS_OWNER_ID + " = ? ");
 		
 		sb.append(where);
 		
