@@ -113,7 +113,7 @@ public class VHostItemHelper {
 		if (val == null || val.isEmpty()) {
 			return StoreMuc.User;
 		}
-		return StoreMuc.valueOf(val);		
+		return StoreMuc.valueof(val);		
 	}
 	
 }
