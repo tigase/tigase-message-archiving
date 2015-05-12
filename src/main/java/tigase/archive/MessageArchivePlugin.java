@@ -641,18 +641,22 @@ public class MessageArchivePlugin
 			throws NotAuthorizedException {
 		StoreMuc save = (StoreMuc) session.getCommonSessionData(ID + "/" + MUC_SAVE);
 		if (save == null) {
-			try {
-				String val = session.getData(SETTINGS, MUC_SAVE, null);
-				if (val == null) {
-					save = VHostItemHelper.getStoreMucMessages(session.getDomain(), globalStoreMucMessages);
-				} else {
-					save = StoreMuc.valueof(val);
-				}		
-			} catch (TigaseDBException ex) {
-				log.log(Level.WARNING, "Error getting Message Archive state of storage of MUC messages: {0}", ex
-						.getMessage());
-				save = StoreMuc.User;
-			}	
+			if (globalStoreMucMessages == StoreMuc.User) {
+				try {
+					String val = session.getData(SETTINGS, MUC_SAVE, null);
+					if (val == null) {
+						save = VHostItemHelper.getStoreMucMessages(session.getDomain(), globalStoreMucMessages);
+					} else {
+						save = StoreMuc.valueof(val);
+					}
+				} catch (TigaseDBException ex) {
+					log.log(Level.WARNING, "Error getting Message Archive state of storage of MUC messages: {0}", ex
+							.getMessage());
+					save = StoreMuc.User;
+				}
+			} else {
+				save = globalStoreMucMessages;
+			}
 			session.putCommonSessionData(ID + "/" + MUC_SAVE, save);
 		}
 		return save == StoreMuc.True;
