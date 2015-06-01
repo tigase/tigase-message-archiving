@@ -380,7 +380,10 @@ public class MessageArchiveComponent
 				try {
 					String stamp = delay.getAttributeStaticStr("stamp");
 					timestamp = TimestampHelper.parseTimestamp(stamp);
-				} catch (ParseException e1) {}
+				} catch (ParseException e1) {
+					// we need to set timestamp to current date if parsing of timestamp failed
+					timestamp = new java.util.Date();
+				}
 			} else {
 				timestamp = new java.util.Date();
 			}			
