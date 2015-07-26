@@ -914,8 +914,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	}
 		
 	protected void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags, Map<String,Object> additionalData) {
-		ResultSet rs = null;
 		try {
+			ResultSet rs = null;
 			String owner_str         = owner.toString();
 			String buddy_str         = buddy.getBareJID().toString();
 			long[] jids_ids          = getJidsIds(owner_str, buddy_str);
@@ -938,38 +938,42 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			Long msgId = null;
 			
 			synchronized (add_message_st) {
-				int i=1;
-				add_message_st.setLong(i++, owner_id);
-				add_message_st.setLong(i++, buddy_id);
-				add_message_st.setString(i++, buddy.getResource());
-				add_message_st.setTimestamp(i++, mtime);
-				add_message_st.setShort(i++, direction.getValue());
-				add_message_st.setString(i++, type);
-				add_message_st.setString(i++, body);
-				add_message_st.setString(i++, msgStr);
-				add_message_st.setString(i++, hash);
+				try {
+					int i = 1;
+					add_message_st.setLong(i++, owner_id);
+					add_message_st.setLong(i++, buddy_id);
+					add_message_st.setString(i++, buddy.getResource());
+					add_message_st.setTimestamp(i++, mtime);
+					add_message_st.setShort(i++, direction.getValue());
+					add_message_st.setString(i++, type);
+					add_message_st.setString(i++, body);
+					add_message_st.setString(i++, msgStr);
+					add_message_st.setString(i++, hash);
 
-				i = addMessageAdditionalInfo(add_message_st, i, additionalData);
-				
-				add_message_st.setLong(i++, owner_id);
-				add_message_st.setLong(i++, buddy_id);
-				add_message_st.setTimestamp(i++, mtime);
-				add_message_st.setString(i++, hash);
-				
-				add_message_st.executeUpdate();
-				
-				if (tags != null) {
-					rs = add_message_st.getGeneratedKeys();
-					if (rs.next()) {
-						switch (data_repo.getDatabaseType()) {
-							case postgresql:
-								msgId = rs.getLong(MSGS_ID);
-								break;
-							default:
-								msgId = rs.getLong(1);
-								break;
+					i = addMessageAdditionalInfo(add_message_st, i, additionalData);
+
+					add_message_st.setLong(i++, owner_id);
+					add_message_st.setLong(i++, buddy_id);
+					add_message_st.setTimestamp(i++, mtime);
+					add_message_st.setString(i++, hash);
+
+					add_message_st.executeUpdate();
+
+					if (tags != null) {
+						rs = add_message_st.getGeneratedKeys();
+						if (rs.next()) {
+							switch (data_repo.getDatabaseType()) {
+								case postgresql:
+									msgId = rs.getLong(MSGS_ID);
+									break;
+								default:
+									msgId = rs.getLong(1);
+									break;
+							}
 						}
 					}
+				} finally {
+					data_repo.release(null, rs);
 				}
 			}
 			
@@ -994,8 +998,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}
 		} catch (SQLException ex) {
 			log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
-		} finally {
-		   data_repo.release(null, rs);
 		}
 	}
 
@@ -1004,19 +1006,19 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	}
 	
 	private Map<String,Long> ensureTags(BareJID owner, long owner_id, Set<String> tags) throws SQLException {
-		Map<String,Long> tagsMap = new HashMap<String,Long>();
+		Map<String, Long> tagsMap = new HashMap<String, Long>();
 		ResultSet rs = null;
-		try {
-			Iterator<String> it = tags.iterator();
-			int iters = (tags.size()/5)+1;
-			for (int i = 0; i < iters; i++) {
-				int params = (i == (iters - 1)) ? tags.size() % 5 : 5;
-				PreparedStatement get_tag_ids_st = data_repo.getPreparedStatement(owner, GET_TAG_IDS + "_" + params);
-				synchronized (get_tag_ids_st) {
+		Iterator<String> it = tags.iterator();
+		int iters = (tags.size() / 5) + 1;
+		for (int i = 0; i < iters; i++) {
+			int params = (i == (iters - 1)) ? tags.size() % 5 : 5;
+			PreparedStatement get_tag_ids_st = data_repo.getPreparedStatement(owner, GET_TAG_IDS + "_" + params);
+			synchronized (get_tag_ids_st) {
+				try {
 					get_tag_ids_st.setLong(1, owner_id);
-					for (int j=0; j<params; j++) {
+					for (int j = 0; j < params; j++) {
 						String tag = it.next();
-						get_tag_ids_st.setString(j+2, tag);
+						get_tag_ids_st.setString(j + 2, tag);
 					}
 					rs = get_tag_ids_st.executeQuery();
 					while (rs.next()) {
@@ -1024,18 +1026,21 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						String tag = rs.getString(2);
 						tagsMap.put(tag, id);
 					}
+				} finally {
 					data_repo.release(null, rs);
-					rs = null;
 				}
+				rs = null;
 			}
-			
-			if (tagsMap.size() < tags.size()) {
-				PreparedStatement add_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG);
-				for (String tag : tags) {
-					if (tagsMap.containsKey(tag))
-						continue;
-					
-					synchronized (add_tag_st) {
+		}
+
+		if (tagsMap.size() < tags.size()) {
+			PreparedStatement add_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG);
+			for (String tag : tags) {
+				if (tagsMap.containsKey(tag))
+					continue;
+
+				synchronized (add_tag_st) {
+					try {
 						add_tag_st.setLong(1, owner_id);
 						add_tag_st.setString(2, tag);
 						add_tag_st.executeUpdate();
@@ -1043,13 +1048,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						if (rs.next()) {
 							tagsMap.put(tag, rs.getLong(1));
 						}
+					} finally {
 						data_repo.release(null, rs);
-						rs = null;						
 					}
+
+					rs = null;
 				}
 			}
-		} finally {
-			data_repo.release(null, rs);
 		}
 		
 		return tagsMap;
@@ -1195,49 +1200,56 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	@Override
 	public List<String> getTags(BareJID owner, String startsWith, Criteria crit) throws TigaseDBException {
 		List<String> results = new ArrayList<String>();
-		ResultSet rs = null;
 		try {
+			ResultSet rs = null;
 			int count = 0;
 			startsWith = startsWith + "%";
 			
 			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT);
 			synchronized (get_tags_count_st) {
-				get_tags_count_st.setString(1, owner.toString());
-				get_tags_count_st.setString(2, startsWith);
-				
-				rs = get_tags_count_st.executeQuery();
-				if (rs.next()) {
-					count = rs.getInt(1);
+				try {
+					get_tags_count_st.setString(1, owner.toString());
+					get_tags_count_st.setString(2, startsWith);
+
+					rs = get_tags_count_st.executeQuery();
+					if (rs.next()) {
+						count = rs.getInt(1);
+					}
+				} finally {
+					data_repo.release(null, rs);
 				}
-				data_repo.release(null, rs);
 			}
 			crit.setSize(count);
 
 			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER);
 			synchronized (get_tags_st) {
-				int i=1;
-				get_tags_st.setString(i++, owner.toString());
-				get_tags_st.setString(i++, startsWith);
+				try {
+					int i = 1;
+					get_tags_st.setString(i++, owner.toString());
+					get_tags_st.setString(i++, startsWith);
 
-				switch (data_repo.getDatabaseType()) {
-					case derby:
-						get_tags_st.setInt(i++, crit.getOffset());
-						get_tags_st.setInt(i++, crit.getLimit());
-						break;
-					case jtds:
-					case sqlserver:
-						get_tags_st.setInt(i++, crit.getOffset());
-						get_tags_st.setInt(i++, crit.getOffset() + crit.getLimit());
-						break;
-					default:
-						get_tags_st.setInt(i++, crit.getLimit());
-						get_tags_st.setInt(i++, crit.getOffset());
-						break;
-				}				
-				
-				rs = get_tags_st.executeQuery();
-				while (rs.next()) {
-					results.add(rs.getString(1));
+					switch (data_repo.getDatabaseType()) {
+						case derby:
+							get_tags_st.setInt(i++, crit.getOffset());
+							get_tags_st.setInt(i++, crit.getLimit());
+							break;
+						case jtds:
+						case sqlserver:
+							get_tags_st.setInt(i++, crit.getOffset());
+							get_tags_st.setInt(i++, crit.getOffset() + crit.getLimit());
+							break;
+						default:
+							get_tags_st.setInt(i++, crit.getLimit());
+							get_tags_st.setInt(i++, crit.getOffset());
+							break;
+					}
+
+					rs = get_tags_st.executeQuery();
+					while (rs.next()) {
+						results.add(rs.getString(1));
+					}
+				} finally {
+					data_repo.release(null, rs);
 				}
 			}
 			
@@ -1249,8 +1261,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}			
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Could not retrieve known tags from database", ex);
-		} finally {
-			data_repo.release(null, rs);
 		}
 		
 		return results;
@@ -1259,13 +1269,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private List<Element> getCollectionsItems(BareJID owner, Criteria crit)
 					throws SQLException {
 		List<Element> results = new LinkedList<Element>();
-		ResultSet selectRs   = null;
-		try {
-			PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
-					+ crit.getQueryName() + "_SELECT");
+		ResultSet selectRs = null;
+		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_"
+				+ crit.getQueryName() + "_SELECT");
 
-			int i=2;
-			synchronized (get_collections_st) {
+		int i = 2;
+		synchronized (get_collections_st) {
+			try {
 				crit.setItemsQueryParams(get_collections_st, data_repo.getDatabaseType());
 
 				selectRs = get_collections_st.executeQuery();
@@ -1274,29 +1284,29 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					String with = selectRs.getString(2);
 					addCollectionToResults(results, crit, with, startTs);
 				}
+			} finally {
+				data_repo.release(null, selectRs);
 			}
-		} finally {
-			data_repo.release(null, selectRs);
 		}
 		return results;
 	}	
 	
 	private Integer getCollectionsCount(BareJID owner, Criteria crit) throws SQLException {
-		ResultSet countRs = null;		
+		ResultSet countRs = null;
 		Integer count = null;
-		try {
-			PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
-					+ crit.getQueryName() + "_COUNT");
-			int i=2;
-			synchronized (get_collections_count) {
+		PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_"
+				+ crit.getQueryName() + "_COUNT");
+		int i = 2;
+		synchronized (get_collections_count) {
+			try {
 				crit.setCountQueryParams(get_collections_count, data_repo.getDatabaseType());
 				countRs = get_collections_count.executeQuery();
 				if (countRs.next()) {
 					count = countRs.getInt(1);
 				}
+			} finally {
+				data_repo.release(null, countRs);
 			}
-		} finally {
-			data_repo.release(null, countRs);
 		}
 		return count;
 	}
@@ -1305,10 +1315,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		ResultSet rs      = null;		
 		Queue<Item> results = new ArrayDeque<Item>();
 		int i=1;
-		try {
-			boolean containsWith = crit.getQueryName().contains("WITH");
-			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_SELECT");
-			synchronized (get_messages_st) {
+		boolean containsWith = crit.getQueryName().contains("WITH");
+		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_SELECT");
+		synchronized (get_messages_st) {
+			try {
 				crit.setItemsQueryParams(get_messages_st, data_repo.getDatabaseType());
 
 				rs = get_messages_st.executeQuery();
@@ -1317,9 +1327,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					item.read(rs, crit, containsWith);
 					results.offer(item);
 				}
+			} finally {
+				data_repo.release(null, rs);
 			}
-		} finally {
-			data_repo.release(null, rs);
 		}
 
 		List<Element> msgs = new LinkedList<Element>();
@@ -1379,20 +1389,20 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	}
 
 	private Integer getItemsCount(BareJID owner, Criteria crit) throws SQLException {
-		ResultSet rs      = null;		
 		Integer count = null;
-		try {
-			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_COUNT");
-			synchronized (get_messages_st) {
+		ResultSet rs = null;
+		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, "GET_MESSAGES_" + crit.getQueryName() + "_COUNT");
+		synchronized (get_messages_st) {
+			try {
 				crit.setCountQueryParams(get_messages_st, data_repo.getDatabaseType());
 
 				rs = get_messages_st.executeQuery();
 				if (rs.next()) {
 					count = rs.getInt(1);
 				}
+			} finally {
+				data_repo.release(null, rs);
 			}
-		} finally {
-			data_repo.release(null, rs);
 		}
 		return count;
 	}
@@ -1409,16 +1419,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 */
 	protected long[] getJidsIds(String... jids) throws SQLException {
 		ResultSet rs = null;
+		long[] results = new long[jids.length];
 
-		try {
-			long[] results = new long[jids.length];
+		Arrays.fill(results, LONG_NULL);
+		if (jids.length == 1) {
+			PreparedStatement get_jid_id_st = data_repo.getPreparedStatement(null,
+					GET_JID_ID_QUERY);
 
-			Arrays.fill(results, LONG_NULL);
-			if (jids.length == 1) {
-				PreparedStatement get_jid_id_st = data_repo.getPreparedStatement(null,
-																						GET_JID_ID_QUERY);
-
-				synchronized (get_jid_id_st) {
+			synchronized (get_jid_id_st) {
+				try {
 					get_jid_id_st.setString(1, jids[0]);
 					rs = get_jid_id_st.executeQuery();
 					if (rs.next()) {
@@ -1426,14 +1435,18 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 						return results;
 					}
+				} finally {
+					data_repo.release(null, rs);
 				}
+			}
 
-				return results;
-			} else {
-				PreparedStatement get_jids_id_st = data_repo.getPreparedStatement(null,
-																						 GET_JID_IDS_QUERY);
+			return results;
+		} else {
+			PreparedStatement get_jids_id_st = data_repo.getPreparedStatement(null,
+					GET_JID_IDS_QUERY);
 
-				synchronized (get_jids_id_st) {
+			synchronized (get_jids_id_st) {
+				try {
 					for (int i = 0; i < jids.length; i++) {
 						get_jids_id_st.setString(i + 1, jids[i]);
 					}
@@ -1451,12 +1464,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 							}
 						}
 					}
-
-					return results;
+				} finally {
+					data_repo.release(null, rs);
 				}
+
+				return results;
 			}
-		} finally {
-			data_repo.release(null, rs);
 		}
 	}
 

@@ -27,7 +27,6 @@ package tigase.archive;
 //~--- non-JDK imports --------------------------------------------------------
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import java.util.*;
 import java.util.Map.Entry;
