@@ -104,6 +104,10 @@ public class MessageArchivePlugin
 	private static final String REQUIRED_STORE_METHOD_KEY = "required-store-method";
 	private static final String STORE_MUC_MESSAGES_KEY = "store-muc-messages";
 	
+	private static final String[] MESSAGE_HINTS_NO_STORE = { Message.ELEM_NAME, "no-store" };
+	private static final String[] MESSAGE_HINTS_NO_PERMANENT_STORE = { Message.ELEM_NAME, "no-permanent-store" };
+	private static final String MESSAGE_HINTS_XMLNS = "urn:xmpp:hints";
+	
 //	static {
 //		HashSet tmpTYPES = new HashSet<StanzaType>();
 //		tmpTYPES.add(null);
@@ -235,6 +239,14 @@ public class MessageArchivePlugin
 					if (storeMethod == StoreMethod.False) {
 						// ignoring as False means we should not store anything
 						return;
+					}
+					
+					// support for XEP-0334 Message Processing Hints
+					if (packet.getAttributeStaticStr(MESSAGE_HINTS_NO_STORE, "xmlns") == MESSAGE_HINTS_XMLNS 
+							|| packet.getAttributeStaticStr(MESSAGE_HINTS_NO_PERMANENT_STORE, "xmlns") == MESSAGE_HINTS_XMLNS) {
+						StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
+						if (requiredStoreMethod == StoreMethod.False)
+							return;
 					}
 					
 					// redirecting to message archiving component
