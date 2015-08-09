@@ -44,21 +44,21 @@ public class VHostItemHelper {
 	
 	private static final DataType[] types = {
 		new DataType(ENABLED_KEY, "XEP-0136 - Message Archiving enabled", Boolean.class, true),
-		new DataType(DEFAULT_STORE_METHOD_KEY, "XEP-0136 - default store method", String.class, null, new Object[] {
+		new DataType(DEFAULT_STORE_METHOD_KEY, "XEP-0136 - default store method", String.class, null, null, new Object[] {
 			null,
 			StoreMethod.False.toString(),
 			StoreMethod.Body.toString(),
 			StoreMethod.Message.toString(),
 			StoreMethod.Stream.toString()
 		}),
-		new DataType(REQUIRED_STORE_METHOD_KEY, "XEP-0136 - required store method", String.class, null, new Object[] {
+		new DataType(REQUIRED_STORE_METHOD_KEY, "XEP-0136 - required store method", String.class, null, null, new Object[] {
 			null,
 			StoreMethod.False.toString(),
 			StoreMethod.Body.toString(),
 			StoreMethod.Message.toString(),
 			StoreMethod.Stream.toString()
 		}),
-		new DataType(RETENTION_TYPE_KEY, "XEP-0136 - retention type", String.class, null, new Object[] {
+		new DataType(RETENTION_TYPE_KEY, "XEP-0136 - retention type", String.class, null, null, new Object[] {
 			RetentionType.userDefined.name(),
 			RetentionType.unlimited.name(),
 			RetentionType.numberOfDays.name()
@@ -68,7 +68,7 @@ public class VHostItemHelper {
 			"Number of days"
 		}),
 		new DataType(RETENTION_PERIOD_KEY, "XEP-0136 - retention perion (in days)", Integer.class, null),
-		new DataType(MUC_SAVE_KEY, "XEP-0136 - store MUC messages", String.class, null, new Object[] {
+		new DataType(MUC_SAVE_KEY, "XEP-0136 - store MUC messages", String.class, null, null, new Object[] {
 			StoreMuc.User.toString(),
 			StoreMuc.False.toString(),
 			StoreMuc.True.toString()
