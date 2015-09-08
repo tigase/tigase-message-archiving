@@ -924,7 +924,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																 : addJidId(owner_str);
 			long buddy_id            = (jids_ids[1] != LONG_NULL)
 																 ? jids_ids[1]
-																 : addJidId(buddy_str);
+																 : (buddy_str.equals(owner_str) ? jids_ids[0] : addJidId(buddy_str));
 			java.sql.Timestamp mtime = new java.sql.Timestamp(timestamp.getTime());
 			msg.addAttribute("time", String.valueOf(mtime.getTime()));
 
