@@ -354,7 +354,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									+ MSGS_BUDDY_ID + " bigint references " + JIDS_TABLE + "(" + JIDS_ID + "),"
 																									+ MSGS_TIMESTAMP + " timestamp, "
 																									+ MSGS_DIRECTION + " smallint, "
-																									+ MSGS_TYPE + " varchar(10), "
+																									+ MSGS_TYPE + " varchar(20), "
 																									+ MSGS_BODY + " varchar(32672), "
 																									+ MSGS_MSG + " varchar(32672),"
 																									+ MSGS_HASH + " varchar(50));"
@@ -374,7 +374,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_BUDDY_ID + " bigint, " +
 																									MSGS_TIMESTAMP + " timestamp, " +
 																									MSGS_DIRECTION + " smallint, " +
-																									MSGS_TYPE + " varchar(10), " +
+																									MSGS_TYPE + " varchar(20), " +
 																									MSGS_BODY + " text, " +
 																									MSGS_MSG + " text," +
 																									MSGS_HASH + " varchar(50)," +
@@ -410,7 +410,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_BUDDY_ID + " bigint, " +
 																									MSGS_TIMESTAMP + " datetime, " +
 																									MSGS_DIRECTION + " smallint, " +
-																									MSGS_TYPE + " nvarchar(10)," +
+																									MSGS_TYPE + " nvarchar(20)," +
 																									MSGS_BODY + " ntext, " +
 																									MSGS_MSG + " ntext," +
 																									MSGS_HASH + " varchar(50), " + 
@@ -446,7 +446,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																									MSGS_BUDDY_ID + " bigint unsigned, " +
 																									MSGS_TIMESTAMP + " timestamp, " +
 																									MSGS_DIRECTION + " smallint, " +
-																									MSGS_TYPE + " varchar(10)," +
+																									MSGS_TYPE + " varchar(20)," +
 																									MSGS_BODY + " text, " + 
 																									MSGS_MSG + " text," +
 																									MSGS_HASH + " varchar(50), " +
@@ -821,6 +821,39 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
 				}
 			}		
+			data_repo.release(stmt, null);
+			try {
+				stmt = data_repo.createStatement(null);
+				//insert into tig_ma_msgs (type) VALUES ( 'unsubscribed' );
+				stmt.executeUpdate("insert into " + MSGS_TABLE + " ( " + MSGS_TYPE + " )  VALUES (  \"unsubscribed\"  )");
+			} catch (SQLException ex) {
+				// if this happens then we have issue with MSGS_TABLE having to short field for message type! need to increase.
+				String alterTable = null;
+				log.log( Level.INFO, "altering table " + MSGS_TABLE + " extend size of " + MSGS_TYPE + " column" );
+				try {
+					switch (data_repo.getDatabaseType()) {
+						case derby:
+							alterTable = "alter table " + MSGS_TABLE + " ALTER COLUMN " + MSGS_TYPE + " SET DATA TYPE varchar(20)";
+							stmt.execute(alterTable);
+							break;
+						case mysql:
+							alterTable = "alter table " + MSGS_TABLE + " MODIFY COLUMN " + MSGS_TYPE + " varchar(20);";
+							stmt.execute(alterTable);
+							break;
+						case postgresql:
+							alterTable = "alter table " + MSGS_TABLE + " ALTER COLUMN " + MSGS_TYPE + " TYPE varchar(20);";
+							stmt.execute(alterTable);
+							break;
+						case jtds:
+						case sqlserver:
+							alterTable = "alter table " + MSGS_TABLE + " ALTER COLUMN " + MSGS_TYPE + " varchar(20);";
+							stmt.execute(alterTable);
+							break;
+					}
+				} catch (SQLException ex1) {
+					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to increase " + MSGS_TYPE + " column lenght:\n" + alterTable, ex1);
+				}
+			}
 			data_repo.release(stmt, null);
 			try {
 				stmt = data_repo.createStatement(null);
