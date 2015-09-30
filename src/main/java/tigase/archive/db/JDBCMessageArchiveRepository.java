@@ -825,7 +825,14 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			try {
 				stmt = data_repo.createStatement(null);
 				//insert into tig_ma_msgs (type) VALUES ( 'unsubscribed' );
-				stmt.executeUpdate("insert into " + MSGS_TABLE + " ( " + MSGS_TYPE + " )  VALUES (  \"unsubscribed\"  )");
+				int executeUpdate = stmt.executeUpdate("insert into " + MSGS_TABLE + " ( " + MSGS_TYPE + " )  VALUES (  \"unsubscribed\"  )", Statement.RETURN_GENERATED_KEYS );
+				if ( executeUpdate > 0 ){
+					ResultSet rs = stmt.getGeneratedKeys();
+					if ( rs.next() ){
+						int id = rs.getInt( 1 );
+						stmt.executeUpdate( "delete from " + MSGS_TABLE + " where " + MSGS_ID + " = " + id );
+					}
+				}
 			} catch (SQLException ex) {
 				// if this happens then we have issue with MSGS_TABLE having to short field for message type! need to increase.
 				String alterTable = null;
