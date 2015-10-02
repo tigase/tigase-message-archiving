@@ -919,13 +919,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 							break;
 						case jtds:
 						case sqlserver:
+							alterTable = null;
 							break;
 						default:
 							alterTable = "create index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_BUDDY_ID + "_" + MSGS_BUDDY_RESOURCE
 									+ "_index on " + MSGS_TABLE + " ("  + MSGS_OWNER_ID + "," + MSGS_BUDDY_ID + "," + MSGS_BUDDY_RESOURCE + ")";
 							break;
 					}
-					stmt.execute(alterTable);					
+					if (alterTable != null)
+						stmt.execute(alterTable);					
 				} catch (SQLException ex1) {
 					log.log(Level.SEVERE, "could not alter table " + MSGS_TABLE + " to add missing column by SQL:\n" + alterTable, ex1);
 				}
