@@ -41,9 +41,11 @@ import tigase.xmpp.*;
 //~--- JDK imports ------------------------------------------------------------
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,7 +101,7 @@ public class MessageArchivePlugin
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
 			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
 					":manage" }) };
-	
+	private static final String MSG_ARCHIVE_PATHS = "msg-archive-paths";
 	private static final String DEFAULT_STORE_METHOD_KEY = "default-store-method";
 	private static final String REQUIRED_STORE_METHOD_KEY = "required-store-method";
 	private static final String STORE_MUC_MESSAGES_KEY = "store-muc-messages";
@@ -117,7 +119,9 @@ public class MessageArchivePlugin
 //	}
 
 	//~--- fields ---------------------------------------------------------------
-
+	private ElementMatcher[] archivingMatchers = new ElementMatcher[] { 
+		new ElementMatcher(new String[] { Message.ELEM_NAME, "body" }, null, true)
+	};
 	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
 	private StoreMuc globalStoreMucMessages = StoreMuc.User;
@@ -168,6 +172,18 @@ public class MessageArchivePlugin
 		if (settings.containsKey(STORE_MUC_MESSAGES_KEY)) {
 			globalStoreMucMessages = StoreMuc.valueof((String) settings.get(STORE_MUC_MESSAGES_KEY));
 		}
+		
+		if (settings.containsKey(MSG_ARCHIVE_PATHS)) {
+			String[] matcherStrs = (String[]) settings.get(MSG_ARCHIVE_PATHS);
+			List<ElementMatcher> matchers = new ArrayList<>();
+			for (String matcherStr : matcherStrs) {
+				ElementMatcher matcher = ElementMatcher.create(matcherStr);
+				if (matcher != null) {
+					matchers.add(matcher);
+				}
+			}
+			archivingMatchers = matchers.toArray(new ElementMatcher[0]);
+		}		
 	}
 
 	/**
@@ -191,93 +207,7 @@ public class MessageArchivePlugin
 		}
 		try {
 			if (Message.ELEM_NAME == packet.getElemName()) {
-				
-				// ignoring packets resent from c2s for redelivery as processing
-				// them would create unnecessary duplication of messages in archive
-				if (C2SDeliveryErrorProcessor.isDeliveryError(packet)) {
-					log.log(Level.FINEST, "not processong packet as it is delivery error = {0}", packet);
-					return;
-				}
-				
-				StanzaType type = packet.getType();
-				Element body = packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH);
-
-				if ((body == null) || (
-						(type != null) 
-						&& (type != StanzaType.chat) 
-						&& (type != StanzaType.normal))) {
-						//&& ((!isStoreMucMessages(session)) && type == StanzaType.groupchat) )) {
-					if (type != StanzaType.groupchat || body == null || !isStoreMucMessages(session)) {
-						if (log.isLoggable(Level.FINEST)) {
-							log.log(Level.FINEST, "not logging packet as type is {0}, {1}, {2}, {3}, {4}",
-									new Object[]{type, type != StanzaType.chat, type != StanzaType.normal,
-										!isStoreMucMessages(session), type != StanzaType.groupchat});
-						}
-						return;
-					}
-				}
-				
-				// we need to log groupchat messages only sent from MUC to user as MUC needs to confirm
-				// message delivery by sending message back
-				if (type == StanzaType.groupchat && session.isUserId(packet.getStanzaFrom().getBareJID())) {
-					if (log.isLoggable(Level.FINEST)) {
-						log.log(Level.FINEST, "not storing message sent to MUC room from user = {0}", packet.toString());
-					}
-					return;
-				}
-
-				boolean auto = getAutoSave(session);
-				if (log.isLoggable(Level.FINEST)) {
-					log.log(Level.FINEST, "got state of automatic storage of messages as {0}", auto);
-				}
-
-				if (auto && body != null) {
-					StoreMethod storeMethod = getStoreMethod(session);
-					if (log.isLoggable(Level.FINEST)) {
-						log.log(Level.FINEST, "store method is {0}", storeMethod);
-					}
-					if (storeMethod == StoreMethod.False) {
-						// ignoring as False means we should not store anything
-						return;
-					}
-					
-					// support for XEP-0334 Message Processing Hints
-					if (packet.getAttributeStaticStr(MESSAGE_HINTS_NO_STORE, "xmlns") == MESSAGE_HINTS_XMLNS 
-							|| packet.getAttributeStaticStr(MESSAGE_HINTS_NO_PERMANENT_STORE, "xmlns") == MESSAGE_HINTS_XMLNS) {
-						StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
-						if (requiredStoreMethod == StoreMethod.False)
-							return;
-					}
-					
-					// redirecting to message archiving component
-					Packet result = packet.copyElementOnly();
-
-					result.setPacketTo(ma_jid);
-					result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
-					switch (storeMethod) {
-						case Body:
-							// in this store method we should only store <body/> element
-							Element message = result.getElement();
-							for (Element elem : message.getChildren()) {
-								switch (elem.getName()) {
-									case "body":
-										break;
-									case "delay":
-										// we need to keep delay as well to have 
-										// a proper timestamp of a messages
-										break;
-									default:
-										message.removeChild(elem);
-										break;
-								}
-							}
-							break;
-						default:
-							// in other case we store whole message
-							break;
-					}
-					results.offer(result);
-				}
+				processMessage(packet, session, results);
 			} else if (Iq.ELEM_NAME == packet.getElemName()) {
 				if (ma_jid.equals(packet.getPacketFrom())) {
 					JID    connId = session.getConnectionId(packet.getStanzaTo());
@@ -603,6 +533,139 @@ public class MessageArchivePlugin
 //	public Set<StanzaType> supTypes() {
 //		return TYPES;
 //	}
+	
+	private void processMessage(Packet packet, XMPPResourceConnection session, Queue<Packet> results) throws NotAuthorizedException {
+		// ignoring packets resent from c2s for redelivery as processing
+		// them would create unnecessary duplication of messages in archive
+		if (C2SDeliveryErrorProcessor.isDeliveryError(packet)) {
+			log.log(Level.FINEST, "not processong packet as it is delivery error = {0}", packet);
+			return;
+		}
+
+		StanzaType type = packet.getType();
+		if (type == null) {
+			type = StanzaType.normal;
+		}
+
+		Element body = packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH);
+
+		boolean auto = getAutoSave(session);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "got state of automatic storage of messages as {0}", auto);
+		}
+
+		if (!auto) {
+			return;
+		}
+
+		// support for XEP-0334 Message Processing Hints
+		if (packet.getAttributeStaticStr(MESSAGE_HINTS_NO_STORE, "xmlns") == MESSAGE_HINTS_XMLNS
+				|| packet.getAttributeStaticStr(MESSAGE_HINTS_NO_PERMANENT_STORE, "xmlns") == MESSAGE_HINTS_XMLNS) {
+			StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
+			if (requiredStoreMethod == StoreMethod.False) {
+				return;
+			}
+		}
+
+		StoreMethod storeMethod = null;
+		switch (type) {
+			case chat:
+			case normal:
+				storeMethod = getStoreMethod(session);
+				break;
+
+			case groupchat:
+				if (!isStoreMucMessages(session)) {
+					if (log.isLoggable(Level.FINEST))
+						log.log(Level.FINEST, "not storing message as archiving of MUC messages is disabled: {0}", packet);
+					return;
+				}
+				// we need to log groupchat messages only sent from MUC to user as MUC needs to confirm
+				// message delivery by sending message back
+				if (session.isUserId(packet.getStanzaFrom().getBareJID())) {
+					if (log.isLoggable(Level.FINEST)) {
+						log.log(Level.FINEST, "not storing message sent to MUC room from user = {0}",
+								packet.toString());
+					}
+					return;
+				}
+
+				storeMethod = getStoreMethod(session);
+				break;
+
+			default:
+				break;
+		}
+
+		switch (storeMethod) {
+			case False:
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "not logging packet due to storage method: {0}, {1}",
+							new Object[]{storeMethod, packet});
+					return;
+				}
+				break;
+			case Body:
+				// we need to store message in this case only if it contains body element
+				if (body == null) {
+					if (log.isLoggable(Level.FINEST)) {
+						log.log(Level.FINEST, "not logging packet as there is not body element: ",
+								new Object[]{storeMethod, packet});
+						return;
+					}
+				}
+				break;
+			case Message:
+			case Stream:
+				// here we can store any message
+				break;
+		}
+
+		// let's check if message should be stored using matchers to make it configurable
+		// whether to archive this message or not
+		boolean archive = false;
+		for (ElementMatcher matcher : archivingMatchers) {
+			if (matcher.matches(packet)) {
+				archive = matcher.getValue();
+				break;
+			}
+		}
+		if (!archive)
+			return;
+
+		// redirecting to message archiving component
+		storeMessage(packet, session, storeMethod, results);		
+	}
+	
+	private void storeMessage(Packet packet, XMPPResourceConnection session, StoreMethod storeMethod, Queue<Packet> results) throws NotAuthorizedException {
+		Packet result = packet.copyElementOnly();
+
+		result.setPacketTo(ma_jid);
+		result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
+		switch (storeMethod) {
+			case Body:
+				// in this store method we should only store <body/> element
+				Element message = result.getElement();
+				for (Element elem : message.getChildren()) {
+					switch (elem.getName()) {
+						case "body":
+							break;
+						case "delay":
+										// we need to keep delay as well to have 
+							// a proper timestamp of a messages
+							break;
+						default:
+							message.removeChild(elem);
+							break;
+					}
+				}
+				break;
+			default:
+				// in other case we store whole message
+				break;
+		}
+		results.offer(result);
+	}
 	
 	//~--- get methods ----------------------------------------------------------	
 	
