@@ -316,6 +316,16 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
 																						", " + MSGS_HASH + ")" +
 																						" values (?, ?, ?, ?, ?, ?, ?, ?)";
+	private static final String DERBY_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
+																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
+																						", " + MSGS_HASH + ")" +
+																						" select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
+																						" from SYSIBM.SYSDUMMY1 " +
+																						" where not exists (select 1 from " + MSGS_TABLE + " m where" +
+																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
+																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
 	private static final String PGSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -522,6 +532,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			initRepositoryDbSchema();
 
 			switch ( data_repo.getDatabaseType() ) {
+				case derby:
+					ADD_MESSAGE = DERBY_ADD_MESSAGE;
+					break;
 				case postgresql:
 					ADD_MESSAGE = PGSQL_ADD_MESSAGE;
 					break;
