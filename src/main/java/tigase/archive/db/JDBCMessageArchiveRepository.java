@@ -749,7 +749,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}
 
 			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "group-by-type = " + groupByType);
 				log.log(Level.FINEST, "prepared collection select query for " + entry.getKey() + " as '" + select.toString() + "'");
 				log.log(Level.FINEST, "prepared collection count query for " + entry.getKey() + " as '" + count.toString() + "'");
 			}
