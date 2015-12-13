@@ -90,7 +90,7 @@ public class MessageArchiveComponent
 	 */
 	@Override
 	public void processPacket(Packet packet) {
-		if ((packet.getStanzaTo() != null) &&!getComponentId().equals(packet.getStanzaTo())) {
+		if ((packet.getStanzaTo() != null) && !getComponentId().equals(packet.getStanzaTo()) && Message.ELEM_NAME == packet.getElemName()) {
 			storeMessage(packet);
 
 			return;

@@ -52,13 +52,16 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 	
-	protected Element addCollectionToResults(List<Element> results, Crit criteria, String with, Date start) {
+	protected Element addCollectionToResults(List<Element> results, Crit criteria, String with, Date start, String type) {
 		String formattedStart = null;
 		synchronized (formatter2) {
 			formattedStart = formatter2.format(start);
 		}
 		Element elem = new Element("chat", new String[] { "with", "start" },
 				new String[] { with, formattedStart });
+		if (type != null && !type.isEmpty()) {
+			elem.addAttribute("type", type);
+		}
 		results.add(elem);
 		return elem;
 	}

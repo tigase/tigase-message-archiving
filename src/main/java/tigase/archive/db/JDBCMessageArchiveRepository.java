@@ -64,6 +64,7 @@ import tigase.xml.SingletonFactory;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
+import tigase.xmpp.StanzaType;
 
 /**
  * Class description
@@ -220,17 +221,26 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String GENERIC_GET_MESSAGES_ORDER_BY = " order by " + MSGS_TIMESTAMP;
 	private static final String GENERIC_GET_COLLECTIONS_SELECT = "select min(m." + MSGS_TIMESTAMP + ") as ts, j." + JIDS_JID + " from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_WITH_TYPE = "select min(m." + MSGS_TIMESTAMP + ") as ts, j." + JIDS_JID + ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end as " + MSGS_TYPE + " from " + MSGS_TABLE + " m "
+			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String MSSQL2008_GET_COLLECTIONS_SELECT = "select x." + MSGS_TIMESTAMP + ", x." + JIDS_JID + " from ( "
 			+ "select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", j." + JIDS_JID + ", ROW_NUMBER() over (order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + ") as rn from " + MSGS_TABLE + " m "
 			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_WITH_TYPE = "select x." + MSGS_TIMESTAMP + ", x." + JIDS_JID + ", x." + MSGS_TYPE + " from ( "
+			+ "select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", j." + JIDS_JID + ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end as " + MSGS_TYPE + ", ROW_NUMBER() over (order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID + ") as rn from " + MSGS_TABLE + " m "
+			+ "inner join " + JIDS_TABLE + " j on m." + MSGS_BUDDY_ID + " = j." + JIDS_ID + " where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP = " group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID;
+	private static final String GENERIC_GET_COLLECTIONS_SELECT_GROUP_WITH_TYPE = " group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end ";
 	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP = " group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ") x ";
+	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_GROUP_WITH_TYPE = " group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ", j." + JIDS_JID + ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end " + ") x ";
 	private static final String GENERIC_GET_COLLECTIONS_SELECT_ORDER = " order by min(m." + MSGS_TIMESTAMP + "), j." + JIDS_JID;
 	private static final String MSSQL2008_GET_COLLECTIONS_SELECT_ORDER = " order by x." + MSGS_TIMESTAMP + ", x." + JIDS_JID;
 	private static final String GENERIC_GET_COLLECTIONS_COUNT = "select count(1) from (select min(m." + MSGS_TIMESTAMP + ") as " + MSGS_TIMESTAMP + ", m." + MSGS_BUDDY_ID + " from " 
 			+ MSGS_TABLE + " m where m." + MSGS_OWNER_ID + " = ? ";
 	private static final String GENERIC_GET_COLLECTIONS_COUNT_GROUP = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID + ") x";
+	private static final String GENERIC_GET_COLLECTIONS_COUNT_GROUP_WITH_TYPE = "group by date(m." + MSGS_TIMESTAMP + "), m." + MSGS_BUDDY_ID+ ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end " + ") x";
 	private static final String MSSQL2008_GET_COLLECTIONS_COUNT_GROUP = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ") x";
+	private static final String MSSQL2008_GET_COLLECTIONS_COUNT_GROUP_WITH_TYPE = "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID+ ", case when m." + MSGS_TYPE + " = 'groupchat' then 'groupchat' else '' end " + ") x";
 	private static final String GENERIC_LIMIT = " limit ? offset ?";					// limit, offset
 	private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";	// offset, limit
 	private static final String MSSQL2008_LIMIT = " where x.rn > ? and x.rn <= ?";				// offset, limit + offset
@@ -491,6 +501,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			+ " j on t." + TAGS_OWNER_ID + " = j." + JIDS_ID + " where j." + JIDS_JID + " = ? and t." + TAGS_TAG + " like ? ) x ";
 	
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
+	private static final String GROUP_BY_TYPE_KEY = "group-by-chat-type";
 	
 	//~--- fields ---------------------------------------------------------------
 
@@ -498,6 +509,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	
 	protected DataRepository data_repo = null;
 	private boolean storePlaintextBody = true;
+	private boolean groupByType = false;
 
 	protected String[] getCollectionsCombinations() {
 		return GET_COLLECTIONS_COMBINATIONS;
@@ -543,7 +555,22 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					break;
 			}
 			
-			initPreparedStatements();
+			// this parameter is set by plugins as we need to initialize statements
+			// using config from component and not from processors
+			if (!params.containsKey("ignoreStatementInitialization")) {
+				StringBuilder sb = new StringBuilder();
+				for (Map.Entry<String, String> e : params.entrySet()) {
+					sb.append(", " + e.getKey() + " = " + e.getValue());
+				}
+
+				if (params.containsKey(GROUP_BY_TYPE_KEY)) {
+					groupByType = Boolean.parseBoolean(params.get(GROUP_BY_TYPE_KEY));
+				} else {
+					groupByType = false;
+				}
+			}
+			
+			initPreparedStatements(params);
 		} catch (Exception ex) {
 			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
 		}
@@ -594,7 +621,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 	
-	protected void initPreparedStatements() throws SQLException {
+	protected void initPreparedStatements(Map<String,String> params) throws SQLException {
+		if (params.containsKey("ignoreStatementInitialization"))
+			return;
 		data_repo.initPreparedStatement(ADD_JID_QUERY, ADD_JID_QUERY);
 		data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
 		data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
@@ -667,10 +696,16 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			switch (data_repo.getDatabaseType()) {
 				case jtds:
 				case sqlserver:
-					select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
+					if (groupByType)
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_WITH_TYPE);
+					else
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
 					break;
 				default:
-					select.append(GENERIC_GET_COLLECTIONS_SELECT);
+					if (groupByType)
+						select.append(GENERIC_GET_COLLECTIONS_SELECT_WITH_TYPE);
+					else
+						select.append(GENERIC_GET_COLLECTIONS_SELECT);
 					break;
 			}
 
@@ -680,12 +715,23 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			switch (data_repo.getDatabaseType()) {
 				case jtds:
 				case sqlserver:
-					select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
-					count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
+					if (groupByType) {
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP_WITH_TYPE);
+						count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP_WITH_TYPE);
+						
+					} else {
+						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
+						count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
+					}
 					break;
 				default:
-					select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
-					count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
+					if (groupByType) {
+						select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP_WITH_TYPE + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
+						count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP_WITH_TYPE);
+					} else {
+						select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
+						count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
+					}
 					break;
 			}
 
@@ -703,6 +749,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}
 
 			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "group-by-type = " + groupByType);
 				log.log(Level.FINEST, "prepared collection select query for " + entry.getKey() + " as '" + select.toString() + "'");
 				log.log(Level.FINEST, "prepared collection count query for " + entry.getKey() + " as '" + count.toString() + "'");
 			}
@@ -1337,7 +1384,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				while (selectRs.next()) {
 					Timestamp startTs = selectRs.getTimestamp(1);
 					String with = selectRs.getString(2);
-					addCollectionToResults(results, crit, with, startTs);
+					String type = null;
+					if (groupByType) {
+						type = selectRs.getString(3);
+					}
+					addCollectionToResults(results, crit, with, startTs, type);
 				}
 			} finally {
 				data_repo.release(null, selectRs);
