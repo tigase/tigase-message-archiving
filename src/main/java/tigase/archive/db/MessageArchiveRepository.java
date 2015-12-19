@@ -21,6 +21,7 @@
  */
 package tigase.archive.db;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -83,6 +84,8 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 	}
 	
 	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
+	
+	void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException;
 	
 	/**
 	 * Destroys instance of this repository and releases resources allocated if possible

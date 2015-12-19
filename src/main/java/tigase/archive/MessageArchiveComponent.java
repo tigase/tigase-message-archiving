@@ -27,6 +27,11 @@ package tigase.archive;
 //~--- non-JDK imports --------------------------------------------------------
 
 import java.text.ParseException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -45,6 +50,7 @@ import tigase.server.AbstractMessageReceiver;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.vhosts.VHostItem;
 import tigase.xml.Element;
 import tigase.xmpp.*;
 
@@ -63,6 +69,9 @@ public class MessageArchiveComponent
 
 	private static final boolean			  DEF_TAGS_SUPPORT_PROP_VAL = false;
 	private static final String			  TAGS_SUPPORT_PROP_KEY = "tags-support";
+	private static final String			  REMOVE_EXPIRED_MESSAGES_KEY = "remove-expired-messages";
+	private static final String			  REMOVE_EXPIRED_MESSAGES_DELAY_KEY = "remove-expired-messages-delay";
+	private static final String			  REMOVE_EXPIRED_MESSAGES_PERIOD_KEY = "remove-expired-messages-period";
 	
 	//~--- fields ---------------------------------------------------------------
 
@@ -147,6 +156,10 @@ public class MessageArchiveComponent
 		if (db_uri != null) {
 			defs.put(MSG_ARCHIVE_REPO_URI_PROP_KEY, db_uri);
 		}
+		
+		defs.put(REMOVE_EXPIRED_MESSAGES_DELAY_KEY, "PT1H");
+		defs.put(REMOVE_EXPIRED_MESSAGES_PERIOD_KEY, "P1D");
+		defs.put(REMOVE_EXPIRED_MESSAGES_KEY, false);
 
 		return defs;
 	}
@@ -230,6 +243,19 @@ public class MessageArchiveComponent
 		} catch (IllegalAccessException ex) {
 			log.log(Level.SEVERE, "Could not initialize MessageArchive repository", ex);
 			throw new ConfigurationException("Could not initialize MessageArchive repository", ex);
+		}
+		
+		Boolean enabled = (Boolean) props.get(REMOVE_EXPIRED_MESSAGES_KEY);
+		if (enabled != null && enabled) {
+			String initialDelayStr = (String) props.get(REMOVE_EXPIRED_MESSAGES_DELAY_KEY);
+			String periodStr = (String) props.get(REMOVE_EXPIRED_MESSAGES_PERIOD_KEY);
+			long initialDelay = Duration.parse(initialDelayStr).toMillis();
+			//long initialDelay = LocalTime.parse(initialDelayStr).toSecondOfDay() * 1000;
+			//long period = LocalTime.parse(periodStr).toSecondOfDay() * 1000;
+			long period = Duration.parse(periodStr).toMillis();
+			log.log(Level.FINE, "scheduling removal of expired messages to once every {0}ms after initial delay of {1}ms",
+					new Object[]{period, initialDelay});
+			addTimerTask(new RemoveExpiredTask(), initialDelay, period);
 		}
 	}
 
@@ -546,6 +572,40 @@ public class MessageArchiveComponent
 			addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
 					"Invalid JID as with attribute", true));			
 		}
+	}
+	
+	private class RemoveExpiredTask extends tigase.util.TimerTask {
+
+		@Override
+		public void run() {
+			for (JID vhost : vHostManager.getAllVHosts()) {
+				try {
+					VHostItem item = vHostManager.getVHostItem(vhost.getDomain());
+					RetentionType retentionType = VHostItemHelper.getRetentionType(item);
+					switch (retentionType) {
+						case numberOfDays:
+							Integer days = VHostItemHelper.getRetentionDays(item);
+							if (days != null) {
+								LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusDays(days);
+								msg_repo.deleteExpiredMessages(vhost.getBareJID(), timestamp);
+								log.log(Level.FINEST, "removed messsages older than {0} for domain {1}", 
+										new Object[]{timestamp.toString(), vhost.getDomain()});
+							}
+							break;
+						case userDefined:
+						// right now there is no implementation for this so let's handle it in same way as unlimited
+						case unlimited:
+							log.log(Level.FINEST, "skipping removal of expired messages for domain {0}"
+									+ " as removal for retention type {1} is not supported", 
+									new Object[]{vhost.getDomain(), retentionType});
+							break;
+					}
+				} catch (Exception ex) {
+					log.log(Level.FINE, "exception removing expired messages", ex);
+				}
+			}
+		}
+		
 	}
 }
 
