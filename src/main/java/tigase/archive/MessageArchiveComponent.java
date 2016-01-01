@@ -187,6 +187,7 @@ public class MessageArchiveComponent
 	@Override
 	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		try {
+			VHostItemHelper.register();
 			super.setProperties(props);
 			
 			if (props.containsKey(TAGS_SUPPORT_PROP_KEY)) {
