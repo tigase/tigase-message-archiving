@@ -367,9 +367,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
 																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";	
-	private static final String DELETE_EXPIRED_MSGS = "delete from " + MSGS_TABLE + " where EXISTS( select 1 from " + JIDS_TABLE + " j " +
-																						"where j." + JIDS_ID + " = " + MSGS_OWNER_ID + " and j." + JIDS_DOMAIN + " = ? ) " + 
-																						"and " + MSGS_TIMESTAMP + " < ?";
+	private static final String DELETE_EXPIRED_MSGS = "delete from " + MSGS_TABLE + " where " + MSGS_TIMESTAMP + " < ? and EXISTS( select 1 from " + JIDS_TABLE + " j " +
+																						"where j." + JIDS_ID + " = " + MSGS_OWNER_ID + " and j." + JIDS_DOMAIN + " = ? ) ";
 	private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE + " where " +
 																						MSGS_OWNER_ID + " = ? and " + MSGS_BUDDY_ID +
 																						" = ?" + " and " + MSGS_TIMESTAMP +
@@ -1056,6 +1055,38 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		} finally {
 			data_repo.release(stmt, null);
 		}
+		String alterTable = "";
+		try {
+			stmt = data_repo.createStatement(null);
+			switch (data_repo.getDatabaseType()) {
+				case mysql:
+					alterTable = "create index " + JIDS_TABLE + "_" + JIDS_DOMAIN
+							+ "_index on " + JIDS_TABLE + " (" + JIDS_DOMAIN + "(255))";
+					break;
+				case jtds:
+				case sqlserver:
+					alterTable = null;
+					break;
+				default:
+					alterTable = "create index " + JIDS_TABLE + "_" + JIDS_DOMAIN
+							+ "_index on " + JIDS_TABLE + " (" + JIDS_DOMAIN + ")";
+					break;
+			}
+			if (alterTable != null) {
+				stmt.execute(alterTable);
+			}
+			alterTable = "create index " + MSGS_TABLE + "_" + MSGS_TIMESTAMP
+					+ "_index on " + MSGS_TABLE + " (" + MSGS_TIMESTAMP + ")";
+			if (alterTable != null) {
+				stmt.execute(alterTable);
+			}
+			log.log(Level.FINEST, "added missing index timestamp and domain");
+		} catch (SQLException ex1) {
+			// we ignore this exception as there is no good way to check if index exists
+			// so we try to add this indexes every time - so exception is expected
+		} finally {
+			data_repo.release(stmt, null);
+		}
 	}
 	
 	/**
@@ -1173,8 +1204,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			long timestamp_long = before.toEpochSecond(ZoneOffset.UTC) * 1000;
 			Timestamp ts = new java.sql.Timestamp(timestamp_long);
 			synchronized (delete_expired_msgs_st) {
-				delete_expired_msgs_st.setString(1, owner.toString());
-				delete_expired_msgs_st.setTimestamp(2, ts);
+				delete_expired_msgs_st.setTimestamp(1, ts);
+				delete_expired_msgs_st.setString(2, owner.toString());
 				delete_expired_msgs_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
