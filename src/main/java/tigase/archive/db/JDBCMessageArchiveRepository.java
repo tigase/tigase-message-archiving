@@ -508,6 +508,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
 	private static final String GROUP_BY_TYPE_KEY = "group-by-chat-type";
 	
+	private static final String DELETE_EXPIRED_QUERY_TIMEOUT_KEY = "remove-expired-messages-query-timeout";
+	private static final int DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL = 5 * 60;
+	
 	//~--- fields ---------------------------------------------------------------
 
 	protected String ADD_MESSAGE;
@@ -515,6 +518,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	protected DataRepository data_repo = null;
 	private boolean storePlaintextBody = true;
 	private boolean groupByType = false;
+	private int delete_expired_timeout = DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL;
 
 	protected String[] getCollectionsCombinations() {
 		return GET_COLLECTIONS_COMBINATIONS;
@@ -573,6 +577,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				} else {
 					groupByType = false;
 				}
+			}
+			
+			if (params.containsKey(DELETE_EXPIRED_QUERY_TIMEOUT_KEY)) {
+				delete_expired_timeout = Integer.parseInt(params.get(DELETE_EXPIRED_QUERY_TIMEOUT_KEY));
+				log.log(Level.FINEST, "setting " + DELETE_EXPIRED_QUERY_TIMEOUT_KEY + " to {0}", delete_expired_timeout);
 			}
 			
 			initPreparedStatements(params);
@@ -1204,6 +1213,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			long timestamp_long = before.toEpochSecond(ZoneOffset.UTC) * 1000;
 			Timestamp ts = new java.sql.Timestamp(timestamp_long);
 			synchronized (delete_expired_msgs_st) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "executing removal of expired messages for domain {0} with timeout set to {1} seconds", 
+							new Object[]{owner, delete_expired_timeout});
+				}
+				delete_expired_msgs_st.setQueryTimeout(delete_expired_timeout);
 				delete_expired_msgs_st.setTimestamp(1, ts);
 				delete_expired_msgs_st.setString(2, owner.toString());
 				delete_expired_msgs_st.executeUpdate();

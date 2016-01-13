@@ -49,6 +49,7 @@ import tigase.osgi.ModulesManagerImpl;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Message;
 import tigase.server.Packet;
+import tigase.stats.StatisticsList;
 import tigase.util.TigaseStringprepException;
 import tigase.vhosts.VHostItem;
 import tigase.xml.Element;
@@ -77,6 +78,8 @@ public class MessageArchiveComponent
 
 	protected MessageArchiveRepository msg_repo = null;
 	private boolean tagsSupport = false;
+	private float expiredMessagesRemovalTimeAvg = -1;
+	private RemoveExpiredTask expiredMessagesRemovalTask = null;
 
 	//~--- constructors ---------------------------------------------------------
 
@@ -175,6 +178,12 @@ public class MessageArchiveComponent
 		return "Message Archiving (XEP-0136) Support";
 	}
 
+	@Override
+	public void getStatistics(StatisticsList list) {
+		super.getStatistics(list);
+		list.add(getName(), "Removal time of expired messages (avg)", expiredMessagesRemovalTimeAvg, Level.FINE);
+	}
+	
 	//~--- set methods ----------------------------------------------------------
 
 	/**
@@ -246,6 +255,11 @@ public class MessageArchiveComponent
 			throw new ConfigurationException("Could not initialize MessageArchive repository", ex);
 		}
 		
+		if (expiredMessagesRemovalTask != null) {
+			expiredMessagesRemovalTask.cancel();
+			expiredMessagesRemovalTask = null;
+		}
+		
 		Boolean enabled = (Boolean) props.get(REMOVE_EXPIRED_MESSAGES_KEY);
 		if (enabled != null && enabled) {
 			String initialDelayStr = (String) props.get(REMOVE_EXPIRED_MESSAGES_DELAY_KEY);
@@ -256,7 +270,8 @@ public class MessageArchiveComponent
 			long period = Duration.parse(periodStr).toMillis();
 			log.log(Level.FINE, "scheduling removal of expired messages to once every {0}ms after initial delay of {1}ms",
 					new Object[]{period, initialDelay});
-			addTimerTask(new RemoveExpiredTask(), initialDelay, period);
+			expiredMessagesRemovalTask = new RemoveExpiredTask();
+			addTimerTask(expiredMessagesRemovalTask, initialDelay, period);
 		}
 	}
 
@@ -579,6 +594,8 @@ public class MessageArchiveComponent
 
 		@Override
 		public void run() {
+			float time = 0;
+			float count = 0;
 			for (JID vhost : vHostManager.getAllVHosts()) {
 				try {
 					VHostItem item = vHostManager.getVHostItem(vhost.getDomain());
@@ -587,11 +604,16 @@ public class MessageArchiveComponent
 						case numberOfDays:
 							Integer days = VHostItemHelper.getRetentionDays(item);
 							if (days != null) {
+								long start = System.currentTimeMillis();
 								LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusDays(days);
 								msg_repo.deleteExpiredMessages(vhost.getBareJID(), timestamp);
-								log.log(Level.FINEST, "removed messsages older than {0} for domain {1}", 
-										new Object[]{timestamp.toString(), vhost.getDomain()});
-							}
+								long stop = System.currentTimeMillis();
+								long executedIn = stop - start;
+								time += executedIn;
+								log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms", 
+										new Object[]{timestamp.toString(), vhost.getDomain(), executedIn});
+								count++;
+							}						
 							break;
 						case userDefined:
 						// right now there is no implementation for this so let's handle it in same way as unlimited
@@ -605,6 +627,7 @@ public class MessageArchiveComponent
 					log.log(Level.FINE, "exception removing expired messages", ex);
 				}
 			}
+			expiredMessagesRemovalTimeAvg = (count > 0) ? (time / count) : -1;
 		}
 		
 	}
