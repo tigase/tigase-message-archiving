@@ -67,7 +67,7 @@ public class VHostItemHelper {
 			"Unlimited",
 			"Number of days"
 		}),
-		new DataType(RETENTION_PERIOD_KEY, "XEP-0136 - retention perion (in days)", Integer.class, null),
+		new DataType(RETENTION_PERIOD_KEY, "XEP-0136 - retention period (in days)", Integer.class, null),
 		new DataType(MUC_SAVE_KEY, "XEP-0136 - store MUC messages", String.class, null, null, new Object[] {
 			StoreMuc.User.toString(),
 			StoreMuc.False.toString(),
