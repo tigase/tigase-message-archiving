@@ -2,7 +2,7 @@
  * JDBCMessageArchiveRepository.java
  *
  * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2014 "Tigase, Inc." <office@tigase.com>
+ * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,12 +35,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -349,7 +351,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
 																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
-	private static final String /*MYSQL_*/SQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+	private static final String MYSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
@@ -366,7 +368,26 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						//" from " + MSGS_TABLE +
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
-																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";	
+																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? for update)";	
+	private static final String SQLSERVER_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
+																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
+																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
+																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
+																						", " + MSGS_HASH + ")" +
+																						" select tmp." + MSGS_OWNER_ID + ", tmp." + MSGS_BUDDY_ID + ", tmp." +
+																						MSGS_BUDDY_RESOURCE + ", tmp." +
+																						MSGS_TIMESTAMP + ", tmp." + MSGS_DIRECTION +
+																						", tmp." + MSGS_TYPE + ", tmp." + MSGS_BODY + ", " + MSGS_MSG +
+																						", tmp." + MSGS_HASH + " from (select ? as " + MSGS_OWNER_ID + 
+																						", ? as " + MSGS_BUDDY_ID + ", ? as " + MSGS_BUDDY_RESOURCE + 
+																						", ? as " + MSGS_TIMESTAMP + 
+																						", ? as " + MSGS_DIRECTION + ", ? as " + MSGS_TYPE + 
+																						", ? as " + MSGS_BODY + ", ? as " + MSGS_MSG + ", ? as " + MSGS_HASH + ") as tmp" +
+																						//" from " + MSGS_TABLE +
+																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
+																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
+																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ?)";	
+
 	private static final String DELETE_EXPIRED_MSGS = "delete from " + MSGS_TABLE + " where " + MSGS_TIMESTAMP + " < ? and EXISTS( select 1 from " + JIDS_TABLE + " j " +
 																						"where j." + JIDS_ID + " = " + MSGS_OWNER_ID + " and j." + JIDS_DOMAIN + " = ? ) ";
 	private static final String REMOVE_MSGS = "delete from " + MSGS_TABLE + " where " +
@@ -559,8 +580,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				case postgresql:
 					ADD_MESSAGE = PGSQL_ADD_MESSAGE;
 					break;
-				default:
-					ADD_MESSAGE = SQL_ADD_MESSAGE;
+				case mysql:
+					ADD_MESSAGE = MYSQL_ADD_MESSAGE;
+					break;
+				case jtds:
+				case sqlserver:
+					ADD_MESSAGE = SQLSERVER_ADD_MESSAGE;
 					break;
 			}
 			
@@ -1872,6 +1897,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 
 	}
+	
 }
 
 

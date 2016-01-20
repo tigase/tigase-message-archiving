@@ -98,6 +98,35 @@ public class MessageArchiveComponent
 	 * Method description
 	 *
 	 *
+	 *
+	 *
+	 * @return a value of <code>int</code>
+	 */
+	@Override
+	public int processingInThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
+	}
+
+	// ~--- methods
+	// --------------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 *
+	 *
+	 * @return a value of <code>int</code>
+	 */
+	@Override
+	public int processingOutThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
+	}
+	
+	/**
+	 * Method description
+	 *
+	 *
 	 * @param packet
 	 */
 	@Override
