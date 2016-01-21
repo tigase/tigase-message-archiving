@@ -1,8 +1,8 @@
 /*
  * Settings.java
  *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2015 "Tigase, Inc." <office@tigase.com>
+ * Tigase Message Archiving Component
+ * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
