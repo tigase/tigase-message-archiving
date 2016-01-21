@@ -26,7 +26,7 @@ create table tig_ma_msgs (
 	"type" varchar(20),
 	body text,
 	msg text,
-	"hash" varchar(50),
+	stanza_hash varchar(50),
 
 	primary key (msg_id),
 	foreign key (buddy_id) references tig_ma_jids (jid_id),
@@ -36,7 +36,7 @@ create table tig_ma_msgs (
 create index tig_ma_msgs_owner_id_index on tig_ma_msgs (owner_id);
 create index tig_ma_msgs_owner_id_buddy_id_index on tig_ma_msgs (owner_id, buddy_id);
 create index tig_ma_msgs_owner_id_buddy_id_ts_index on tig_ma_msgs (owner_id, buddy_id, ts);
-create unique index tig_ma_msgs_owner_id_ts_buddy_id_hash_index on tig_ma_msgs (owner_id, ts, buddy_id, "hash");
+create unique index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index on tig_ma_msgs (owner_id, ts, buddy_id, stanza_hash);
 
 create table tig_ma_tags (
 	tag_id bigserial,

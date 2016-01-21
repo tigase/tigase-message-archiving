@@ -49,7 +49,7 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs' and xtype='U')
 		[type] [nvarchar(20)],
 		[body] [nvarchar(max)],
 		[msg] [nvarchar(max)],
-		[hash] [nvarchar(50)],
+		[stanza_hash] [nvarchar(50)],
 
 		PRIMARY KEY ( [msg_id] ),
 		CONSTRAINT [FK_tig_ma_msgs_owner_id] FOREIGN KEY ([owner_id])
@@ -76,8 +76,8 @@ CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_ts_index ON [dbo].[tig_ma_msgs] ([
 -- QUERY END:
 GO
 -- QUERY START:
-IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_ts_buddy_id_hash_index')
-CREATE INDEX IX_tig_ma_msgs_owner_id_ts_buddy_id_hash_index ON [dbo].[tig_ma_msgs] ([owner_id], [ts], [buddy_id], [hash]);
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')
+CREATE INDEX IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index ON [dbo].[tig_ma_msgs] ([owner_id], [ts], [buddy_id], [stanza_hash]);
 -- QUERY END:
 GO
 

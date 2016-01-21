@@ -25,7 +25,7 @@ create table if not exists tig_ma_msgs (
 	`type` varchar(20),
 	body text, 
 	msg text,
-	`hash` varchar(50),
+	stanza_hash varchar(50),
 
 	primary key (msg_id),
 	foreign key (buddy_id) references tig_ma_jids (jid_id),
@@ -33,7 +33,7 @@ create table if not exists tig_ma_msgs (
 	key tig_ma_msgs_owner_id (owner_id),
 	key tig_ma_msgs_owner_id_buddy_id (owner_id, buddy_id),
 	key tig_ma_msgs_owner_id_ts_buddy_id (owner_id, ts, buddy_id),
-	unique index using hash (owner_id, ts, buddy_id, `hash`)
+	unique index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index using hash (owner_id, ts, buddy_id, stanza_hash)
 )
 ENGINE=InnoDB default character set utf8 ROW_FORMAT=DYNAMIC;
 

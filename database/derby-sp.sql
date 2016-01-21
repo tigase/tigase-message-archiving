@@ -30,50 +30,50 @@ drop procedure if exists Tig_MA_GetTagsForUser;
 
 drop procedure if exists Tig_MA_GetTagsForUserCount;
 
-create procedure Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _limit int, _offset int)
+create procedure Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags varchar(32672), _limit int, _offset int)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	READS SQL DATA
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getMessages';
 
-create procedure Tig_MA_GetMessagesCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _limit int, _offset int)
+create procedure Tig_MA_GetMessagesCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags varchar(32672), _limit int, _offset int)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	READS SQL DATA
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getMessagesCount';
 
-create procedure Tig_MA_GetCollections(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _byType smallint, _limit int, _offset int)
+create procedure Tig_MA_GetCollections(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags varchar(32672), _byType smallint, _limit int, _offset int)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	READS SQL DATA
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getCollections';
 
-create procedure Tig_MA_GetCollectionsCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _byType smallint)
+create procedure Tig_MA_GetCollectionsCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags varchar(32672), _byType smallint)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	READS SQL DATA
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getCollectionsCount';
 
-create procedure Tig_MA_EnsureJid(_jid varchar(2049))
+create function Tig_MA_EnsureJid(_jid varchar(2049))
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	MODIFIES SQL DATA
 	DYNAMIC RESULT SETS 1
-	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.';
+	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.ensureJid';
 
-create procedure Tig_MA_AddMessage(_jid varchar(2049))
+create procedure Tig_MA_AddMessage(_ownerJid varchar(2049), _buddyJid varchar(2049), _buddyRes varchar(1024), _ts timestamp, 
+	_direction smallint, _type varchar(20), _body varchar(32672), _msg varchar(32672), _hash varchar(50))
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	MODIFIES SQL DATA
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.addMessage';
 
-create procedure Tig_MA_AddTagToMessage(_ownerJid varchar(2049), _buddyJid varchar(2049), _buddyRes varchar(1024), _ts timestamp, 
-	_direction smallint, _type varchar(20), _body varchar(32672), _msg varchar(32672), _hash varchar(50))
+create procedure Tig_MA_AddTagToMessage(msg_id bigint, tag varchar(255))
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	MODIFIES SQL DATA

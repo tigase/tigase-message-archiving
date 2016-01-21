@@ -237,7 +237,7 @@ begin
 		end if;
 	end if;
 end //
--- TODO: removal only for above!!!
+
 create function Tig_MA_EnsureJid(_jid varchar(2049) CHARSET utf8) returns bigint DETERMINISTIC
 begin
 	declare _jid_id bigint;
@@ -247,7 +247,8 @@ begin
 	select jid_id into _jid_id from tig_ma_jids where jid_sha1 = _jid_sha1;
 	if _jid_id is null then
 		insert into tig_ma_jids (jid, jid_sha1)
-			values (_jid, _jid_sha1)
+			select _jid, _jid_sha1
+			where not exists(select 1 from tig_ma_jids where jid_sha1 = _jid_sha1 and jid = _jid for update)
 			on duplicate key update jid_id = LAST_INSERT_ID(jid_id);
 		select LAST_INSERT_ID() into _jid_id;
 	end if;
@@ -267,10 +268,10 @@ begin
 	select Tig_MA_EnsureJid(_ownerJid) into owner_id;
 	select Tig_MA_EnsureJid(_buddyJid) into buddy_id;
 
-	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, `hash`)
+	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, stanza_hash)
 	select _owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash
 	where not exists (
-		select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and `hash` = _hash 
+		select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and stanza_hash = _hash for update
 	);
 
 	select LAST_INSERT_ID() into _msg_id;
@@ -294,7 +295,7 @@ begin
 		select LAST_INSERT_ID() into _tag_id;
 	end if;
 	insert into tig_ma_msgs_tags (msg_id, tag_id) select _msgId, _tag_id where not exists (
-		select 1 from tig_ma_msgs_tags where msg_id = _msgId and tag_id = _tag_id; 
+		select 1 from tig_ma_msgs_tags where msg_id = _msgId and tag_id = _tag_id for update
 	);
 	COMMIT;
 end //

@@ -243,10 +243,10 @@ begin
 	select Tig_MA_EnsureJid(_buddyJid) into buddy_id;
 
 	with inserted_msg as (
-		insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, "hash")
+		insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, stanza_hash)
 		select _owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash
 		where not exists (
-			select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and "hash" = _hash 
+			select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and stanza_hash = _hash 
 		)
 		returning msg_id;
 	)
