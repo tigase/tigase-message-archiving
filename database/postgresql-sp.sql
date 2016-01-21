@@ -305,11 +305,16 @@ begin
 end;
 $$ LANGUAGE 'plpgsql';
 
-create or replace function Tig_MA_GetTagsForUser(_ownerJid varchar(2049)) returns table (
+create or replace function Tig_MA_GetTagsForUser(_ownerJid varchar(2049), _limit int, _offset int) returns table (
 	tag varchar(255)
 ) as $$
 begin
-	return query select tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = _ownerJid;
+	return query select tag 
+		from tig_ma_tags t 
+		inner join tig_ma_jids o on o.jid_id = t.owner_id 
+		where o.jid = _ownerJid
+		order by t.tag
+		limit _limit offset _offset;
 end;
 $$ LANGUAGE 'plpgsql';
 

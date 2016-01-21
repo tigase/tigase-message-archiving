@@ -465,10 +465,18 @@ GO
 
 -- QUERY START:
 create procedure Tig_MA_GetTagsForUser
-	@_ownerJid nvarchar(2049)
+	@_ownerJid nvarchar(2049),
+	@_limit int,
+	@_offset int
 AS
 begin
-	select tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid;
+	with results_cte as (
+		select tag, ROW_NUMBER() over (order by t.tag) as row_num
+			from tig_ma_tags t
+			inner join tig_ma_jids o on o.jid_id = t.owner_id 
+			where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid
+	)
+	select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
 end
 -- QUERY END:
 GO

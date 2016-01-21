@@ -98,7 +98,7 @@ create procedure Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before tim
 	MODIFIES SQL DATA
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.deleteExpiredMessages';
 
-create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049))
+create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049), _limit int, _offset int)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
 	READS SQL DATA

@@ -321,9 +321,14 @@ begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and `domain` = _domain);
 end //
 
-create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8)
+create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _limit int, _offset int)
 begin
-	select tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid;
+	select tag 
+		from tig_ma_tags t 
+		inner join tig_ma_jids o on o.jid_id = t.owner_id 
+		where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
+		order by t.tag
+		limit _limit offset _offset;
 end //
 
 create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8)

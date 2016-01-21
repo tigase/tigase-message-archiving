@@ -425,15 +425,17 @@ public class StoredProcedures {
 		}		
 	}
 
-	public static void getTagsForUser(String ownerJid, ResultSet[] data) throws SQLException {
+	public static void getTagsForUser(String ownerJid, Integer limit, Integer offset, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			PreparedStatement ps = conn.prepareStatement("select t.tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = ?");
+			PreparedStatement ps = conn.prepareStatement("select t.tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = ? order by t.tag offset ? rows fetch next ? rows only");
 			
 			ps.setString(1, ownerJid);
+			ps.setInt(2, offset);
+			ps.setInt(3, limit);
 			
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
