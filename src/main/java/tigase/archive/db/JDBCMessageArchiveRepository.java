@@ -97,7 +97,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String MSGS_DIRECTION = "direction";
 	public static final String MSGS_MSG       = "msg";
 	public static final String MSGS_OWNER_ID  = "owner_id";
-	private static final String MSGS_HASH	   = "stanza_hash";
+	protected static final String MSGS_HASH	   = "stanza_hash";
 
 //+ "create unique index " + JIDS_TABLE + "_" + JIDS_JID + " on "
 //+ JIDS_TABLE + " ( " + JIDS_JID + "(765));";
@@ -355,20 +355,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
 																						", " + MSGS_TYPE + ", " + MSGS_BODY + ", " + MSGS_MSG +
-																						", " + MSGS_HASH + ")" +
-																						" select tmp." + MSGS_OWNER_ID + ", tmp." + MSGS_BUDDY_ID + ", tmp." +
-																						MSGS_BUDDY_RESOURCE + ", tmp." +
-																						MSGS_TIMESTAMP + ", tmp." + MSGS_DIRECTION +
-																						", tmp." + MSGS_TYPE + ", tmp." + MSGS_BODY + ", " + MSGS_MSG +
-																						", tmp." + MSGS_HASH + " from (select ? as " + MSGS_OWNER_ID + 
-																						", ? as " + MSGS_BUDDY_ID + ", ? as " + MSGS_BUDDY_RESOURCE + 
-																						", ? as " + MSGS_TIMESTAMP + 
-																						", ? as " + MSGS_DIRECTION + ", ? as " + MSGS_TYPE + 
-																						", ? as " + MSGS_BODY + ", ? as " + MSGS_MSG + ", ? as " + MSGS_HASH + ") as tmp" +
-																						//" from " + MSGS_TABLE +
-																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
-																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
-																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? for update)";	
+																						", " + MSGS_HASH + ") values (?, ?, ? , ?, ?, ?, ?, ?, ?) on duplicate key update " + MSGS_DIRECTION + " = " + MSGS_DIRECTION;	
 	private static final String SQLSERVER_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -1178,11 +1165,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 					i = addMessageAdditionalInfo(add_message_st, i, additionalData);
 
-					add_message_st.setLong(i++, owner_id);
-					add_message_st.setLong(i++, buddy_id);
-					add_message_st.setTimestamp(i++, mtime);
-					add_message_st.setString(i++, hash);
-
+					if (data_repo.getDatabaseType() != dbTypes.mysql) {
+						add_message_st.setLong(i++, owner_id);
+						add_message_st.setLong(i++, buddy_id);
+						add_message_st.setTimestamp(i++, mtime);
+						add_message_st.setString(i++, hash);
+					}
 					add_message_st.executeUpdate();
 
 					if (tags != null) {
