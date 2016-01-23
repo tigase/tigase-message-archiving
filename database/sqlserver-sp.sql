@@ -16,6 +16,46 @@
 --  If not, see http://www.gnu.org/licenses/.
 
 -- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetHasTagsQuery')
+	DROP PROCEDURE [dbo].[Tig_MA_GetHasTagsQuery]
+-- QUERY END:
+GO
+
+-- QUERY START:
+create procedure [dbo].[Tig_MA_GetHasTagsQuery]
+	@_in_str nvarchar(max),
+	@_out_query nvarchar(max) OUTPUT
+AS
+begin
+	if @_in_str is not null
+		set @_out_query = N' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' + @_in_str + N'))';
+	else
+		set @_out_query = N'';
+end
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetBodyContainsQuery')
+	DROP PROCEDURE [dbo].[Tig_MA_GetBodyContainsQuery]
+-- QUERY END:
+GO
+
+-- QUERY START:
+create procedure [dbo].[Tig_MA_GetBodyContainsQuery]
+	@_in_str nvarchar(max),
+	@_out_query nvarchar(max) OUTPUT
+AS
+begin
+	if @_in_str is null
+		set @_out_query = N'';
+	else
+		set @_out_query = N' and m.body like ' + replace(@_str, N''',''', N''' and m.body like = ''');
+end
+-- QUERY END:
+GO
+
+-- QUERY START:
 IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetMessages')
 	DROP PROCEDURE [dbo].[Tig_MA_GetMessages]
 -- QUERY END:
@@ -26,23 +66,26 @@ create procedure [dbo].[Tig_MA_GetMessages]
 	@_ownerJid nvarchar(2049), 
 	@_buddyJid nvarchar(2049), 
 	@_from datetime, 
-	@_to datetime, 
+	@_to datetime,
 	@_tags nvarchar(max), 
+	@_contains nvarchar(max),
 	@_limit int, 
 	@_offset int
 AS
 begin
 	declare 
 		@params_def nvarchar(max),
+		@contains_query nvarchar(max),
 		@tags_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
-	if _tags is not null
+	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		set @tags_query = N' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' + _tags + '))';
-		set @msgs_query = N'select m.msg, m.ts, m.direction, row_number() over (order by m.ts) as row_num
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
+		set @msgs_query = N'select m.msg, m.ts, m.direction, b.jid, row_number() over (order by m.ts) as row_num
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -51,7 +94,7 @@ begin
 			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
-		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
+		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + @contains_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
 		execute sp_executesql @query_sql, @params_def, @_ownerJid, @_buddyJid, @_from, @_to, @_limit, @_offset
 		end
 	else
@@ -85,19 +128,22 @@ create procedure [dbo].[Tig_MA_GetMessagesCount]
 	@_buddyJid nvarchar(2049), 
 	@_from datetime, 
 	@_to datetime, 
-	@_tags nvarchar(max)
+	@_tags nvarchar(max),
+	@_contains nvarchar(max)
 AS
 begin
 	declare 
 		@params_def nvarchar(max),
 		@tags_query nvarchar(max),
+		@contains_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
-	if _tags is not null
+	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		set @tags_query = N' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' + _tags + '))';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
 		set @msgs_query = N'select count(m.msg_id)
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
@@ -140,7 +186,8 @@ create procedure [dbo].[Tig_MA_GetCollections]
 	@_buddyJid nvarchar(2049), 
 	@_from datetime, 
 	@_to datetime, 
-	@_tags nvarchar(max), 
+	@_tags nvarchar(max),
+	@_contains nvarchar(max),
 	@_byType smallint,
 	@_limit int, 
 	@_offset int
@@ -149,13 +196,15 @@ begin
 	declare 
 		@params_def nvarchar(max),
 		@tags_query nvarchar(max),
+		@contains_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
-	if _tags is not null
+	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		set @tags_query = N' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' + _tags + '))';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
 		set @msgs_query = N'select min(m.ts) as ts, b.jid, ROW_NUMBER() over (order by min(m.ts), j.jid) as row_num';
 
 		if _byType = 1 
@@ -230,20 +279,23 @@ create procedure [dbo].[Tig_MA_GetCollectionsCount]
 	@_buddyJid nvarchar(2049), 
 	@_from datetime, 
 	@_to datetime, 
-	@_tags nvarchar(max), 
+	@_tags nvarchar(max),
+	@_contains nvarchar(max),
 	@_byType smallint
 AS
 begin
 	declare 
 		@params_def nvarchar(max),
 		@tags_query nvarchar(max),
+		@contains_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
-	if _tags is not null
+	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		set @tags_query = N' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' + _tags + '))';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
 		set @msgs_query = N'select min(m.ts) as ts, b.jid';
 
 		if _byType = 1 
@@ -466,6 +518,7 @@ GO
 -- QUERY START:
 create procedure Tig_MA_GetTagsForUser
 	@_ownerJid nvarchar(2049),
+	@_tagStartsWith nvarchar(255),
 	@_limit int,
 	@_offset int
 AS
@@ -475,6 +528,7 @@ begin
 			from tig_ma_tags t
 			inner join tig_ma_jids o on o.jid_id = t.owner_id 
 			where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid
+				and t.tag like @_tagStartsWith
 	)
 	select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
 end
@@ -489,10 +543,11 @@ GO
 
 -- QUERY START:
 create procedure Tig_MA_GetTagsForUserCount
-	@_ownerJid nvarchar(2049)
+	@_ownerJid nvarchar(2049),
+	@_tagStartsWith nvarchar(255)
 AS
 begin
-	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid;
+	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid and t.tag like @_tagStartsWith;
 end
 -- QUERY END:
 GO

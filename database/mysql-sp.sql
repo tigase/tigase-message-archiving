@@ -15,6 +15,10 @@
 --  along with this program. Look for COPYING file in the top folder.
 --  If not, see http://www.gnu.org/licenses/.
 
+drop procedure if exists Tig_MA_GetHasTagsQuery;
+
+drop procedure if exists Tig_MA_GetBodyContainsQuery;
+
 drop procedure if exists Tig_MA_GetMessages;
 
 drop procedure if exists Tig_MA_GetMessagesCount;
@@ -39,7 +43,25 @@ drop procedure if exists Tig_MA_GetTagsForUserCount;
 
 delimiter //
 
-create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _limit int, _offset int)
+create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text
+begin
+	if _in_str is not null then
+		return CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', @_in_str, '))'));
+	else
+		return '';
+	end if;
+end //
+
+create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8) returns text
+begin
+	if _in_str is not null then
+		return CONCAT(' and m.body like ', replace(@_str, N''',''', N''' and m.body like = '''));
+	else
+		return '';
+	end if;
+end //
+
+create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _limit int, _offset int)
 begin
 	if _tags is not null then
 		set @ownerJid = _ownerJid;
@@ -48,8 +70,9 @@ begin
 		set @to = _to;
 		set @limit = _limit;
 		set @offset = _offset;
-		set @tags_query = CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _tags, '))');
-		set @msgs_query = 'select m.msg, m.ts, m.direction 
+		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
+		set @msgs_query = 'select m.msg, m.ts, m.direction, b.jid
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -59,13 +82,13 @@ begin
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)';
 		set @pagination_query = ' limit ? offset ?';
-		set @query = CONCAT(@msgs_query, @tags_query, ' order by m.ts', @pagination_query);
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, ' order by m.ts', @pagination_query);
 		select @query;
 		prepare stmt from @query;
 		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
 		deallocate prepare stmt;
 	else
-		select m.msg, m.ts, m.direction 
+		select m.msg, m.ts, m.direction, b.jid
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -79,14 +102,15 @@ begin
 	end if;
 end //
 
-create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8)
+create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8)
 begin
 	if _tags is not null then
 		set @ownerJid = _ownerJid;
 		set @buddyJid = _buddyJid;
 		set @from = _from;
 		set @to = _to;
-		set @tags_query = CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _tags, '))');
+		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
 		set @msgs_query = 'select count(m.msg_id)
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
@@ -96,7 +120,7 @@ begin
 			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)';
-		set @query = CONCAT(@msgs_query, @tags_query);
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query);
 		select @query;
 		prepare stmt from @query;
 		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to;
@@ -114,7 +138,7 @@ begin
 	end if;
 end //
 
-create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _byType smallint, _limit int, _offset int)
+create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint, _limit int, _offset int)
 begin
 	if _tags is not null then
 		set @ownerJid = _ownerJid;
@@ -123,7 +147,8 @@ begin
 		set @to = _to;
 		set @limit = _limit;
 		set @offset = _offset;
-		set @tags_query = CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _tags, '))');
+		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
 		set @msgs_query = 'select min(m.ts), b.jid'
 		if _byType = 1 then
 			@msgs_query = CONCAT( @msgs_query, 
@@ -145,7 +170,7 @@ begin
 			set @groupby_query = ' group by date(m.ts), m.buddy_id, b.jid';
 		end if;
 		set @pagination_query = ' limit ? offset ?';
-		set @query = CONCAT(@msgs_query, @tags_query, @groupby_query, ' order by m.ts, b.jid', @pagination_query);
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' order by m.ts, b.jid', @pagination_query);
 		select @query;
 		prepare stmt from @query;
 		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
@@ -181,14 +206,15 @@ begin
 	end if;
 end //
 
-create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _byType smallint)
+create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint)
 begin
 	if _tags is not null then
 		set @ownerJid = _ownerJid;
 		set @buddyJid = _buddyJid;
 		set @from = _from;
 		set @to = _to;
-		set @tags_query = CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _tags, '))');
+		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
 		set @msgs_query = 'select count(1) from (select min(m.ts), b.jid'
 		if _byType = 1 then
 			@msgs_query = CONCAT( @msgs_query, 
@@ -209,7 +235,7 @@ begin
 		else
 			set @groupby_query = ' group by date(m.ts), m.buddy_id, b.jid';
 		end if;
-		set @query = CONCAT(@msgs_query, @tags_query, @groupby_query, ' ) x');
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' ) x');
 		select @query;
 		prepare stmt from @query;
 		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
@@ -321,19 +347,20 @@ begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and `domain` = _domain);
 end //
 
-create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _limit int, _offset int)
+create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8, _limit int, _offset int)
 begin
 	select tag 
 		from tig_ma_tags t 
 		inner join tig_ma_jids o on o.jid_id = t.owner_id 
 		where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
+			and t.tag like _tagStartsWith
 		order by t.tag
 		limit _limit offset _offset;
 end //
 
-create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8)
+create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8)
 begin
-	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid;
+	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid and t.tag like _tagStartsWith;
 end //
 
 delimiter ;
