@@ -93,7 +93,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String DEF_GET_MESSAGES_COUNT_QUERY = "{ call Tig_MA_GetMessagesCount(?,?,?,?,?,?) }";
 	private static final String DEF_GET_COLLECTIONS_QUERY = "{ call Tig_MA_GetCollections(?,?,?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_COLLECTIONS_COUNT_QUERY = "{ call Tig_MA_GetCollectionsCount(?,?,?,?,?,?,?) }";
-	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_Add_Message(?,?,?,?,?,?,?,?) }";
+	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_AddMessage(?,?,?,?,?,?,?,?,?) }";
 	private static final String DEF_ADD_TAG_TO_MESSAGE_QUERY = "{ call Tig_MA_AddTagToMessage(?,?) }";
 	private static final String DEF_REMOVE_MESSAGES_QUERY = "{ call Tig_MA_RemoveMessages(?,?,?,?) }";
 	private static final String DEF_DELETE_EXPIRED_MESSAGES_QUERY = "{ call Tig_MA_DeleteExpiredMessages(?,?) }";
@@ -192,7 +192,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		Map<String,String> queries = getQueries(params);
 		
 		for (Map.Entry<String,String> e : queries.entrySet()) {
-			data_repo.initPreparedStatement(GROUP_BY_TYPE_KEY, GROUP_BY_TYPE_KEY);
+			data_repo.initPreparedStatement(e.getKey(), e.getValue());
 		}
 	}
 	
@@ -300,8 +300,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 							new Object[]{owner, delete_expired_timeout});
 				}
 				delete_expired_msgs_st.setQueryTimeout(delete_expired_timeout);
-				delete_expired_msgs_st.setTimestamp(1, ts);
-				delete_expired_msgs_st.setString(2, owner.toString());
+				delete_expired_msgs_st.setString(1, owner.toString());
+				delete_expired_msgs_st.setTimestamp(2, ts);
 				delete_expired_msgs_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
@@ -413,8 +413,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				synchronized (remove_msgs_st) {
 					remove_msgs_st.setString(1, owner.toString());
 					remove_msgs_st.setString(2, withJid);
-					remove_msgs_st.setTimestamp(3, end_);
-					remove_msgs_st.setTimestamp(4, start_);
+					remove_msgs_st.setTimestamp(3, start_);
+					remove_msgs_st.setTimestamp(4, end_);
 					remove_msgs_st.executeUpdate();
 				}
 			}
@@ -645,9 +645,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	
 	public static class Criteria extends AbstractCriteria<Timestamp> {
 		
-		private boolean groupByType = false;
+		private Boolean groupByType = null;
 		
-		public void setGroupByType(boolean groupByType) {
+		public void setGroupByType(Boolean groupByType) {
 			this.groupByType = groupByType;
 		}
 		
@@ -701,7 +701,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				}
 				stmt.setString(i++, sb.toString());
 			}
-			stmt.setShort(i++, (short) (groupByType ? 1 : 0));
+			if (groupByType != null) {
+				stmt.setShort(i++, (short) (groupByType ? 1 : 0));
+			}
 			return i;
 		}
 		

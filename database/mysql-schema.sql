@@ -60,9 +60,10 @@ create table if not exists tig_ma_msgs_tags (
 	msg_id bigint unsigned NOT NULL,
 	tag_id bigint unsigned NOT NULL,
 	
+	primary key (msg_id, tag_id),
 	foreign key (msg_id) references tig_ma_msgs (msg_id) on delete cascade,
 	foreign key (tag_id) references tig_ma_tags (tag_id) on delete cascade,
-	key index tig_ma_tags_msg_id on tig_ma_msgs_tags (msg_id);
+	key index tig_ma_tags_msg_id on tig_ma_msgs_tags (msg_id),
 	key tig_ma_tags_tag_id on tig_ma_msgs_tags (tag_id);
 )
 ENGINE=InnoDB default character set utf8 ROW_FORMAT=DYNAMIC;
@@ -75,7 +76,7 @@ create index tig_ma_msgs_owner_id_buddy_id_buddy_res_index on tig_ma_msgs (owner
 
 -- addition of domain field to jids table for easier removal of expired messages
 alter table tig_ma_jids add `domain` varchar(1024);
-update tig_ma_jids set `domain` = SUBSTR(jid, LOCATE('@', jid) + 1) where `domain`ą is null;
+update tig_ma_jids set `domain` = SUBSTR(jid, LOCATE('@', jid) + 1) where `domain` is null;
 create index tig_ma_jids_domain_index on tig_ma_jids (`domain`(255));
 
 -- additional index on tig_ma_msgs to improve removal of expired messages
@@ -84,4 +85,12 @@ create index tig_ma_msgs_ts_index on tig_ma_msgs (ts);
 -- additional performace optimizations
 alter table tig_ma_jids add jid_sha1 char(40);
 update tig_ma_jids set jid_sha1 = SHA1(jid) where jid_sha1 is null;
-create unique index tig_ma_jids_jids_sha1 on tig_ma_jids (jid_sha1);
+create unique index tig_ma_jids_jid_sha1 on tig_ma_jids (jid_sha1);
+
+-- added unique constraint on tig_ma_msgs_tags
+alter table add primary key (msgs_id, tag_id);
+
+--fixing collation of tables
+alter table tig_ma_jids collate utf8_general_ci;
+alter table tig_ma_tags collate utf8_general_ci;
+alter table tig_ma_msgs collate utf8_general_ci;

@@ -22,12 +22,16 @@
 package tigase.archive.db;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -40,7 +44,9 @@ import tigase.archive.AbstractCriteria;
 import tigase.db.DBInitException;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
@@ -148,11 +154,9 @@ public class AbstractMessageArchiveRepositoryTest {
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		crit.addTag("#Test123");
-		
 		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		List<Element> chats = repo.getCollections(owner.getBareJID(), crit);
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
-		
 		Element chat = chats.get(0);
 		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
 	}
@@ -212,7 +216,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		
 		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		chats = repo.getCollections(owner.getBareJID(), crit);
-		Assert.assertEquals("Incorrect number of collections", 0, chats.size());		
+		Assert.assertEquals("Incorrect number of collections", 0, chats.size());	
 	}
 	
 	@Test
@@ -243,5 +247,44 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Still some messages, while in this duration all should be deleted", 0, msgs.size());
 	}
 
+	@Test
+	public void test8_removeExpiredItems() throws TigaseDBException, TigaseStringprepException {
+		Date date = new Date();
+		String uuid = UUID.randomUUID().toString();
+		testStart = date;
+		String body = "Test 1 " + uuid;
+		Element msg = new Element("message", new String[] { "from", "to", "type"}, new String[] { owner.toString(), buddy.toString(), StanzaType.chat.name()});
+		msg.addChild(new Element("body", body));
+		Element delay = new Element("delay");
+		LocalDateTime time = LocalDateTime.now().minusDays(1).minusHours(1);
+		Date originalTime = new Date(time.toEpochSecond(ZoneOffset.UTC) * 1000);
+		delay.setAttribute("stamp", formatter2.format(originalTime));
+		msg.addChild(delay);
+		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, originalTime, msg, null);
 	
+		AbstractCriteria crit = repo.newCriteriaInstance();
+		crit.setWith(buddy.getBareJID().toString());
+		crit.addContains(uuid);
+		crit.setSize(1);
+		List<Element> msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertEquals("Incorrect number of messages", 1, msgs.size());		
+		
+		crit = repo.newCriteriaInstance();
+		crit.setWith(buddy.getBareJID().toString());
+		crit.setStart(date);
+		crit.addContains(uuid);
+		crit.setSize(1);
+		msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertEquals("Incorrect number of messages", 0, msgs.size());
+
+		LocalDateTime before = LocalDateTime.now().minusDays(1);
+		repo.deleteExpiredMessages(BareJID.bareJIDInstance(owner.getDomain()), before);
+		
+		crit = repo.newCriteriaInstance();
+		crit.setWith(buddy.getBareJID().toString());
+		crit.addContains(uuid);
+		crit.setSize(1);
+		msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertEquals("Incorrect number of messages", 0, msgs.size());		
+	}
 }
