@@ -61,6 +61,7 @@ create table tig_ma_msgs_tags (
 	msg_id bigint not null,
 	tag_id bigint not null,
 	
+	primary key (msg_id, tag_id),
 	foreign key (msg_id) references tig_ma_msgs (msg_id) on delete cascade,
 	foreign key (tag_id) references tig_ma_tags (tag_id) on delete cascade
 );
@@ -81,3 +82,6 @@ create index tig_ma_jids_domain_index on tig_ma_jids ("domain");
 
 -- additional index on tig_ma_msgs to improve removal of expired messages
 create index tig_ma_msgs_ts_index on tig_ma_msgs (ts); 
+
+-- added unique constraint on tig_ma_msgs_tags
+alter table add primary key (msgs_id, tag_id);

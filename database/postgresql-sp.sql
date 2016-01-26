@@ -18,25 +18,25 @@
 create or replace function Tig_MA_GetHasTagsQuery(_in_str text) returns text as $$
 begin
 	if _in_str is not null then
-		return ' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' || @_in_str || '))';
+		return ' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (' || _in_str || '))';
 	else
 		return '';
 	end if;
-end
+end;
 $$ LANGUAGE 'plpgsql';
 
 create or replace function Tig_MA_GetBodyContainsQuery(_in_str text) returns text as $$
 begin
 	if _in_str is not null then
-		return ' and m.body like ' || replace(@_str, ''',''', ''' and m.body like = ''');
+		return ' and m.body like ' || replace(replace(_in_str, ''',''', ''' and m.body like '''), '%', '%%');
 	else
 		return '';
 	end if;
-end
+end;
 $$ LANGUAGE 'plpgsql';
 
 create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int) returns table(
-	"msg" text, "ts" timestamp, "direction" smallint
+	"msg" text, "ts" timestamp, "direction" smallint, "buddyJid" varchar(2049)
 ) as $$
 declare 
 	tags_query text;
@@ -108,7 +108,7 @@ begin
 			o.jid = _ownerJid
 			and (_buddyJid is null or b.jid = _buddyJid)
 			and (_from is null or m.ts >= _from)
-			and (_to is null or m.ts <= _to)
+			and (_to is null or m.ts <= _to);
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
@@ -127,6 +127,7 @@ begin
 	if _tags is not null or _contains is not null then
 		select Tig_MA_GetHasTagsQuery(_tags) into tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into contains_query;
+		msgs_query := 'select min(m.ts), b.jid';
 		if byType = 1 then
 			msgs_query := msgs_query || ', case when m.type = ''groupchat'' then cast(''groupchat'' as varchar(20)) else cast('''' as varchar(20)) end as "type"';
 		else
@@ -147,7 +148,7 @@ begin
 			groupby_query := ' group by date(m.ts), m.buddy_id, b.jid';
 		end if;
 		pagination_query := ' limit %s offset %s';
-		query_sql = msgs_query || tags_query || contains_query || groupby_query || ' order by min(m.ts), b.jid' || pagination_query;
+		query_sql := msgs_query || tags_query || contains_query || groupby_query || ' order by min(m.ts), b.jid' || pagination_query;
 		return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to, _limit, _offset);
 	else
 		if byType = 1 then
@@ -194,6 +195,7 @@ begin
 	if _tags is not null or _contains is not null then
 		select Tig_MA_GetHasTagsQuery(_tags) into tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into contains_query;
+		msgs_query := 'select count(1) from (select min(m.ts), b.jid';
 		if byType = 1 then
 			msgs_query := msgs_query || ', case when m.type = ''groupchat'' then cast(''groupchat'' as varchar(20)) else cast('''' as varchar(20)) end as "type"';
 		else
@@ -213,7 +215,7 @@ begin
 		else
 			groupby_query := ' group by date(m.ts), m.buddy_id, b.jid';
 		end if;
-		query_sql = msgs_query || tags_query || contains_query || groupby_query || ') x';
+		query_sql := msgs_query || tags_query || contains_query || groupby_query || ') x';
 		return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to);
 	else
 		if byType = 1 then
@@ -252,8 +254,8 @@ begin
 	select jid_id into _jid_id from tig_ma_jids where jid = _jid;
 	if _jid_id is null then
 		with insered as (
-			insert into tig_ma_jids (jid) select _jid where not exists(
-				select 1 from tig_ma_jids where jid = _jid;
+			insert into tig_ma_jids (jid, "domain") select _jid, substr(_jid, strpos(_jid, '@') + 1) where not exists(
+				select 1 from tig_ma_jids where jid = _jid
 			) returning jid_id
 		)
 		select _jid_id = jid_id from inserted;
@@ -272,8 +274,8 @@ declare
 	_buddy_id bigint;
 	_msg_id bigint;
 begin
-	select Tig_MA_EnsureJid(_ownerJid) into owner_id;
-	select Tig_MA_EnsureJid(_buddyJid) into buddy_id;
+	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
+	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
 
 	with inserted_msg as (
 		insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, stanza_hash)
@@ -281,33 +283,33 @@ begin
 		where not exists (
 			select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and stanza_hash = _hash 
 		)
-		returning msg_id;
+		returning msg_id
 	)
-	select _msg_id = msg_id from inserted_msg;
+	select msg_id into _msg_id from inserted_msg;
 	return _msg_id;
 end;
 $$ LANGUAGE 'plpgsql';
 
-create or replace function Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255)) return void as $$
+create or replace function Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255)) returns void as $$
 declare
 	_tag_id bigint;
 	_owner_id bigint;
 begin
-	select _owner_id = owner_id from tig_ma_msgs where msg_id = _msgId;
-	select _tag_id = tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
+	select owner_id into _owner_id from tig_ma_msgs where msg_id = _msgId;
+	select tag_id into _tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
 	if _tag_id is null then
 		with inserted as (
 			insert into tig_ma_tags (owner_id, tag) select _owner_id, _tag where not exists(
-				select 1 from tig_ma_tags where owner_id = _owner_id and tag = _tag;
-			) returning tag_id;
+				select 1 from tig_ma_tags where owner_id = _owner_id and tag = _tag
+			) returning tag_id
 		)
-		select _tag_id = tag_id from inserted;
+		select tag_id into _tag_id from inserted;
 		if _tag_id is null then
-			select _tag_id = tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
+			select tag_id into _tag_id  from tig_ma_tags where owner_id = _owner_id and tag = _tag;
 		end if;
 	end if;
 	insert into tig_ma_msgs_tags (msg_id, tag_id) select _msgId, _tag_id where not exists (
-		select 1 from tig_ma_msgs_tags where msg_id = _msgId and tag_id = _tag_id; 
+		select 1 from tig_ma_msgs_tags where msg_id = _msgId and tag_id = _tag_id
 	);
 end;
 $$ LANGUAGE 'plpgsql';
@@ -319,13 +321,13 @@ declare
 begin
 	_owner_id = 0;
 	_buddy_id = 0;
-	select _owner_id = jid_id from tig_ma_jids where jid = _ownerJid;
-	select _buddy_id = jid_id from tig_ma_jids where jid = _buddyJid;
+	select jid_id into _owner_id from tig_ma_jids where jid = _ownerJid;
+	select jid_id into _buddy_id from tig_ma_jids where jid = _buddyJid;
 	delete from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts >= _from and ts <= _to;
 end;
 $$ LANGUAGE 'plpgsql';
 
-create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp) return void as $$
+create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp) returns void as $$
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and "domain" = _domain);
 end;
@@ -345,7 +347,7 @@ begin
 end;
 $$ LANGUAGE 'plpgsql';
 
-create or replace function Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049), _tagStartsWith varchar(255)) returns bigint $$
+create or replace function Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049), _tagStartsWith varchar(255)) returns bigint as $$
 declare
 	result bigint;
 begin
