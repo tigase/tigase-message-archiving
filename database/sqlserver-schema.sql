@@ -53,10 +53,10 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs' and xtype='U')
 		[buddy_id] [bigint],
 		[ts] [datetime],
 		[direction] [smallint],
-		[type] [nvarchar(20)],
-		[body] [nvarchar(max)],
-		[msg] [nvarchar(max)],
-		[stanza_hash] [nvarchar(50)],
+		[type] [nvarchar](20),
+		[body] [nvarchar](max),
+		[msg] [nvarchar](max),
+		[stanza_hash] [nvarchar](50),
 
 		PRIMARY KEY ( [msg_id] ),
 		CONSTRAINT [FK_tig_ma_msgs_owner_id] FOREIGN KEY ([owner_id])
@@ -92,13 +92,13 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_tags' and xtype='U')
 	CREATE TABLE [dbo].[tig_ma_tags] (
 		[tag_id] [bigint] IDENTITY(1,1) NOT NULL,
 		[owner_id] [bigint] NOT NULL,
-		[tag] [nvarchar(255)],
+		[tag] [nvarchar](255),
 
 		PRIMARY KEY ([tag_id]),
 		CONSTRAINT [FK_tig_ma_tags_owner_id] FOREIGN KEY ([owner_id]) 
 			REFERENCES [tig_ma_jids] ([jid_id]) on delete cascade
 	);
-);
+GO
 
 -- QUERY START:
 IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_tags') AND NAME ='IX_tig_ma_tags_owner_id')
@@ -116,12 +116,13 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs_tags' and xtype=
 		[msg_id] [bigint] NOT NULL,
 		[tag_id] [bigint] NOT NULL,
 
+		PRIMARY KEY ([msg_id], [tag_id]),
 		CONSTRAINT [FK_tig_ma_msgs_tags_msg_id] FOREIGN KEY ([msg_id]) 
 			REFERENCES [tig_ma_msgs] ([msg_id]) on delete cascade,
 		CONSTRAINT [FK_tig_ma_msgs_tags_tag_id] FOREIGN KEY ([tag_id]) 
 			REFERENCES [tig_ma_tags] ([tag_id]) on delete cascade
 	);
-);
+GO
 
 -- QUERY START:
 IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs_tags') AND NAME ='IX_tig_ma_msgs_tags_msg_id')
@@ -138,18 +139,23 @@ GO
 -- additional changes introduced later - after original schema clarified
 
 -- addition of buddy_res field which should contain resource of buddy
-ALTER TABLE [dbo].[tig_ma_msgs] ADD [buddy_res] [nvarchar(1024)];
-CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_buddy_res_index ON [tig_ma_msgs] ([owner_id], [buddy_id], [buddy_res(255)]);
+ALTER TABLE [dbo].[tig_ma_msgs] ADD [buddy_res] [nvarchar](1024);
 
 -- addition of domain field to jids table for easier removal of expired messages
-ALTER TABLE [dbo].[tig_ma_jids] ADD [domain] [nvarchar(1024)];
+ALTER TABLE [dbo].[tig_ma_jids] ADD [domain] [nvarchar](1024);
+ALTER TABLE [dbo].[tig_ma_jids] ADD [domain_sha1] [varbinary](20);
 UPDATE [dbo].[tig_ma_jids] SET [domain] = SUBSTRING([jid], CHARINDEX('@',[jid]) + 1, LEN([jid])) WHERE [domain] IS NULL;
-CREATE INDEX IX_tig_ma_jids_domain_index ON [dbo].[tig_ma_jids] ([domain(255)]);
+UPDATE [dbo].[tig_ma_jids] SET [domain_sha1] = HASHBYTES('SHA1', [domain]) WHERE [domain_sha1] IS NULL;
+
+CREATE INDEX IX_tig_ma_jids_domain_sha1_index ON [dbo].[tig_ma_jids] ([domain_sha1]);
 
 -- additional index on tig_ma_msgs to improve removal of expired messages
 CREATE INDEX IX_tig_ma_msgs_ts_index ON [dbo].[tig_ma_msgs] ([ts]); 
 
 -- add detection if column tig_ma_jids - jid_sha1 exists
-ALTER TABLE [dbo].[tig_ma_jids] ADD [jid_sha1] [varbinary(20)];
+ALTER TABLE [dbo].[tig_ma_jids] ADD [jid_sha1] [varbinary](20);
 UPDATE [dbo].[tig_ma_jids] SET [jid_sha1] = HASHBYTES('SHA1', [jid]) WHERE [jid_sha1] IS NULL;
 ALTER TABLE [dbo].[tig_ma_jids] ADD CONSTRAINT UQ_tig_ma_jids_jids_sha1 UNIQUE (jid_sha1);
+
+-- added unique constraint on tig_ma_msgs_tags
+ALTER TABLE ADD PRIMARY KEY (msgs_id, tag_id);

@@ -50,7 +50,7 @@ begin
 	if @_in_str is null
 		set @_out_query = N'';
 	else
-		set @_out_query = N' and m.body like ' + replace(@_str, N''',''', N''' and m.body like = ''');
+		set @_out_query = N' and m.body like ' + replace(@_in_str, N''',''', N''' and m.body like = ''');
 end
 -- QUERY END:
 GO
@@ -73,6 +73,7 @@ create procedure [dbo].[Tig_MA_GetMessages]
 	@_offset int
 AS
 begin
+	SET NOCOUNT ON;
 	declare 
 		@params_def nvarchar(max),
 		@contains_query nvarchar(max),
@@ -83,8 +84,8 @@ begin
 	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
-		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
 		set @msgs_query = N'select m.msg, m.ts, m.direction, b.jid, row_number() over (order by m.ts) as row_num
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
@@ -95,7 +96,7 @@ begin
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + @contains_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
-		execute sp_executesql @query_sql, @params_def, @_ownerJid, @_buddyJid, @_from, @_to, @_limit, @_offset
+		execute sp_executesql @query_sql, @params_def, @_ownerJid=@_ownerJid, @_buddyJid=@_buddyJid, @_from=@_from, @_to=@_to, @_limit=@_limit, @_offset=@_offset
 		end
 	else
 		begin
@@ -141,9 +142,9 @@ begin
 
 	if @_tags is not null or @_contains is not null
 		begin
-		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
-		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
+		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
 		set @msgs_query = N'select count(m.msg_id)
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
@@ -153,8 +154,8 @@ begin
 			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
-		set @query_sql = @msgs_query + @tags_query;
-		execute sp_executesql @query_sql, @params_def, @_ownerJid, @_buddyJid, @_from, @_to, @_limit, @_offset
+		set @query_sql = @msgs_query + @tags_query + @contains_query;
+		execute sp_executesql @query_sql, @params_def, @_ownerJid=@_ownerJid, @_buddyJid=@_buddyJid, @_from=@_from, @_to=@_to
 		end
 	else
 		begin
@@ -167,7 +168,6 @@ begin
 			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)
-		)
 		end
 end
 -- QUERY END:
@@ -197,17 +197,18 @@ begin
 		@params_def nvarchar(max),
 		@tags_query nvarchar(max),
 		@contains_query nvarchar(max),
+		@groupby_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
 	if @_tags is not null or @_contains is not null
 		begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
-		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
-		set @msgs_query = N'select min(m.ts) as ts, b.jid, ROW_NUMBER() over (order by min(m.ts), j.jid) as row_num';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
+		set @msgs_query = N'select min(m.ts) as ts, b.jid, ROW_NUMBER() over (order by min(m.ts), b.jid) as row_num';
 
-		if _byType = 1 
+		if @_byType = 1 
 			set @msgs_query = @msgs_query + N', case when m.type = ''groupchat'' then ''groupchat'' else '''' end as type';
 		else
 			set @msgs_query = @msgs_query + N', null as type';
@@ -220,17 +221,17 @@ begin
 			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
-		if _byType = 1
-			set @msgs_query = msgs_query + N' group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = ''groupchat'' then ''groupchat'' else '''' end';
+		if @_byType = 1
+			set @groupby_query = N' group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = ''groupchat'' then ''groupchat'' else '''' end';
 		else
-			set @msgs_query = msgs_query + N' group by cast(m.ts as date), m.buddy_id, b.jid';
+			set @groupby_query = N' group by cast(m.ts as date), m.buddy_id, b.jid';
 		
-		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
-		execute sp_executesql @query_sql, @params_def, @_ownerJid, @_buddyJid, @_from, @_to, @_limit, @_offset
+		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + @contains_query + @groupby_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
+		execute sp_executesql @query_sql, @params_def, @_ownerJid=@_ownerJid, @_buddyJid=@_buddyJid, @_from=@_from, @_to=@_to, @_limit=@_limit, @_offset=@_offset
 		end
 	else
 		begin
-		if _byType = 1
+		if @_byType = 1
 			begin
 			;with results_cte as (
 			select min(ts) as ts, b.jid, row_number() over (order by min(m.ts), b.jid) as row_num, case when m.type = 'groupchat' then 'groupchat' else '' end as type
@@ -288,17 +289,18 @@ begin
 		@params_def nvarchar(max),
 		@tags_query nvarchar(max),
 		@contains_query nvarchar(max),
+		@groupby_query nvarchar(max),
 		@msgs_query nvarchar(max),
 		@query_sql nvarchar(max);
 
 	if @_tags is not null or @_contains is not null
 		begin
-		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
-		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query;
-		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query;
+		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
 		set @msgs_query = N'select min(m.ts) as ts, b.jid';
 
-		if _byType = 1 
+		if @_byType = 1 
 			set @msgs_query = @msgs_query + N', case when m.type = ''groupchat'' then ''groupchat'' else '''' end as type';
 		else
 			set @msgs_query = @msgs_query + N', null as type';
@@ -311,17 +313,17 @@ begin
 			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
-		if _byType = 1
-			set @msgs_query = msgs_query + N' group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = ''groupchat'' then ''groupchat'' else '''' end';
+		if @_byType = 1
+			set @groupby_query = N' group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = ''groupchat'' then ''groupchat'' else '''' end';
 		else
-			set @msgs_query = msgs_query + N' group by cast(m.ts as date), m.buddy_id, b.jid';
+			set @groupby_query = N' group by cast(m.ts as date), m.buddy_id, b.jid';
 		
-		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + N') select count(1) from results_cte'
-		execute sp_executesql @query_sql, @params_def, @_ownerJid, @_buddyJid, @_from, @_to, @_limit, @_offset
+		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + @contains_query + @groupby_query + N') select count(1) from results_cte'
+		execute sp_executesql @query_sql, @params_def, @_ownerJid=@_ownerJid, @_buddyJid=@_buddyJid, @_from=@_from, @_to=@_to
 		end
 	else
 		begin
-		if _byType = 1
+		if @_byType = 1
 			begin
 			;with results_cte as (
 			select min(ts) as ts, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end as type
@@ -370,7 +372,8 @@ create procedure dbo.Tig_MA_EnsureJid
 	@_jid_id bigint OUTPUT
 AS
 begin
-	declare @_jid_sha1 varbinary(20);
+	declare @_jid_sha1 varbinary(20),
+			@_domain nvarchar(1024);
 
 		set @_jid_sha1 = HASHBYTES('SHA1', @_jid);
 		select @_jid_id=jid_id from tig_ma_jids
@@ -378,8 +381,9 @@ begin
 		if @_jid_id is null
 		begin
 			BEGIN TRY
-			insert into tig_ma_jids (jid,jid_sha1)
-				select @_jid, @_jid_sha1 where not exists(
+			select @_domain = SUBSTRING(@_jid, CHARINDEX('@',@_jid) + 1, LEN(@_jid));
+			insert into tig_ma_jids (jid,jid_sha1,[domain],[domain_sha1])
+				select @_jid, @_jid_sha1, @_domain, HASHBYTES('SHA1', @_domain) where not exists(
 							select 1 from tig_ma_jids where jid_sha1 = @_jid_sha1 and jid = @_jid);
 			select @_jid_id = @@IDENTITY;
 			END TRY
@@ -416,8 +420,8 @@ create procedure Tig_MA_AddMessage
 	@_hash nvarchar(50)
 AS
 begin
-	declare @owner_id bigint;
-	declare @buddy_id bigint;
+	declare @_owner_id bigint;
+	declare @_buddy_id bigint;
 	
 	exec Tig_MA_EnsureJid @_jid=@_ownerJid, @_jid_id=@_owner_id output;
 	exec Tig_MA_EnsureJid @_jid=@_buddyJid, @_jid_id=@_buddy_id output;
@@ -427,7 +431,7 @@ begin
 		where not exists (
 			select 1 from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts = @_ts and stanza_hash = @_hash 
 		);
-	select _msg_id = @@IDENTITY;	
+	select @@IDENTITY as msg_id
 end
 -- QUERY END:
 GO
@@ -452,16 +456,16 @@ begin
 	if @_tag_id is null
 		begin
 		insert into tig_ma_tags (owner_id, tag) select @_owner_id, @_tag where not exists(
-			select 1 from tig_ma_tags where owner_id = @_owner_id and tag = @_tag;
-		);
+			select 1 from tig_ma_tags where owner_id = @_owner_id and tag = @_tag
+		)
 		select @_tag_id = @@IDENTITY;
-		if @_tag_id is null then
+		if @_tag_id is null
+			begin
 			select @_tag_id = tag_id from tig_ma_tags where owner_id = @_owner_id and tag = @_tag;
-		end if;
+			end
 		end
-	end if;
 	insert into tig_ma_msgs_tags (msg_id, tag_id) select @_msgId, @_tag_id where not exists (
-		select 1 from tig_ma_msgs_tags where msg_id = @_msgId and tag_id = @_tag_id; 
+		select 1 from tig_ma_msgs_tags where msg_id = @_msgId and tag_id = @_tag_id
 	);
 end
 -- QUERY END:
@@ -482,7 +486,7 @@ create procedure Tig_MA_RemoveMessages
 AS
 begin
 	declare @_owner_id bigint;
-	daclare @_buddy_id bigint;
+	declare @_buddy_id bigint;
 	set @_owner_id = 0;
 	set @_buddy_id = 0;
 	select @_owner_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and jid = @_ownerJid;
@@ -504,7 +508,7 @@ create procedure Tig_MA_DeleteExpiredMessages
 	@_before datetime
 AS
 begin
-	delete from tig_ma_msgs where ts < @_before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and [domain] = @_domain);
+	delete from tig_ma_msgs where ts < @_before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and [domain_sha1] = HASHBYTES('SHA1', @_domain) and [domain] = @_domain);
 end
 -- QUERY END:
 GO

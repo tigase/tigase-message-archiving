@@ -248,14 +248,23 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 					i = addMessageAdditionalInfo(add_message_st, i, additionalData);
 
-					add_message_st.executeUpdate();
-
+					// works for MSSQL, MySQL and PostgreSQL
+					rs = add_message_st.executeQuery();
 					if (tags != null) {
-						rs = add_message_st.getResultSet();
 						if (rs.next()) {
 								msgId = rs.getLong(1);
 						}
 					}
+
+					// below works for MySQL and PostgreSQL
+//					add_message_st.executeUpdate();
+//					if (tags != null) {
+//						rs = add_message_st.getResultSet();
+//						if (rs.next()) {
+//								msgId = rs.getLong(1);
+//						}
+//					}
+
 				} finally {
 					data_repo.release(null, rs);
 				}
