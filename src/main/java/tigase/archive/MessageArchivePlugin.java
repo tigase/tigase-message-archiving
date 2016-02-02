@@ -567,7 +567,7 @@ public class MessageArchivePlugin
 			}
 		}
 
-		StoreMethod storeMethod = null;
+		StoreMethod storeMethod = StoreMethod.False;
 		switch (type) {
 			case chat:
 			case normal:
