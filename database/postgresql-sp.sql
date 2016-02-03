@@ -15,6 +15,7 @@
 --  along with this program. Look for COPYING file in the top folder.
 --  If not, see http://www.gnu.org/licenses/.
 
+-- QUERY START:
 create or replace function Tig_MA_GetHasTagsQuery(_in_str text) returns text as $$
 begin
 	if _in_str is not null then
@@ -24,7 +25,9 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetBodyContainsQuery(_in_str text) returns text as $$
 begin
 	if _in_str is not null then
@@ -34,7 +37,9 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int) returns table(
 	"msg" text, "ts" timestamp, "direction" smallint, "buddyJid" varchar(2049)
 ) as $$
@@ -75,7 +80,9 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetMessagesCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text) returns table(
 	"count" bigint
 ) as $$
@@ -112,7 +119,9 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetCollections(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, byType smallint, _limit int, _offset int) returns table(
 	"ts" timestamp, "with" varchar(2049), "type" varchar(20)
 ) as $$
@@ -181,7 +190,9 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetCollectionsCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, byType smallint) returns table(
 	"count" bigint
 ) as $$
@@ -244,8 +255,10 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
+-- QUERY END:
 
 
+-- QUERY START:
 create or replace function Tig_MA_EnsureJid(_jid varchar(2049)) returns bigint as $$
 declare
 	_jid alias for $1;
@@ -266,7 +279,9 @@ begin
 	return _jid_id;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_AddMessage(_ownerJid varchar(2049), _buddyJid varchar(2049), _buddyRes varchar(1024), _ts timestamp, 
 	_direction smallint, _type varchar(20), _body text, _msg text, _hash varchar(50)) returns bigint as $$
 declare
@@ -289,7 +304,9 @@ begin
 	return _msg_id;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255)) returns void as $$
 declare
 	_tag_id bigint;
@@ -313,7 +330,9 @@ begin
 	);
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_RemoveMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp) returns void as $$
 declare
 	_owner_id bigint;
@@ -326,13 +345,17 @@ begin
 	delete from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts >= _from and ts <= _to;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp) returns void as $$
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and "domain" = _domain);
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetTagsForUser(_ownerJid varchar(2049), _tagStartsWith varchar(255), _limit int, _offset int) returns table (
 	tag varchar(255)
 ) as $$
@@ -346,7 +369,9 @@ begin
 		limit _limit offset _offset;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049), _tagStartsWith varchar(255)) returns bigint as $$
 declare
 	result bigint;
@@ -355,3 +380,4 @@ begin
 	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = _ownerJid and t.tag like _tagStartsWith;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:

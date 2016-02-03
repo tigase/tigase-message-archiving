@@ -139,23 +139,64 @@ GO
 -- additional changes introduced later - after original schema clarified
 
 -- addition of buddy_res field which should contain resource of buddy
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('tig_ma_msgs') and NAME = 'buddy_res')
 ALTER TABLE [dbo].[tig_ma_msgs] ADD [buddy_res] [nvarchar](1024);
+-- QUERY END:
+GO
 
 -- addition of domain field to jids table for easier removal of expired messages
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('tig_ma_jids') and NAME = 'domain')
 ALTER TABLE [dbo].[tig_ma_jids] ADD [domain] [nvarchar](1024);
+-- QUERY END:
+GO
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('tig_ma_jids') and NAME = 'domain_sha1')
 ALTER TABLE [dbo].[tig_ma_jids] ADD [domain_sha1] [varbinary](20);
+-- QUERY END:
+GO
+-- QUERY START:
 UPDATE [dbo].[tig_ma_jids] SET [domain] = SUBSTRING([jid], CHARINDEX('@',[jid]) + 1, LEN([jid])) WHERE [domain] IS NULL;
+-- QUERY END:
+GO
+-- QUERY START:
 UPDATE [dbo].[tig_ma_jids] SET [domain_sha1] = HASHBYTES('SHA1', [domain]) WHERE [domain_sha1] IS NULL;
+-- QUERY END:
+GO
 
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_jids') AND NAME ='IX_tig_ma_jids_domain_sha1_index')
 CREATE INDEX IX_tig_ma_jids_domain_sha1_index ON [dbo].[tig_ma_jids] ([domain_sha1]);
+-- QUERY END:
+GO
 
 -- additional index on tig_ma_msgs to improve removal of expired messages
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_ts_index')
 CREATE INDEX IX_tig_ma_msgs_ts_index ON [dbo].[tig_ma_msgs] ([ts]); 
+-- QUERY END:
+GO
 
 -- add detection if column tig_ma_jids - jid_sha1 exists
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('tig_ma_jids') and NAME = 'jid_sha1')
 ALTER TABLE [dbo].[tig_ma_jids] ADD [jid_sha1] [varbinary](20);
+-- QUERY END:
+GO
+-- QUERY START:
 UPDATE [dbo].[tig_ma_jids] SET [jid_sha1] = HASHBYTES('SHA1', [jid]) WHERE [jid_sha1] IS NULL;
+-- QUERY END:
+GO
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID('tig_ma_jids') and TYPE = 'UQ' and NAME = 'UQ_tig_ma_jids_jids_sha1')
 ALTER TABLE [dbo].[tig_ma_jids] ADD CONSTRAINT UQ_tig_ma_jids_jids_sha1 UNIQUE (jid_sha1);
+-- QUERY END:
+GO
 
 -- added unique constraint on tig_ma_msgs_tags
-ALTER TABLE ADD PRIMARY KEY (msgs_id, tag_id);
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID('tig_ma_msgs_tags') and TYPE = 'PK')
+ALTER TABLE [dbo].[tig_ma_msgs_tags] ADD PRIMARY KEY (msg_id, tag_id);
+-- QUERY END:
+GO

@@ -15,38 +15,71 @@
 --  along with this program. Look for COPYING file in the top folder.
 --  If not, see http://www.gnu.org/licenses/.
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetHasTagsQuery;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetBodyContainsQuery;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetMessages;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetMessagesCount;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetCollections;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetCollectionsCount;
+-- QUERY END:
 
+-- QUERY START:
 drop function if exists Tig_MA_EnsureJid;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_AddMessage;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_AddTagToMessage;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_RemoveMessages;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_DeleteExpiredMessages;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetTagsForUser;
+-- QUERY END:
 
+-- QUERY START:
 drop procedure if exists Tig_MA_GetTagsForUserCount;
+-- QUERY END:
 
+-- QUERY START:
 drop function if exists Tig_MA_GetHasTagsQuery;
+-- QUERY END:
 
+-- QUERY START:
 drop function if exists Tig_MA_GetBodyContainsQuery;
+-- QUERY END:
 
+-- QUERY START:
 delimiter //
+-- QUERY END:
 
+-- QUERY START:
 create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8
 begin
 	if _in_str is not null then
@@ -55,7 +88,9 @@ begin
 		return '';
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8
 begin
 	if _in_str is not null then
@@ -64,7 +99,9 @@ begin
 		return '';
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
@@ -104,7 +141,9 @@ begin
 		limit _limit offset _offset;
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8)
 begin
 	if _tags is not null or _contains is not null then
@@ -139,7 +178,9 @@ begin
 			and (_to is null or m.ts <= _to);
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
@@ -206,7 +247,9 @@ begin
 		end if;
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint)
 begin
 	if _tags is not null or _contains is not null then
@@ -267,7 +310,9 @@ begin
 		end if;
 	end if;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create function Tig_MA_EnsureJid(_jid varchar(2049) CHARSET utf8) returns bigint DETERMINISTIC
 begin
 	declare _jid_id bigint;
@@ -284,7 +329,9 @@ begin
 
 	return (_jid_id);
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8,
 	 _buddyRes varchar(1024)  CHARSET utf8, _ts timestamp, _direction smallint, _type varchar(20) CHARSET utf8,
 	 _body text CHARSET utf8, _msg text CHARSET utf8, _hash varchar(50) CHARSET utf8)
@@ -306,7 +353,9 @@ begin
 
 	select _msg_id as msg_id;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255) CHARSET utf8)
 begin
 	declare _owner_id bigint;
@@ -324,7 +373,9 @@ begin
 	insert into tig_ma_msgs_tags (msg_id, tag_id) values (_msgId, _tag_id) on duplicate key update tag_id = tag_id;
 	COMMIT;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_RemoveMessages(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp)
 begin
 	set @_owner_id = 0;
@@ -333,12 +384,16 @@ begin
 	select jid_id into @_buddy_id from tig_ma_jids j where j.jid_sha1 = SHA1(_buddyJid) and jid = _buddyJid;
 	delete from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts >= _from and ts <= _to;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_DeleteExpiredMessages(_domain varchar(1024) CHARSET utf8, _before timestamp)
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and `domain` = _domain);
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8, _limit int, _offset int)
 begin
 	select tag 
@@ -349,10 +404,15 @@ begin
 		order by t.tag
 		limit _limit offset _offset;
 end //
+-- QUERY END:
 
+-- QUERY START:
 create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8)
 begin
 	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid and t.tag like _tagStartsWith;
 end //
+-- QUERY END:
 
+-- QUERY START:
 delimiter ;
+-- QUERY END:
