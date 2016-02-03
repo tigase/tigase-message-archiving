@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.logging.Logger;
+import tigase.xmpp.BareJID;
 
 /**
  *
@@ -125,7 +126,7 @@ public class StoredProcedures {
 		}		
 	}	
 	
-	public static void getCollections(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, Integer limit, Integer offset, Short byType, ResultSet[] data) throws SQLException {
+	public static void getCollections(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, short byType, Integer limit, Integer offset, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -180,7 +181,7 @@ public class StoredProcedures {
 		}		
 	}
 	
-	public static void getCollectionsCount(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, Short byType, ResultSet[] data) throws SQLException {
+	public static void getCollectionsCount(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, short byType, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -238,6 +239,7 @@ public class StoredProcedures {
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
+			BareJID bareJid = BareJID.bareJIDInstanceNS(jid);
 			PreparedStatement ps =
 				conn.prepareStatement("select jid_id from tig_ma_jids where jid = ?");
 
@@ -246,9 +248,10 @@ public class StoredProcedures {
 			if (rs.next()) {
 				return rs.getLong(1);
 			} else {
-				ps = conn.prepareStatement("insert into tig_ma_jids (jid) values (?)",
+				ps = conn.prepareStatement("insert into tig_ma_jids (jid, \"domain\") values (?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 				ps.setString(1, jid);
+				ps.setString(2, bareJid.getDomain());
 				ps.executeUpdate();
 				rs = ps.getGeneratedKeys();
 				if (rs.next())
@@ -262,7 +265,7 @@ public class StoredProcedures {
 		}		
 	}	
 
-	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, Short direction, String type, String body, String msg, String hash, ResultSet[] data) throws SQLException {
+	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, short direction, String type, String body, String msg, String hash, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -270,14 +273,13 @@ public class StoredProcedures {
 		try {
 			long ownerId = ensureJid(ownerJid);
 			long buddyId = ensureJid(buddyJid);
-
 			PreparedStatement ps = conn.prepareStatement("" +
 					"insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, \"type\", body, msg, stanza_hash)" +
 					" select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 					" from SYSIBM.SYSDUMMY1" +
 					" where not exists (" +
 					" select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and ts = ? and stanza_hash = ?" +
-					")");
+					")", Statement.RETURN_GENERATED_KEYS);
 
 			int i=0;
 			ps.setLong(++i, ownerId);
@@ -294,9 +296,16 @@ public class StoredProcedures {
 			ps.setLong(++i, buddyId);
 			ps.setTimestamp(++i, ts);
 			ps.setString(++i, hash);
+
+			ps.execute();
 			
-			ps.executeUpdate();
-			data[0] = ps.getGeneratedKeys();
+			ResultSet rs = ps.getGeneratedKeys();
+			long id = 0;
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+			ps = conn.prepareStatement("select msg_id from tig_ma_msgs where msg_id = " + id);
+			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
@@ -304,7 +313,7 @@ public class StoredProcedures {
 		}		
 	}
 
-	public static void addTagToMessage(Long msgId, String tag, ResultSet[] data) throws SQLException {
+	public static void addTagToMessage(long msgId, String tag) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -328,10 +337,10 @@ public class StoredProcedures {
 			long tagId = -1;
 			if (!rs.next()) {
 				rs.close();
-				ps = conn.prepareStatement("insert into tig_ma_tags (owner_id, tag) values (?,?)");
+				ps = conn.prepareStatement("insert into tig_ma_tags (owner_id, tag) values (?,?)", Statement.RETURN_GENERATED_KEYS);
 				ps.setLong(1, ownerId);
 				ps.setString(2, tag);
-				ps.executeUpdate();
+				ps.execute();
 				rs = ps.getGeneratedKeys();
 				rs.next();
 			}
@@ -339,7 +348,7 @@ public class StoredProcedures {
 			rs.close();
 			
 			ps = conn.prepareStatement("insert into tig_ma_msgs_tags (msg_id, tag_id) select ?, ? from SYSIBM.SYSDUMMY1"
-					+ " where not exists (select 1 from tig_ma_msgs_tags mt where mt.msg_id = ? and mt.tag_id = ?");
+					+ " where not exists (select 1 from tig_ma_msgs_tags mt where mt.msg_id = ? and mt.tag_id = ?)");
 			
 			ps.setLong(1, msgId);
 			ps.setLong(2, tagId);
@@ -354,14 +363,14 @@ public class StoredProcedures {
 		}		
 	}
 	
-	public static void removeMessages(String ownerJid, String buddyJid, Timestamp from, Timestamp to, ResultSet[] data) throws SQLException {
+	public static void removeMessages(String ownerJid, String buddyJid, Timestamp from, Timestamp to) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
 			PreparedStatement ps =
-				conn.prepareStatement("select owner_id from tig_ma_jids where jid = ?");
+				conn.prepareStatement("select jid_id from tig_ma_jids where jid = ?");
 
 			ps.setString(1, ownerJid);
 			ResultSet rs = ps.executeQuery();
@@ -369,7 +378,7 @@ public class StoredProcedures {
 			long ownerId = rs.getLong(1);
 			rs.close();
 			
-			ps.setString(2, buddyJid);
+			ps.setString(1, buddyJid);
 			rs = ps.executeQuery();
 			rs.next();
 			long buddyId = rs.getLong(1);
@@ -382,7 +391,7 @@ public class StoredProcedures {
 			ps.setTimestamp(3, from);
 			ps.setTimestamp(4, to);
 			
-			ps.executeUpdate();
+			ps.execute();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
@@ -390,7 +399,7 @@ public class StoredProcedures {
 		}		
 	}
 
-	public static void deleteExpiredMessages(String domain, Timestamp before, ResultSet[] data) throws SQLException {
+	public static void deleteExpiredMessages(String domain, Timestamp before) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -401,7 +410,7 @@ public class StoredProcedures {
 			ps.setTimestamp(1, before);
 			ps.setString(2, domain);
 			
-			ps.executeUpdate();
+			ps.execute();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
