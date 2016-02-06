@@ -640,6 +640,7 @@ public class MessageArchivePlugin
 	private void storeMessage(Packet packet, XMPPResourceConnection session, StoreMethod storeMethod, Queue<Packet> results) throws NotAuthorizedException {
 		Packet result = packet.copyElementOnly();
 
+		result.setPacketFrom(session.getJID().copyWithoutResource());
 		result.setPacketTo(ma_jid);
 		result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
 		switch (storeMethod) {
