@@ -291,7 +291,7 @@ begin
 	else
 		begin
 		;with results_cte as (
-		select m.msg, m.ts, m.direction, row_number() over (order by m.ts) as row_num
+		select m.msg, m.ts, m.direction, b.jid, row_number() over (order by m.ts) as row_num
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
