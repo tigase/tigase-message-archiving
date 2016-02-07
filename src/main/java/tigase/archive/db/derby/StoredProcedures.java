@@ -458,7 +458,7 @@ public class StoredProcedures {
 		}		
 	}
 	
-	private static StringBuilder appendTagsQuery(StringBuilder sb, String tags) {
+	protected static StringBuilder appendTagsQuery(StringBuilder sb, String tags) {
 		if (tags != null) {
 			sb.append(" and exists(select 1 from tig_ma_msgs_tags mt "
 					+ "inner join tig_ma_tags t on mt.tag_id = t.tag_id "
@@ -468,7 +468,7 @@ public class StoredProcedures {
 		return sb;
 	}
 
-	private static StringBuilder appendContainsQuery(StringBuilder sb, String contains) {
+	protected static StringBuilder appendContainsQuery(StringBuilder sb, String contains) {
 		if (contains != null) {
 			sb.append(" and m.body like ")
 				.append(contains.replace("','", "' and m.body like '"));
