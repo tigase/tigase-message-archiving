@@ -177,6 +177,12 @@ public class AbstractMessageArchiveRepositoryTest {
 		res = msgs.get(1);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		
+		crit = repo.newCriteriaInstance();
+		crit.setStart(testStart);
+		
+		msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);		
 	}
 
 	@Test
@@ -192,6 +198,13 @@ public class AbstractMessageArchiveRepositoryTest {
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		
+		crit = repo.newCriteriaInstance();
+		crit.setStart(testStart);
+		crit.addTag("#Test123");
+		
+		msgs = repo.getItems(owner.getBareJID(), crit);
+		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);		
 	}
 	
 	@Test
