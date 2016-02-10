@@ -87,9 +87,7 @@ drop procedure if exists TigAddColumnIfNotExists;
 drop procedure if exists TigAddIndexIfNotExists;
 -- QUERY END:
 
--- QUERY START:
 delimiter //
--- QUERY END:
 
 -- QUERY START:
 create procedure TigExecuteIfNot(cond int, query text)
@@ -124,9 +122,7 @@ call TigExecuteIfNot((select count(1) from information_schema.STATISTICS where T
 end //
 -- QUERY END:
 
--- QUERY START:
 delimiter ;
--- QUERY END:
 
 -- addition of buddy_res field which should contain resource of buddy
 -- QUERY START:
@@ -244,9 +240,7 @@ drop function if exists Tig_MA_GetHasTagsQuery;
 drop function if exists Tig_MA_GetBodyContainsQuery;
 -- QUERY END:
 
--- QUERY START:
 delimiter //
--- QUERY END:
 
 -- QUERY START:
 create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8
@@ -582,6 +576,4 @@ begin
 end //
 -- QUERY END:
 
--- QUERY START:
 delimiter ;
--- QUERY END:
