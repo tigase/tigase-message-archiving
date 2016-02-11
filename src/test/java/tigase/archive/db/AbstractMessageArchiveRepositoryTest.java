@@ -25,7 +25,6 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,12 +38,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
-import static org.junit.Assume.assumeNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -102,8 +99,8 @@ public class AbstractMessageArchiveRepositoryTest {
 	// this is static to pass date from first test to next one
 	private static Date testStart = null;
 
-	private JID owner = JID.jidInstanceNS("test1@zeus/tigase-1");
-	private JID buddy = JID.jidInstanceNS("test2@zeus/tigase-2");	
+	private static JID owner = null;
+	private static JID buddy = null;	
 	
 	@BeforeClass
 	public static void loadSchema() {
@@ -198,6 +195,9 @@ public class AbstractMessageArchiveRepositoryTest {
 			Assert.assertEquals(Result.ok, loader.loadSchemaFile(props));
 			loader.shutdown(props);			
 		} 
+
+		owner = JID.jidInstanceNS("ua-" + UUID.randomUUID(), "test", "tigase-1");
+		buddy = JID.jidInstanceNS("ua-" + UUID.randomUUID(), "test", "tigase-2");
 	}
 	
 	@AfterClass

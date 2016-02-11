@@ -251,7 +251,7 @@ public class MessageArchiveComponent
 			if (uri != null) {
 				Class<? extends MessageArchiveRepository> repoCls = null;
 				if (repoClsName == null)
-					repoCls = RepositoryFactory.getRepoClass(MessageArchiveRepository.class, uri);
+					repoCls = RepositoryFactory.getRepoClass(getMessageArchiveRepositoryClass(), uri);
 				else {
 					try {
 						repoCls = (Class<? extends MessageArchiveRepository>) ModulesManagerImpl.getInstance().forName(repoClsName);
@@ -306,6 +306,10 @@ public class MessageArchiveComponent
 
 	//~--- methods --------------------------------------------------------------
 
+	protected Class<? extends MessageArchiveRepository> getMessageArchiveRepositoryClass() {
+		return MessageArchiveRepository.class;
+	}
+	
 	/**
 	 * Method description
 	 *

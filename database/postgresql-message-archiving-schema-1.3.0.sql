@@ -142,6 +142,13 @@ end$$;
 
 -- additional changes introduced later - after original schema clarified
 
+do $$ 
+if not exists (select 1 from information_schema.columns where table_catalog = current_database() AND table_schema = 'public' 
+		AND table_name = 'tig_ma_msgs' and column_name = 'msg_id' and data_type = 'int') then
+	alter table tig_ma_msgs alter column msg_id set data type bigint; 
+end if;
+end $$;
+
 -- addition of buddy_res field which should contain resource of buddy
 -- QUERY START:
 do $$
@@ -459,12 +466,12 @@ declare
 begin
 	select jid_id into _jid_id from tig_ma_jids where jid = _jid;
 	if _jid_id is null then
-		with insered as (
+		with inserted as (
 			insert into tig_ma_jids (jid, "domain") select _jid, substr(_jid, strpos(_jid, '@') + 1) where not exists(
 				select 1 from tig_ma_jids where jid = _jid
 			) returning jid_id
 		)
-		select _jid_id = jid_id from inserted;
+		select jid_id into _jid_id from inserted;
 		if _jid_id is null then
 			select jid_id into _jid_id from tig_ma_jids where jid = _jid;
 		end if;
