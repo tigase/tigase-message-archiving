@@ -94,6 +94,21 @@ public class MessageArchiveComponent
 
 	//~--- methods --------------------------------------------------------------
 
+	@Override
+	public int hashCodeForPacket(Packet packet) {
+		if (packet.getElemName() == Message.ELEM_NAME && packet.getPacketFrom() != null 
+				&& !getComponentId().equals(packet.getPacketFrom())) {
+			return packet.getPacketFrom().hashCode();
+		}
+		if (packet.getStanzaFrom() != null && !getComponentId().equals(packet.getStanzaFrom())) {
+			return packet.getStanzaFrom().getBareJID().hashCode();
+		}
+		if (packet.getStanzaTo() != null) {
+			return packet.getStanzaTo().hashCode();
+		}
+		return 1;
+	}
+	
 	/**
 	 * Method description
 	 *
@@ -440,6 +455,10 @@ public class MessageArchiveComponent
 
 		if (ownerStr != null) {
 			packet.getElement().removeAttribute(OWNER_JID);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "for user {0} storing message: {1}", 
+						new Object[]{ownerStr, packet.toString()});
+			}
 
 			BareJID owner    = BareJID.bareJIDInstanceNS(ownerStr);
 			Direction direction = Direction.getDirection(owner, packet.getStanzaFrom().getBareJID());
