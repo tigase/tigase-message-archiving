@@ -29,31 +29,23 @@ package tigase.archive;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 
+import tigase.server.Iq;
 import tigase.server.Message;
 import tigase.server.Packet;
 
-import tigase.util.DNSResolver;
-
-import tigase.xml.Element;
-
 import tigase.xmpp.*;
+import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
 
-//~--- JDK imports ------------------------------------------------------------
+import tigase.util.DNSResolverFactory;
+import tigase.xml.Element;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
-import tigase.server.Iq;
-import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * MessageArchingPlugin is implementation of plugin which forwards messages
@@ -150,7 +142,7 @@ public class MessageArchivePlugin
 		if (componentJidStr != null) {
 			ma_jid = JID.jidInstanceNS(componentJidStr);
 		} else {
-			String defHost = DNSResolver.getDefaultHostname();
+			String defHost = DNSResolverFactory.getInstance().getDefaultHost();
 
 			ma_jid = JID.jidInstanceNS("message-archive", defHost, null);
 		}
