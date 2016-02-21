@@ -1,8 +1,8 @@
 /*
  * MessageArchiveComponent.java
  *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2013 "Tigase, Inc." <office@tigase.com>
+ * Tigase Message Archiving Component
+ * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -266,7 +266,7 @@ public class MessageArchiveComponent
 			if (uri != null) {
 				Class<? extends MessageArchiveRepository> repoCls = null;
 				if (repoClsName == null)
-					repoCls = RepositoryFactory.getRepoClass(MessageArchiveRepository.class, uri);
+					repoCls = RepositoryFactory.getRepoClass(getMessageArchiveRepositoryClass(), uri);
 				else {
 					try {
 						repoCls = (Class<? extends MessageArchiveRepository>) ModulesManagerImpl.getInstance().forName(repoClsName);
@@ -321,6 +321,10 @@ public class MessageArchiveComponent
 
 	//~--- methods --------------------------------------------------------------
 
+	protected Class<? extends MessageArchiveRepository> getMessageArchiveRepositoryClass() {
+		return MessageArchiveRepository.class;
+	}
+	
 	/**
 	 * Method description
 	 *
