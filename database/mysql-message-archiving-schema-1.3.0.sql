@@ -117,7 +117,7 @@ end //
 create procedure TigAddIndexIfNotExists(tab varchar(255), ix_name varchar(255), uni smallint, def varchar(255))
 begin
 call TigExecuteIfNot((select count(1) from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = tab and INDEX_NAME = ix_name), 
-	CONCAT('create ', IF(uni=1, 'unique', ''), ' ', ix_name, ' on ', tab, ' ', def)
+	CONCAT('create ', IF(uni=1, 'unique', ''), ' index ', ix_name, ' on ', tab, ' ', def)
 );
 end //
 -- QUERY END:
