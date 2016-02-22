@@ -243,7 +243,7 @@ drop function if exists Tig_MA_GetBodyContainsQuery;
 delimiter //
 
 -- QUERY START:
-create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8
+create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8 NO SQL
 begin
 	if _in_str is not null then
 		return CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _in_str, '))');
@@ -254,7 +254,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8
+create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8 NO SQL
 begin
 	if _in_str is not null then
 		return CONCAT(' and m.body like ', replace(_in_str, N''',''', N''' and m.body like = '''));
