@@ -115,6 +115,13 @@
 		</plugins>
 		<resources>
 			<resource>
+				<directory>database</directory>
+				<targetPath>database</targetPath>
+				<includes>
+					<include>**/*.sql</include>
+				</includes>
+			</resource>			
+			<resource>
 				<directory>src/main/resources</directory>
 			</resource>
 		</resources>
