@@ -40,12 +40,6 @@ IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_
 GO
 
 -- QUERY START:
-IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_jids') AND NAME ='IX_tig_ma_jids_jid_sha1')
-	CREATE INDEX IX_tig_ma_jids_jid_sha1 ON [dbo].[tig_ma_jids](jid_sha1);
--- QUERY END:
-GO
-
--- QUERY START:
 IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs' and xtype='U')
 	CREATE  TABLE [dbo].[tig_ma_msgs] (
 		[msg_id] [bigint] IDENTITY(1,1) NOT NULL,
@@ -191,6 +185,11 @@ GO
 -- QUERY START:
 IF NOT EXISTS(SELECT * FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID('tig_ma_jids') and TYPE = 'UQ' and NAME = 'UQ_tig_ma_jids_jids_sha1')
 ALTER TABLE [dbo].[tig_ma_jids] ADD CONSTRAINT UQ_tig_ma_jids_jids_sha1 UNIQUE (jid_sha1);
+-- QUERY END:
+GO
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_jids') AND NAME ='IX_tig_ma_jids_jid_sha1')
+	CREATE INDEX IX_tig_ma_jids_jid_sha1 ON [dbo].[tig_ma_jids](jid_sha1);
 -- QUERY END:
 GO
 
