@@ -165,7 +165,7 @@ call TigExecuteIfNot((select count(1) from information_schema.KEY_COLUMN_USAGE w
 'alter table tig_ma_msgs_tags add primary key (msg_id, tag_id)');
 -- QUERY END:
 
---fixing collation of tables
+-- fixing collation of tables
 -- QUERY START:
 alter table tig_ma_jids collate utf8_general_ci;
 -- QUERY END:
