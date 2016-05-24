@@ -32,20 +32,18 @@ import java.util.TimeZone;
  */
 public class TimestampHelper {
 	
-	private final static SimpleDateFormat formatter4 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-	private final static SimpleDateFormat formatter3 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ssZ");
-	private final static SimpleDateFormat formatter = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
+	private static final SimpleDateFormat TIMESTAMP_FORMATTER2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+	private final static SimpleDateFormat TIMESTAMP_FORMATTER3 = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss.SSSXX");
+	private final static SimpleDateFormat TIMESTAMP_FORMATTER4 = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
 	static {
-		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter3.setTimeZone(TimeZone.getTimeZone("UTC"));
-		formatter4.setTimeZone(TimeZone.getTimeZone("UTC"));
+		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
+		TIMESTAMP_FORMATTER2.setTimeZone(TimeZone.getTimeZone("UTC"));
+		TIMESTAMP_FORMATTER3.setTimeZone(TimeZone.getTimeZone("UTC"));
+		TIMESTAMP_FORMATTER4.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}	
 	
 	public static Date parseTimestamp(String tmp) throws ParseException {
@@ -54,24 +52,26 @@ public class TimestampHelper {
 		
 		Date date = null;
 
-		if (tmp.endsWith("Z")) {
-			if (tmp.contains(".")) {
-				synchronized (formatter4) {
-					date = formatter4.parse(tmp);
+		boolean useXXX = (tmp.charAt(tmp.length()-6) == '+');
+		if (tmp.contains(".")) {
+			if (useXXX) {
+				synchronized (TIMESTAMP_FORMATTER4) {
+					date = TIMESTAMP_FORMATTER4.parse(tmp);
 				}
-			}
-			else {
-				synchronized (formatter) {
-					date = formatter.parse(tmp);
+			} else {
+				synchronized (TIMESTAMP_FORMATTER3) {
+					date = TIMESTAMP_FORMATTER4.parse(tmp);
 				}
-			}
-		} else if (tmp.contains(".")) {
-			synchronized (formatter3) {
-				date = formatter3.parse(tmp);
 			}
 		} else {
-			synchronized (formatter2) {
-				date = formatter2.parse(tmp);
+			if (useXXX) {
+				synchronized (TIMESTAMP_FORMATTER2) {
+					date = TIMESTAMP_FORMATTER2.parse(tmp);
+				}
+			} else {
+				synchronized (TIMESTAMP_FORMATTER1) {
+					date =TIMESTAMP_FORMATTER1.parse(tmp);
+				}
 			}
 		}
 
@@ -79,9 +79,9 @@ public class TimestampHelper {
 	}	
 	
 	public static String format(Date ts) {
-		synchronized (formatter2) {
-			return formatter2.format(ts);
+		synchronized (TIMESTAMP_FORMATTER1) {
+			return TIMESTAMP_FORMATTER1.format(ts);
 		}
 	}
-	
+
 }
