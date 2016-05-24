@@ -21,6 +21,10 @@
  */
 package tigase.archive.db;
 
+import tigase.archive.AbstractCriteria;
+import tigase.xml.Element;
+import tigase.xmpp.JID;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -28,12 +32,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import tigase.archive.AbstractCriteria;
-import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
 /**
  * AbstractMessageArchiveRepository contains methods commonly used by other implementations
@@ -42,20 +40,19 @@ import tigase.xmpp.JID;
  * @author andrzej
  */
 public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCriteria> implements MessageArchiveRepository<Crit> {
-	
-	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ssZ");
-	
+
+	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
+
 	protected static final String[] MSG_BODY_PATH = { "message", "body" };	
 	
 	static {
-		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
+		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 	
 	protected Element addCollectionToResults(List<Element> results, Crit criteria, String with, Date start, String type) {
 		String formattedStart = null;
-		synchronized (formatter2) {
-			formattedStart = formatter2.format(start);
+		synchronized (TIMESTAMP_FORMATTER1) {
+			formattedStart = TIMESTAMP_FORMATTER1.format(start);
 		}
 		Element elem = new Element("chat", new String[] { "with", "start" },
 				new String[] { with, formattedStart });
