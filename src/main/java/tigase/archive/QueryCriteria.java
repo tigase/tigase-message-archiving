@@ -1,5 +1,5 @@
 /*
- * AbstractCriteria.java
+ * QueryCriteria.java
  *
  * Tigase Message Archiving Component
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
@@ -21,23 +21,17 @@
  */
 package tigase.archive;
 
+import tigase.xml.Element;
 import tigase.xmpp.RSM;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import tigase.xml.Element;
+import java.util.*;
 
 /**
  *
  * @author andrzej
  */
-public abstract class AbstractCriteria<D extends Date> {
+public class QueryCriteria {
 	
 	private static final String CONTAINS = "contains";
 	private static final String TAG = "tag";
@@ -46,8 +40,8 @@ public abstract class AbstractCriteria<D extends Date> {
 	public static final String QUERTY_XMLNS = "http://tigase.org/protocol/archive#query";
 	
 	private String with = null;
-	private D start = null;
-	private D end = null;
+	private Date start = null;
+	private Date end = null;
 	private final RSM rsm = new RSM();
 	private int index = 0;
 	private int limit = 0;
@@ -55,15 +49,15 @@ public abstract class AbstractCriteria<D extends Date> {
 	private final Set<String> contains = new HashSet<String>();
 	private final Set<String> tags = new HashSet<String>();
 	
-	public AbstractCriteria fromElement(Element el, boolean tagsSupport) throws IllegalArgumentException, ParseException {
+	public QueryCriteria fromElement(Element el, boolean tagsSupport) throws IllegalArgumentException, ParseException {
 		if (el.getXMLNS() != ARCHIVE_XMLNS)
 			throw new IllegalArgumentException("Not supported XMLNS of element");
 
 		rsm.fromElement(el);
 		
 		with     = el.getAttributeStaticStr("with");
-		start = convertTimestamp(TimestampHelper.parseTimestamp(el.getAttributeStaticStr("start")));
-		end  = convertTimestamp(TimestampHelper.parseTimestamp(el.getAttributeStaticStr("end")));
+		start = TimestampHelper.parseTimestamp(el.getAttributeStaticStr("start"));
+		end  = TimestampHelper.parseTimestamp(el.getAttributeStaticStr("end"));
 		
 		
 		Element query = el.getChild(NAME, QUERTY_XMLNS);
@@ -129,20 +123,20 @@ public abstract class AbstractCriteria<D extends Date> {
 		this.with = with;
 	}
 	
-	public D getStart() {
+	public Date getStart() {
 		return start;
 	}
-	
-	public D getEnd() {
+
+	public Date getEnd() {
 		return end;
 	}
-	
+
 	public void setStart(Date start) {
-		this.start = convertTimestamp(start);
+		this.start = start;
 	}
 	
 	public void setEnd(Date end) {
-		this.end = convertTimestamp(end);
+		this.end = end;
 	}
 	
 	public int getOffset() {
@@ -183,7 +177,5 @@ public abstract class AbstractCriteria<D extends Date> {
 			retList.addChild(rsm.toElement());
 		}	
 	}
-	
-	protected abstract D convertTimestamp(Date date);
 	
 }

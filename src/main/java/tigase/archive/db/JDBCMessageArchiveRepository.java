@@ -23,50 +23,29 @@ package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import tigase.archive.AbstractCriteria;
-import tigase.archive.db.JDBCMessageArchiveRepository.Criteria;
-
-import tigase.db.DBInitException;
+import tigase.archive.QueryCriteria;
 import tigase.db.DataRepository;
-import tigase.db.DataRepository.dbTypes;
-
-import static tigase.db.DataRepository.dbTypes.derby;
-
 import tigase.db.Repository;
-import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
-
+import tigase.kernel.beans.config.ConfigField;
 import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
-
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
-import tigase.xmpp.StanzaType;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class description
@@ -76,7 +55,7 @@ import tigase.xmpp.StanzaType;
  * @author         Enter your name here...
  */
 @Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" } )
-public class JDBCMessageArchiveRepository extends AbstractMessageArchiveRepository<Criteria> {
+public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extends AbstractMessageArchiveRepository<Criteria, DataRepository> {
 	private static final Logger log        =
 		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
@@ -99,109 +78,63 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private static final String DEF_DELETE_EXPIRED_MESSAGES_QUERY = "{ call Tig_MA_DeleteExpiredMessages(?,?) }";
 	private static final String DEF_GET_TAGS_FOR_USER_QUERY = "{ call Tig_MA_GetTagsForUser(?,?,?,?) }";
 	private static final String DEF_GET_TAGS_FOR_USER_COUNT_QUERY = "{ call Tig_MA_GetTagsForUserCount(?,?) }";
-	
-	protected static final String GET_MESSAGES_QUERY_KEY = "get-messages-query";
-	protected static final String GET_MESSAGES_COUNT_QUERY_KEY = "get-messages-count-query";
-	protected static final String GET_COLLECTIONS_QUERY_KEY = "get-collections-query";
-	protected static final String GET_COLLECTIONS_COUNT_QUERY_KEY = "get-collections-count-query";
-	protected static final String ADD_MESSAGE_QUERY_KEY = "add-message-query";
-	protected static final String ADD_TAG_TO_MESSAGE_QUERY_KEY = "add-tag-to-message-query";
-	protected static final String REMOVE_MESSAGES_QUERY_KEY = "remove-messages-query";
-	protected static final String DELETE_EXPIRED_MESSAGES_QUERY_KEY = "delete-expired-messages-query";
-	protected static final String GET_TAGS_FOR_USER_QUERY_KEY = "get-tags-for-user-query";
-	protected static final String GET_TAGS_FOR_USER_COUNT_QUERY_KEY = "get-tags-for-user-count-query";
-	
+
+	@ConfigField(desc = "Query to retrieve list of messages", alias = "get-messages-query")
+	protected String GET_MESSAGES_QUERY = DEF_GET_MESSAGES_QUERY;
+	@ConfigField(desc = "Query to retrieve number of messages", alias = "get-messages-count-query")
+	protected String GET_MESSAGES_COUNT_QUERY = DEF_GET_MESSAGES_COUNT_QUERY;
+	@ConfigField(desc = "Query to retrieve list of collections", alias = "get-collections-query")
+	protected String GET_COLLECTIONS_QUERY = DEF_GET_COLLECTIONS_QUERY;
+	@ConfigField(desc = "Query to retrieve number of collections", alias = "get-collections-count-query")
+	protected String GET_COLLECTIONS_COUNT_QUERY = DEF_GET_COLLECTIONS_COUNT_QUERY;
+	@ConfigField(desc = "Query to add message to store", alias = "add-message-query")
+	protected String ADD_MESSAGE_QUERY = DEF_ADD_MESSAGE_QUERY;
+	@ConfigField(desc = "Query to add tag to message in store", alias = "add-tag-to-message-query")
+	protected String ADD_TAG_TO_MESSAGE_QUERY = DEF_ADD_TAG_TO_MESSAGE_QUERY;
+	@ConfigField(desc = "Query to remove messages", alias = "remove-messages-query")
+	protected String REMOVE_MESSAGES_QUERY = DEF_REMOVE_MESSAGES_QUERY;
+	@ConfigField(desc = "Query to delete expired messages", alias = "delete-expired-messages-query")
+	protected String DELETE_EXPIRED_MESSAGES_QUERY = DEF_DELETE_EXPIRED_MESSAGES_QUERY;
+	@ConfigField(desc = "Query to retrieve tags used by user", alias = "get-tags-for-user-query")
+	protected String GET_TAGS_FOR_USER_QUERY = DEF_GET_TAGS_FOR_USER_QUERY;
+	@ConfigField(desc = "Query to retrieve number of tags used by user", alias = "get-tags-for-user-count-query")
+	protected String GET_TAGS_FOR_USER_COUNT_QUERY = DEF_GET_TAGS_FOR_USER_COUNT_QUERY;
+
 	//~--- fields ---------------------------------------------------------------
 	
 	protected DataRepository data_repo = null;
+	@ConfigField(desc = "Store plaintext body in separate field", alias = STORE_PLAINTEXT_BODY_KEY)
 	private boolean storePlaintextBody = true;
+	@ConfigField(desc = "Group collections by stanza type", alias = GROUP_BY_TYPE_KEY)
 	private boolean groupByType = false;
+	@ConfigField(desc = "Delete expired messages statement query timeout", alias = DELETE_EXPIRED_QUERY_TIMEOUT_KEY)
 	private int delete_expired_timeout = DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL;
 
 	//~--- methods --------------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param conn_str
-	 * @param params
-	 *
-	 * @throws SQLException
-	 */
 	@Override
-	public void initRepository(String conn_str, Map<String, String> params)
-					throws DBInitException {
+	public void setDataSource(DataRepository data_repo) {
 		try {
-			data_repo = RepositoryFactory.getDataRepository( null, conn_str, params );
-			if (params.containsKey(STORE_PLAINTEXT_BODY_KEY)) {
-				storePlaintextBody = Boolean.parseBoolean(params.get(STORE_PLAINTEXT_BODY_KEY));
-			} else {
-				storePlaintextBody = true;
-			}
+			initPreparedStatements(data_repo);
+			this.data_repo = data_repo;
+		} catch (SQLException ex) {
+			throw new RuntimeException("MessageArchiveDB initialization exception", ex);
+		}
+	}
 
-			// this parameter is set by plugins as we need to initialize statements
-			// using config from component and not from processors
-			if (!params.containsKey("ignoreStatementInitialization")) {
-				if (params.containsKey(GROUP_BY_TYPE_KEY)) {
-					groupByType = Boolean.parseBoolean(params.get(GROUP_BY_TYPE_KEY));
-				} else {
-					groupByType = false;
-				}
-			}
-			
-			if (params.containsKey(DELETE_EXPIRED_QUERY_TIMEOUT_KEY)) {
-				delete_expired_timeout = Integer.parseInt(params.get(DELETE_EXPIRED_QUERY_TIMEOUT_KEY));
-				log.log(Level.FINEST, "setting " + DELETE_EXPIRED_QUERY_TIMEOUT_KEY + " to {0}", delete_expired_timeout);
-			}
-			
-			initPreparedStatements(params);
-		} catch (Exception ex) {
-			log.log(Level.WARNING, "MessageArchiveDB initialization exception", ex);
-		}
+	protected void initPreparedStatements(DataRepository data_repo) throws SQLException {
+		data_repo.initPreparedStatement(GET_MESSAGES_QUERY, GET_MESSAGES_QUERY);
+		data_repo.initPreparedStatement(GET_MESSAGES_COUNT_QUERY, GET_MESSAGES_COUNT_QUERY);
+		data_repo.initPreparedStatement(GET_COLLECTIONS_QUERY, GET_COLLECTIONS_QUERY);
+		data_repo.initPreparedStatement(GET_COLLECTIONS_COUNT_QUERY, GET_COLLECTIONS_COUNT_QUERY);
+		data_repo.initPreparedStatement(ADD_MESSAGE_QUERY, ADD_MESSAGE_QUERY);
+		data_repo.initPreparedStatement(ADD_TAG_TO_MESSAGE_QUERY, ADD_TAG_TO_MESSAGE_QUERY);
+		data_repo.initPreparedStatement(REMOVE_MESSAGES_QUERY, REMOVE_MESSAGES_QUERY);
+		data_repo.initPreparedStatement(DELETE_EXPIRED_MESSAGES_QUERY, DELETE_EXPIRED_MESSAGES_QUERY);
+		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_QUERY, GET_TAGS_FOR_USER_QUERY);
+		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT_QUERY, GET_TAGS_FOR_USER_COUNT_QUERY);
 	}
 	
-	protected Map<String,String> getQueries(Map<String,String> params) {
-		Map<String,String> queries = new HashMap<>();
-		
-		queries.put(GET_MESSAGES_QUERY_KEY, DEF_GET_MESSAGES_QUERY);
-		queries.put(GET_MESSAGES_COUNT_QUERY_KEY, DEF_GET_MESSAGES_COUNT_QUERY);
-		queries.put(GET_COLLECTIONS_QUERY_KEY, DEF_GET_COLLECTIONS_QUERY);
-		queries.put(GET_COLLECTIONS_COUNT_QUERY_KEY, DEF_GET_COLLECTIONS_COUNT_QUERY);
-		queries.put(ADD_MESSAGE_QUERY_KEY, DEF_ADD_MESSAGE_QUERY);
-		queries.put(ADD_TAG_TO_MESSAGE_QUERY_KEY, DEF_ADD_TAG_TO_MESSAGE_QUERY);
-		queries.put(REMOVE_MESSAGES_QUERY_KEY, DEF_REMOVE_MESSAGES_QUERY);
-		queries.put(DELETE_EXPIRED_MESSAGES_QUERY_KEY, DEF_DELETE_EXPIRED_MESSAGES_QUERY);
-		queries.put(GET_TAGS_FOR_USER_QUERY_KEY, DEF_GET_TAGS_FOR_USER_QUERY);
-		queries.put(GET_TAGS_FOR_USER_COUNT_QUERY_KEY, DEF_GET_TAGS_FOR_USER_COUNT_QUERY);
-		
-		for (Map.Entry<String,String> e : params.entrySet()) {
-			if (!e.getKey().endsWith("-query"))
-				continue;
-			
-			queries.put(e.getKey(), e.getValue());
-		}
-		
-		return queries;
-	}
-	
-	protected void initPreparedStatements(Map<String,String> params) throws SQLException {
-		if (params.containsKey("ignoreStatementInitialization"))
-			return;
-		
-		Map<String,String> queries = getQueries(params);
-		
-		for (Map.Entry<String,String> e : queries.entrySet()) {
-			data_repo.initPreparedStatement(e.getKey(), e.getValue());
-		}
-	}
-	
-	@Override
-	public void destroy() {
-		// here we use cached instance of repository pool cached by RepositoryFactory
-		// so we should not close it
-	}
-		
 	/**
 	 * Method description
 	 *
@@ -229,7 +162,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
 			String hash						 = generateHashOfMessageAsString(direction, msg, additionalData);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
-																					 ADD_MESSAGE_QUERY_KEY);
+					ADD_MESSAGE_QUERY);
 
 			Long msgId = null;
 			
@@ -278,7 +211,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				return;
 			
 			if (tags != null && !tags.isEmpty()) {
-				PreparedStatement add_message_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG_TO_MESSAGE_QUERY_KEY);
+				PreparedStatement add_message_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG_TO_MESSAGE_QUERY);
 				synchronized (add_message_tag_st) {
 					for (String tag : tags) {
 						add_message_tag_st.setLong(1, msgId);
@@ -300,7 +233,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	@Override
 	public void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException {
 		try {
-			PreparedStatement delete_expired_msgs_st = data_repo.getPreparedStatement(owner, DELETE_EXPIRED_MESSAGES_QUERY_KEY);
+			PreparedStatement delete_expired_msgs_st = data_repo.getPreparedStatement(owner, DELETE_EXPIRED_MESSAGES_QUERY);
 			long timestamp_long = before.toEpochSecond(ZoneOffset.UTC) * 1000;
 			Timestamp ts = new java.sql.Timestamp(timestamp_long);
 			synchronized (delete_expired_msgs_st) {
@@ -334,7 +267,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	public List<Element> getCollections(BareJID owner, Criteria crit)
 					 throws TigaseDBException {
 		try {
-			crit.setGroupByType(groupByType);
 			Integer count = getCollectionsCount(owner, crit);
 			if (count == null)
 				count = 0;
@@ -416,7 +348,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 			java.sql.Timestamp start_ = new java.sql.Timestamp(start.getTime());
 			java.sql.Timestamp end_ = new java.sql.Timestamp(end.getTime());
-			PreparedStatement remove_msgs_st = data_repo.getPreparedStatement(owner, REMOVE_MESSAGES_QUERY_KEY);
+			PreparedStatement remove_msgs_st = data_repo.getPreparedStatement(owner, REMOVE_MESSAGES_QUERY);
 
 			synchronized (remove_msgs_st) {
 				synchronized (remove_msgs_st) {
@@ -442,14 +374,14 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	 * @throws TigaseDBException 
 	 */
 	@Override
-	public List<String> getTags(BareJID owner, String startsWith, Criteria crit) throws TigaseDBException {
+	public List<String> getTags(BareJID owner, String startsWith, QueryCriteria crit) throws TigaseDBException {
 		List<String> results = new ArrayList<String>();
 		try {
 			ResultSet rs = null;
 			int count = 0;
 			startsWith = startsWith + "%";
 			
-			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT_QUERY_KEY);
+			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT_QUERY);
 			synchronized (get_tags_count_st) {
 				try {
 					get_tags_count_st.setString(1, owner.toString());
@@ -465,7 +397,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			}
 			crit.setSize(count);
 
-			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_QUERY_KEY);
+			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_QUERY);
 			synchronized (get_tags_st) {
 				try {
 					int i = 1;
@@ -501,12 +433,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					throws SQLException {
 		List<Element> results = new LinkedList<Element>();
 		ResultSet selectRs = null;
-		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_QUERY_KEY);
+		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_QUERY);
 
 		int i = 2;
 		synchronized (get_collections_st) {
 			try {
-				crit.setItemsQueryParams(get_collections_st, data_repo.getDatabaseType(), owner.toString());
+				setItemsQueryParams(get_collections_st, owner.toString(), crit, groupByType);
 
 				selectRs = get_collections_st.executeQuery();
 				while (selectRs.next()) {
@@ -525,10 +457,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private Integer getCollectionsCount(BareJID owner, Criteria crit) throws SQLException {
 		ResultSet countRs = null;
 		Integer count = null;
-		PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_COUNT_QUERY_KEY);
+		PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_COUNT_QUERY);
 		synchronized (get_collections_count) {
 			try {
-				crit.setCountQueryParams(get_collections_count, data_repo.getDatabaseType(), owner.toString());
+				setCountQueryParams(get_collections_count, owner.toString(), crit, groupByType);
 				countRs = get_collections_count.executeQuery();
 				if (countRs.next()) {
 					count = countRs.getInt(1);
@@ -543,10 +475,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private List<Element> getItemsItems(BareJID owner, Criteria crit) throws SQLException {
 		ResultSet rs      = null;		
 		Queue<Item> results = new ArrayDeque<Item>();
-		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY_KEY);
+		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				crit.setItemsQueryParams(get_messages_st, data_repo.getDatabaseType(), owner.toString());
+				setItemsQueryParams(get_messages_st, owner.toString(), crit, null);
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
@@ -600,7 +532,69 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	protected Element addMessageToResults(List<Element> msgs, Criteria crit, Date startTimestamp, Item item, Element msg) {
 		return addMessageToResults(msgs, crit, startTimestamp, msg, item.timestamp, item.direction, item.with);
 	}
-	
+
+	protected Timestamp convertToTimestamp(Date date) {
+		if (date == null)
+			return null;
+		return new Timestamp(date.getTime());
+	}
+
+	protected int setCountQueryParams(PreparedStatement stmt, String ownerJid, Criteria crit, Boolean groupByType) throws SQLException {
+		stmt.setString(1, ownerJid);
+		return setQueryParams(stmt, crit, groupByType, 2);
+	}
+
+	protected int setQueryParams(PreparedStatement stmt, Criteria crit, Boolean groupByType, int i) throws SQLException {
+		if (crit.getWith() != null) {
+			stmt.setString(i++, crit.getWith());
+		} else {
+			stmt.setObject(i++, null);
+		}
+		if (crit.getStart() != null) {
+			stmt.setTimestamp(i++, convertToTimestamp(crit.getStart()));
+		} else {
+			stmt.setObject(i++, null);
+		}
+		if (crit.getEnd() != null) {
+			stmt.setTimestamp(i++, convertToTimestamp(crit.getEnd()));
+		} else {
+			stmt.setObject(i++, null);
+		}
+		if (crit.getTags().isEmpty()) {
+			stmt.setObject(i++, null);
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (String tag : crit.getTags()) {
+				if (sb.length() != 0)
+					sb.append(",");
+				sb.append('\'').append(tag.replace("'", "''")).append("'");
+			}
+			stmt.setString(i++, sb.toString());
+		}
+		if (crit.getContains().isEmpty()) {
+			stmt.setObject(i++, null);
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (String contain : crit.getContains()) {
+				if (sb.length() != 0)
+					sb.append(",");
+				sb.append("'%").append(contain.replace("'", "''")).append("%'");
+			}
+			stmt.setString(i++, sb.toString());
+		}
+		if (groupByType != null) {
+			stmt.setShort(i++, (short) (groupByType ? 1 : 0));
+		}
+		return i;
+	}
+
+	public void setItemsQueryParams(PreparedStatement stmt, String ownerJid, Criteria crit, Boolean groupByType) throws SQLException {
+		stmt.setString(1, ownerJid);
+		int i = setQueryParams(stmt, crit, groupByType, 2);
+		stmt.setInt(i++, crit.getLimit());
+		stmt.setInt(i++, crit.getOffset());
+	}
+
 	protected Item newItemInstance() {
 		return new Item();
 	}
@@ -608,10 +602,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private Integer getItemsCount(BareJID owner, Criteria crit) throws SQLException {
 		Integer count = null;
 		ResultSet rs = null;
-		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_COUNT_QUERY_KEY);
+		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_COUNT_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				crit.setCountQueryParams(get_messages_st, data_repo.getDatabaseType(), owner.toString());
+				setCountQueryParams(get_messages_st, owner.toString(), crit, null);
 
 				rs = get_messages_st.executeQuery();
 				if (rs.next()) {
@@ -630,11 +624,11 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	}
 
 	@Override
-	public AbstractCriteria newCriteriaInstance() {
-		return new Criteria();
+	public QueryCriteria newCriteriaInstance() {
+		return new QueryCriteria();
 	}
 	
-	public static class Item<Crit extends Criteria> {
+	public static class Item<Crit extends QueryCriteria> {
 		String message;
 		Date timestamp;
 		Direction direction;
@@ -652,78 +646,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 	
-	public static class Criteria extends AbstractCriteria<Timestamp> {
-		
-		private Boolean groupByType = null;
-		
-		public void setGroupByType(Boolean groupByType) {
-			this.groupByType = groupByType;
-		}
-		
-		@Override
-		protected Timestamp convertTimestamp(Date date) {
-			if (date == null)
-				return null;
-			return new Timestamp(date.getTime());
-		}
-				
-		public int setCountQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType, String ownerJid) throws SQLException {
-			stmt.setString(1, ownerJid);
-			return setQueryParams(stmt, dbType, 2);
-		}
-		
-		protected int setQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType, int i) throws SQLException {	
-			if (getWith() != null) {
-				stmt.setString(i++, getWith());
-			} else {
-				stmt.setObject(i++, null);
-			}
-			if (getStart() != null) {
-				stmt.setTimestamp(i++, getStart());
-			} else {
-				stmt.setObject(i++, null);
-			}
-			if (getEnd() != null) {
-				stmt.setTimestamp(i++, getEnd());
-			} else {
-				stmt.setObject(i++, null);
-			}
-			if (getTags().isEmpty()) {
-				stmt.setObject(i++, null);
-			} else {
-				StringBuilder sb = new StringBuilder();
-				for (String tag : getTags()) {
-					if (sb.length() != 0)
-						sb.append(",");
-					sb.append('\'').append(tag.replace("'", "''")).append("'");
-				}
-				stmt.setString(i++, sb.toString());
-			}
-			if (getContains().isEmpty()) {
-				stmt.setObject(i++, null);
-			} else {
-				StringBuilder sb = new StringBuilder();
-				for (String contain : getContains()) {
-					if (sb.length() != 0)
-						sb.append(",");
-					sb.append("'%").append(contain.replace("'", "''")).append("%'");
-				}
-				stmt.setString(i++, sb.toString());
-			}
-			if (groupByType != null) {
-				stmt.setShort(i++, (short) (groupByType ? 1 : 0));
-			}
-			return i;
-		}
-		
-		public void setItemsQueryParams(PreparedStatement stmt, DataRepository.dbTypes dbType, String ownerJid) throws SQLException {
-			stmt.setString(1, ownerJid);
-			int i = setQueryParams(stmt, dbType, 2);
-			stmt.setInt(i++, getLimit());
-			stmt.setInt(i++, getOffset());
-		}
-
-	}
 }
 
 

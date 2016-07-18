@@ -21,22 +21,24 @@
  */
 package tigase.archive.db;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import tigase.archive.AbstractCriteria;
-import tigase.db.Repository;
+import tigase.archive.QueryCriteria;
+import tigase.db.DataSource;
+import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
 /**
  *
  * @author andrzej
  */
-public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends Repository {
+public interface MessageArchiveRepository<Crit extends QueryCriteria, DS extends DataSource> extends DataSourceAware<DS> {
 	
 	enum Direction {
 		incoming((short) 1, "from"),
@@ -90,9 +92,9 @@ public interface MessageArchiveRepository<Crit extends AbstractCriteria> extends
 	/**
 	 * Destroys instance of this repository and releases resources allocated if possible
 	 */
-	void destroy();
+	default void destroy() {};
 	
-	AbstractCriteria newCriteriaInstance();
+	QueryCriteria newCriteriaInstance();
 	
 	List<Element> getCollections(BareJID owner, Crit criteria) throws TigaseDBException;
 	

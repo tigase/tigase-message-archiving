@@ -21,7 +21,8 @@
  */
 package tigase.archive.db;
 
-import tigase.archive.AbstractCriteria;
+import tigase.archive.QueryCriteria;
+import tigase.db.DataSource;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
@@ -39,7 +40,7 @@ import java.util.TimeZone;
  * 
  * @author andrzej
  */
-public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCriteria> implements MessageArchiveRepository<Crit> {
+public abstract class AbstractMessageArchiveRepository<Crit extends QueryCriteria, DS extends DataSource> implements MessageArchiveRepository<Crit,DS> {
 
 	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 

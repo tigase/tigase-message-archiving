@@ -21,21 +21,18 @@
  */
 package tigase.archive.db;
 
-import java.util.ArrayDeque;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import tigase.db.DBInitException;
+import tigase.db.DataRepository;
 import tigase.db.RepositoryFactory;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+
+import java.sql.SQLException;
+import java.util.*;
 
 /**
  *
@@ -54,12 +51,13 @@ public class JDBCMessageArchiveRepositoryTest {
 
 	// This test to work requires change in archiveMessage method to throw Exception - by default exception is catched in this method
 	@Test
-	public void testDeadlocksOnInsert() throws InterruptedException {
+	public void testDeadlocksOnInsert() throws InterruptedException, ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
 		try {
 			Map<String,String> params = new HashMap<String,String>();
 			params.put(RepositoryFactory.DATA_REPO_POOL_SIZE_PROP_KEY, "40");
+			DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, params);
 			JDBCMessageArchiveRepository repo = new JDBCMessageArchiveRepository();
-			repo.initRepository(uri, params);
+			repo.setDataSource(dataRepo);
 			
 			Queue<Thread> threads = new ArrayDeque<Thread>();
 			for (int i=0; i<128; i++) {

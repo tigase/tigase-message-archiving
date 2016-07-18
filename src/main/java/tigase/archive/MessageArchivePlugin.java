@@ -28,16 +28,16 @@ package tigase.archive;
 
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
-
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.config.ConfigField;
 import tigase.server.Iq;
 import tigase.server.Message;
 import tigase.server.Packet;
-
-import tigase.xmpp.*;
-import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
-
+import tigase.server.xmppsession.SessionManager;
 import tigase.util.DNSResolverFactory;
 import tigase.xml.Element;
+import tigase.xmpp.*;
+import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -52,6 +52,7 @@ import java.util.logging.Logger;
  * with type set to "chat" to MessageArchivingComponent to store this messages
  * in message archive.
  */
+@Bean(name = MessageArchivePlugin.ID, parent = SessionManager.class, active = false)
 public class MessageArchivePlugin
 				extends XMPPProcessor
 				implements XMPPProcessorIfc {
@@ -87,7 +88,7 @@ public class MessageArchivePlugin
 		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, REMOVE}, 
 		{Iq.ELEM_NAME, SAVE}, {Iq.ELEM_NAME, "pref"}, {Iq.ELEM_NAME, "tags"} };
 	private static final String[] XMLNSS = { Packet.CLIENT_XMLNS, XEP0136NS, 
-		XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, AbstractCriteria.QUERTY_XMLNS };
+		XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, QueryCriteria.QUERTY_XMLNS };
 	//private static final Set<StanzaType> TYPES;
 	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
 			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
@@ -111,15 +112,23 @@ public class MessageArchivePlugin
 //	}
 
 	//~--- fields ---------------------------------------------------------------
+	@ConfigField(desc = "Matchers selecting messages that will be archived", alias = MSG_ARCHIVE_PATHS)
 	private ElementMatcher[] archivingMatchers = new ElementMatcher[] { 
 		new ElementMatcher(new String[] { Message.ELEM_NAME, "body" }, null, true)
 	};
+	@ConfigField(desc = "Global default store method", alias = DEFAULT_STORE_METHOD_KEY)
 	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
+	@ConfigField(desc = "Global required store method", alias = REQUIRED_STORE_METHOD_KEY)
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
+	@ConfigField(desc = "Store MUC messages in archive using automatic archiving", alias = STORE_MUC_MESSAGES_KEY)
 	private StoreMuc globalStoreMucMessages = StoreMuc.User;
 	
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
+
+	public MessageArchivePlugin() {
+		VHostItemHelper.register();
+	}
 
 	//~--- methods --------------------------------------------------------------
 
@@ -135,8 +144,6 @@ public class MessageArchivePlugin
 	public void init(Map<String, Object> settings) throws TigaseDBException {
 		super.init(settings);
 		
-		VHostItemHelper.register();
-
 		String componentJidStr = (String) settings.get("component-jid");
 
 		if (componentJidStr != null) {
@@ -149,33 +156,6 @@ public class MessageArchivePlugin
 		log.log(Level.CONFIG, "Loaded message archiving component jid option: {0} = {1}",
 				new Object[] { "component-jid",
 				ma_jid });
-		System.out.println("MA LOADED = " + ma_jid.toString());
-		
-		// setting required and default level of archiving
-		if (settings.containsKey(REQUIRED_STORE_METHOD_KEY)) {
-			globalRequiredStoreMethod = StoreMethod.valueof((String) settings.get(REQUIRED_STORE_METHOD_KEY));
-		}
-		if (settings.containsKey(DEFAULT_STORE_METHOD_KEY)) {
-			globalDefaultStoreMethod = StoreMethod.valueof((String) settings.get(DEFAULT_STORE_METHOD_KEY));
-		}
-		if (globalDefaultStoreMethod.ordinal() < globalRequiredStoreMethod.ordinal()) {
-			globalDefaultStoreMethod  = globalRequiredStoreMethod;
-		}
-		if (settings.containsKey(STORE_MUC_MESSAGES_KEY)) {
-			globalStoreMucMessages = StoreMuc.valueof((String) settings.get(STORE_MUC_MESSAGES_KEY));
-		}
-		
-		if (settings.containsKey(MSG_ARCHIVE_PATHS)) {
-			String[] matcherStrs = (String[]) settings.get(MSG_ARCHIVE_PATHS);
-			List<ElementMatcher> matchers = new ArrayList<>();
-			for (String matcherStr : matcherStrs) {
-				ElementMatcher matcher = ElementMatcher.create(matcherStr);
-				if (matcher != null) {
-					matchers.add(matcher);
-				}
-			}
-			archivingMatchers = matchers.toArray(new ElementMatcher[0]);
-		}		
 	}
 
 	/**
@@ -659,7 +639,26 @@ public class MessageArchivePlugin
 		}
 		results.offer(result);
 	}
-	
+
+	public String[] getArchivingMatchers() {
+		String[] result = new String[archivingMatchers.length];
+		for (int i=0; i<archivingMatchers.length; i++) {
+			result[i] = archivingMatchers[i].toString();
+		}
+		return result;
+	}
+
+	public void setArchivingMatchers(String[] matcherStrs) {
+		List<ElementMatcher> matchers = new ArrayList<>();
+		for (String matcherStr : matcherStrs) {
+			ElementMatcher matcher = ElementMatcher.create(matcherStr);
+			if (matcher != null) {
+				matchers.add(matcher);
+			}
+		}
+		archivingMatchers = matchers.toArray(new ElementMatcher[0]);
+	}
+
 	//~--- get methods ----------------------------------------------------------	
 	
 	private boolean getAutoSave(final XMPPResourceConnection session)

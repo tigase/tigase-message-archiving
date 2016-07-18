@@ -21,36 +21,13 @@
  */
 package tigase.archive.db;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.UUID;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.model.Statement;
-import tigase.archive.AbstractCriteria;
-import tigase.db.DBInitException;
-import tigase.db.RepositoryFactory;
-import tigase.db.TigaseDBException;
+import tigase.archive.QueryCriteria;
+import tigase.db.*;
 import tigase.util.SchemaLoader;
 import tigase.util.SchemaLoader.Result;
 import tigase.util.TigaseStringprepException;
@@ -58,6 +35,13 @@ import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
+
+import java.io.File;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 /**
  *
@@ -220,12 +204,13 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	
 	@Before
-	public void setup() throws DBInitException, InstantiationException, IllegalAccessException {
+	public void setup() throws DBInitException, InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
 		if (uri == null)
 			return;
-		
-		repo = RepositoryFactory.getRepoClass(MessageArchiveRepository.class, uri).newInstance();
-		repo.initRepository(uri, new HashMap<String,String>());
+
+		DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, new HashMap<>());
+		repo = DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, uri).newInstance();
+		repo.setDataSource(dataRepo);
 	}
 	
 	@After
@@ -248,7 +233,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		msg.addChild(new Element("body", body));
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, null);
 	
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(date);
 		crit.setSize(1);
@@ -271,7 +256,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		tags.add("#Test123");
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.incoming, date, msg, tags);
 		
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(date);
 		crit.setSize(1);
@@ -285,7 +270,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	@Test
 	public void test3_getCollections() throws TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		
@@ -300,7 +285,7 @@ public class AbstractMessageArchiveRepositoryTest {
 
 	@Test
 	public void test3_getCollectionsByTag() throws TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		crit.addTag("#Test123");
@@ -313,7 +298,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	@Test
 	public void test4_getItems() throws InterruptedException, TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		
@@ -337,7 +322,7 @@ public class AbstractMessageArchiveRepositoryTest {
 
 	@Test
 	public void test4_getItemsWithTag() throws InterruptedException, TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		crit.addTag("#Test123");
@@ -359,7 +344,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	@Test
 	public void test5_getCollectionsContains() throws TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		crit.addContains("Test 1");
@@ -384,7 +369,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	@Test
 	public void test6_getItems() throws InterruptedException, TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		crit.addContains("Test 1");
@@ -399,7 +384,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	
 	@Test
 	public void test7_removeItems() throws TigaseDBException {
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.setStart(testStart);
 		
@@ -425,7 +410,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		msg.addChild(delay);
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, originalTime, msg, null);
 	
-		AbstractCriteria crit = repo.newCriteriaInstance();
+		QueryCriteria crit = repo.newCriteriaInstance();
 		crit.setWith(buddy.getBareJID().toString());
 		crit.addContains(uuid);
 		crit.setSize(1);
