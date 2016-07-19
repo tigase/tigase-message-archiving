@@ -45,7 +45,7 @@ import java.util.Set;
 public class MessageArchiveRepositoryPool<R extends MessageArchiveRepository> extends MDRepositoryBean<R> implements MessageArchiveRepository {
 
 	public MessageArchiveRepositoryPool() {
-		domainSelection = SelectorType.MainOnly;
+		dataSourceSelection = SelectorType.MainOnly;
 	}
 
 	@Override
