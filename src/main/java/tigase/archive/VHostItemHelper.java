@@ -21,9 +21,10 @@
  */
 package tigase.archive;
 
-import java.util.Arrays;
 import tigase.vhosts.VHostItem;
 import tigase.vhosts.VHostItem.DataType;
+
+import java.util.Arrays;
 
 /**
  *
@@ -83,20 +84,20 @@ public class VHostItemHelper {
 		return item.isData(ENABLED_KEY);
 	}
 	
-	public static String getDefaultStoreMethod(VHostItem item, String defValue) {
+	public static StoreMethod getDefaultStoreMethod(VHostItem item, StoreMethod defValue) {
 		String val = item.getData(DEFAULT_STORE_METHOD_KEY);
 		if (val == null || val.isEmpty()) {
-			val = defValue;
+			return defValue;
 		}
-		return val;
+		return StoreMethod.valueof(val);
 	}
 	
-	public static String getRequiredStoreMethod(VHostItem item, String defValue) {
+	public static StoreMethod getRequiredStoreMethod(VHostItem item, StoreMethod defValue) {
 		String val = item.getData(REQUIRED_STORE_METHOD_KEY);
 		if (val == null || val.isEmpty()) {
-			val = defValue;
+			return defValue;
 		}
-		return val;		
+		return StoreMethod.valueof(val);
 	}
 	
 	public static RetentionType getRetentionType(VHostItem item) {

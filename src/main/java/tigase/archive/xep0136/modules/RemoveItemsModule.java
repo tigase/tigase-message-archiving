@@ -19,19 +19,19 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-package tigase.archive.module.xep0136;
+package tigase.archive.xep0136.modules;
 
 import tigase.archive.QueryCriteria;
-import tigase.archive.module.AbstractModule;
+import tigase.archive.modules.AbstractModule;
+import tigase.archive.xep0136.Xep0136QueryParser;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.db.TigaseDBException;
+import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-
-import java.text.ParseException;
 
 /**
  * Created by andrzej on 16.07.2016.
@@ -39,6 +39,9 @@ import java.text.ParseException;
 public class RemoveItemsModule extends AbstractModule {
 
 	private static final String REMOVE_ELEM = "remove";
+
+	@Inject
+	private Xep0136QueryParser queryParser;
 
 	@Override
 	public String[] getFeatures() {
@@ -61,14 +64,12 @@ public class RemoveItemsModule extends AbstractModule {
 		}
 
 		try {
-			QueryCriteria criteria = msg_repo.newCriteriaInstance();
-			criteria.fromElement(remove, config.isTagSupportEnabled());
+			QueryCriteria query = msg_repo.newQuery();
+			queryParser.parseQuery(query, packet);
 
-			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), criteria.getWith(),
-					criteria.getStart(), criteria.getEnd());
+			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), query.getWith().toString(),
+					query.getStart(), query.getEnd());
 			packetWriter.write(packet.okResult((Element) null, 0));
-		} catch (ParseException e) {
-			throw new ComponentException(Authorization.BAD_REQUEST, "Date parsing error", e);
 		} catch (TigaseDBException e) {
 			throw new RuntimeException("Error removing items", e);
 		}

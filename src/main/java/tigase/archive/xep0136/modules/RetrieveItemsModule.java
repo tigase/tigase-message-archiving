@@ -1,0 +1,149 @@
+/*
+ * RetrieveItemsModule.java
+ *
+ * Tigase Message Archiving Component
+ * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. Look for COPYING file in the top folder.
+ * If not, see http://www.gnu.org/licenses/.
+ *
+ */
+package tigase.archive.xep0136.modules;
+
+import tigase.archive.MessageArchiveComponent;
+import tigase.archive.QueryCriteria;
+import tigase.archive.TimestampHelper;
+import tigase.archive.db.MessageArchiveRepository;
+import tigase.archive.modules.AbstractModule;
+import tigase.archive.xep0136.Xep0136QueryParser;
+import tigase.archive.xep0313.MAMRepository;
+import tigase.component.exceptions.ComponentException;
+import tigase.criteria.Criteria;
+import tigase.db.TigaseDBException;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.JID;
+
+import java.util.List;
+
+import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136NS;
+
+/**
+ * Created by andrzej on 16.07.2016.
+ */
+@Bean(name = "retrieveItems", parent = MessageArchiveComponent.class)
+public class RetrieveItemsModule extends AbstractModule {
+
+	private static final String RETRIEVE_ELEM = "retrieve";
+
+	@Inject
+	private Xep0136QueryParser queryParser;
+
+	@Inject
+	private Xep0136ItemHandler itemHandler;
+
+	@Override
+	public String[] getFeatures() {
+		return new String[0];
+	}
+
+	@Override
+	public Criteria getModuleCriteria() {
+		return null;
+	}
+
+	@Override
+	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
+		Element retrieve = packet.getElement().getChild(RETRIEVE_ELEM, MA_XMLNS);
+		getMessages(packet, retrieve);
+	}
+
+	@Override
+	public boolean canHandle(Packet packet) {
+		return packet.getElement().getChild(RETRIEVE_ELEM, MA_XMLNS) != null;
+	}
+
+	private void getMessages(Packet packet, Element retrieve) throws ComponentException, TigaseStringprepException {
+		try {
+			QueryCriteria query = msg_repo.newQuery();
+			query.setUseMessageIdInRsm(false);
+			queryParser.parseQuery(query, packet);
+
+			msg_repo.queryItems(query, itemHandler);
+
+			List<Element> items = query.getItems();
+
+			Element retList = new Element("chat");
+
+			if (query.getWith() != null)
+				retList.setAttribute("with", query.getWith().toString());
+			if (query.getStart() != null)
+				retList.setAttribute("start", TimestampHelper.format(query.getStart()));
+
+			retList.setXMLNS(XEP0136NS);
+			if (!items.isEmpty()) {
+				retList.addChildren(items);
+			}
+
+			query.prepareResult(retList);
+
+			packetWriter.write(packet.okResult(retList, 0));
+		} catch (TigaseDBException e) {
+			throw new RuntimeException("Error retrieving items", e);
+		}
+	}
+
+	@Bean(name = "xep0136ItemHandler", parent = MessageArchiveComponent.class)
+	public static class Xep0136ItemHandler<Q extends QueryCriteria,I extends MessageArchiveRepository.Item> implements MAMRepository.ItemHandler<Q, MAMRepository.Item> {
+
+		@Override
+		public void itemFound(Q query, MAMRepository.Item item) {
+			if (!(item instanceof MessageArchiveRepository.Item)){
+				throw new RuntimeException("Invalid class of repository item, got = " + item.getClass().getCanonicalName());
+			}
+
+			itemFound(query, (I) item);
+		}
+
+		public void itemFound(Q query, I item) {
+			Element itemEl = new Element(item.getDirection().toElementName());
+
+			// Now we should send all elements of a message so as we can store not only <body/>
+			// element. If we will store only <body/> element then only this element will
+			// be available in store
+			//item.addChild(msg.getChild("body"));
+			Element msg = item.getMessage();
+			itemEl.addChildren(msg.getChildren());
+			itemEl.setAttribute("secs", String.valueOf((item.getTimestamp().getTime() - query.getStart().getTime()) / 1000));
+			if (item.getWith() != null) {
+				itemEl.setAttribute("with", item.getWith());
+			}
+			if ("groupchat".equals(msg.getAttributeStaticStr("type"))) {
+				JID from = JID.jidInstanceNS(msg.getAttributeStaticStr("from"));
+				if (from != null && from.getResource() != null) {
+					itemEl.setAttribute("name", from.getResource());
+				}
+			}
+
+			query.addItem(itemEl);
+			if (query.getRsm().getFirst() == null) {
+				query.getRsm().setFirst(item.getId());
+			}
+			query.getRsm().setLast(item.getId());
+		}
+	}
+}

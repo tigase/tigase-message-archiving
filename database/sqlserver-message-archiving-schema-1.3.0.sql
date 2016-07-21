@@ -275,7 +275,7 @@ begin
 		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_limit int, @_offset int';
 		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
 		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
-		set @msgs_query = N'select m.msg, m.ts, m.direction, b.jid, row_number() over (order by m.ts) as row_num
+		set @msgs_query = N'select m.msg, m.ts, m.direction, b.jid, m.stanza_hash, row_number() over (order by m.ts) as row_num
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -290,7 +290,7 @@ begin
 	else
 		begin
 		;with results_cte as (
-		select m.msg, m.ts, m.direction, b.jid, row_number() over (order by m.ts) as row_num
+		select m.msg, m.ts, m.direction, b.jid, m.stanza_hash, row_number() over (order by m.ts) as row_num
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -362,6 +362,65 @@ end
 -- QUERY END:
 GO
 
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetMessagePosition')
+	DROP PROCEDURE [dbo].[Tig_MA_GetMessagePosition]
+-- QUERY END:
+GO
+
+-- QUERY START:
+create procedure [dbo].[Tig_MA_GetMessagePosition]
+	@_ownerJid nvarchar(2049),
+	@_buddyJid nvarchar(2049),
+	@_from datetime,
+	@_to datetime,
+	@_tags nvarchar(max),
+	@_contains nvarchar(max),
+	@_hash nvarchar(50)
+AS
+begin
+	declare
+		@params_def nvarchar(max),
+		@tags_query nvarchar(max),
+		@contains_query nvarchar(max),
+		@msgs_query nvarchar(max),
+		@query_sql nvarchar(max);
+
+	if @_tags is not null or @_contains is not null
+		begin
+		set @params_def = N'@_ownerJid nvarchar(2049), @_buddyJid nvarchar(2049), @_from datetime, @_to datetime, @_hash nvarchar(50)';
+		exec Tig_MA_GetHasTagsQuery @_in_str = @_tags, @_out_query = @tags_query output;
+		exec Tig_MA_GetBodyContainsQuery @_in_str = @_contains, @_out_query = @contains_query output;
+		set @msgs_query = N'select x.position from (
+		select m.stanza_hash, row_number() over (order by m.ts) as position
+		from tig_ma_msgs m
+			inner join tig_ma_jids o on m.owner_id = o.jid_id
+			inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		where
+			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
+			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			and (@_from is null or m.ts >= @_from)
+			and (@_to is null or m.ts <= @_to)';
+		set @query_sql = @msgs_query + @tags_query + @contains_query + N') x where x.stanza_hash = @_hash';
+		execute sp_executesql @query_sql, @params_def, @_ownerJid=@_ownerJid, @_buddyJid=@_buddyJid, @_from=@_from, @_to=@_to, @_hash = @_hash
+		end
+	else
+		begin
+		select x.position from (
+		    select m.stanza_hash, row_number() over (order by m.ts) as position
+		    from tig_ma_msgs m
+			    inner join tig_ma_jids o on m.owner_id = o.jid_id
+			    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		    where
+			    o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
+			    and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+			    and (@_from is null or m.ts >= @_from)
+			    and (@_to is null or m.ts <= @_to)) x
+	    where x.stanza_hash = @_hash
+		end
+end
+-- QUERY END:
+GO
 
 -- QUERY START:
 IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetCollections')

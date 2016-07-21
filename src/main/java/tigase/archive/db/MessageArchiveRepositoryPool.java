@@ -23,6 +23,8 @@ package tigase.archive.db;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
+import tigase.archive.xep0313.MAMRepository;
+import tigase.component.exceptions.ComponentException;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
@@ -42,7 +44,9 @@ import java.util.Set;
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "repositoryPool", parent = MessageArchiveComponent.class)
-public class MessageArchiveRepositoryPool<R extends MessageArchiveRepository> extends MDRepositoryBean<R> implements MessageArchiveRepository {
+public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends MessageArchiveRepository<Q, DataSource>>
+		extends MDRepositoryBean<R>
+		implements MessageArchiveRepository<Q, DataSource> {
 
 	public MessageArchiveRepositoryPool() {
 		dataSourceSelection = SelectorType.MainOnly;
@@ -64,18 +68,18 @@ public class MessageArchiveRepositoryPool<R extends MessageArchiveRepository> ex
 	}
 
 	@Override
-	public QueryCriteria newCriteriaInstance() {
-		return getRepository(defaultDataSourceName).newCriteriaInstance();
+	public Q newQuery() {
+		return getRepository(defaultDataSourceName).newQuery();
 	}
 
 	@Override
-	public List<Element> getCollections(BareJID owner, QueryCriteria criteria) throws TigaseDBException {
-		return getRepository(owner.getDomain()).getCollections(owner, criteria);
+	public void queryCollections(Q query, CollectionHandler<Q> collectionHandler) throws TigaseDBException {
+		getRepository(query.getQuestionerJID().getDomain()).queryCollections(query, collectionHandler);
 	}
 
 	@Override
-	public List<Element> getItems(BareJID owner, QueryCriteria criteria) throws TigaseDBException {
-		return getRepository(owner.getDomain()).getItems(owner, criteria);
+	public void queryItems(Q query, ItemHandler<Q,MAMRepository.Item> itemHandler) throws TigaseDBException, ComponentException {
+		getRepository(query.getQuestionerJID().getDomain()).queryItems(query, itemHandler);
 	}
 
 	@Override
@@ -84,7 +88,7 @@ public class MessageArchiveRepositoryPool<R extends MessageArchiveRepository> ex
 	}
 
 	@Override
-	public List<String> getTags(BareJID owner, String startsWith, QueryCriteria criteria) throws TigaseDBException {
+	public List<String> getTags(BareJID owner, String startsWith, Q criteria) throws TigaseDBException {
 		return getRepository(owner.getDomain()).getTags(owner, startsWith, criteria);
 	}
 
@@ -92,4 +96,5 @@ public class MessageArchiveRepositoryPool<R extends MessageArchiveRepository> ex
 	public void setDataSource(DataSource dataSource) {
 		// nothing to do
 	}
+
 }

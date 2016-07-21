@@ -1,5 +1,5 @@
 /*
- * AbstractModule.java
+ * Query.java
  *
  * Tigase Message Archiving Component
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
@@ -19,28 +19,38 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-package tigase.archive.module;
+package tigase.archive.xep0136;
 
-import tigase.archive.MessageArchiveConfig;
-import tigase.archive.db.MessageArchiveRepository;
-import tigase.component.PacketWriter;
-import tigase.component.modules.Module;
-import tigase.kernel.beans.Inject;
+import tigase.xml.Element;
+
+import java.util.List;
+import java.util.Set;
 
 /**
- * Created by andrzej on 16.07.2016.
+ * Created by andrzej on 21.07.2016.
  */
-public abstract class AbstractModule implements Module {
+public interface Query extends tigase.archive.xep0313.Query {
 
-	protected static final String MA_XMLNS = "urn:xmpp:archive";
+	Set<String> getContains();
 
-	@Inject
-	protected MessageArchiveConfig config;
+	void addContains(String contain);
 
-	@Inject
-	protected MessageArchiveRepository msg_repo;
+	Set<String> getTags();
 
-	@Inject
-	protected PacketWriter packetWriter;
+	void addTag(String tag);
+
+	boolean getUseMessageIdInRsm();
+
+	void setUseMessageIdInRsm(boolean value);
+
+	void prepareResult(Element retList);
+
+	void addCollection(Element collection);
+
+	List<Element> getCollections();
+
+	void addItem(Element item);
+
+	List<Element> getItems();
 
 }

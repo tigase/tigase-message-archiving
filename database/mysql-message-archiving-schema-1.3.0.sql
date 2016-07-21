@@ -197,6 +197,10 @@ drop procedure if exists Tig_MA_GetMessagesCount;
 -- QUERY END:
 
 -- QUERY START:
+drop procedure if exists Tig_MA_GetMessagePosition;
+-- QUERY END:
+
+-- QUERY START:
 drop procedure if exists Tig_MA_GetCollections;
 -- QUERY END:
 
@@ -276,7 +280,7 @@ begin
 		set @offset = _offset;
 		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
-		set @msgs_query = 'select m.msg, m.ts, m.direction, b.jid
+		set @msgs_query = 'select m.msg, m.ts, m.direction, b.jid, m.stanza_hash
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -291,7 +295,7 @@ begin
 		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
 		deallocate prepare stmt;
 	else
-		select m.msg, m.ts, m.direction, b.jid
+		select m.msg, m.ts, m.direction, b.jid, m.stanza_hash
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -339,6 +343,50 @@ begin
 			and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to);
+	end if;
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MA_GetMessagePosition( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _hash varchar(50) CHARSET utf8)
+begin
+	if _tags is not null or _contains is not null then
+		set @ownerJid = _ownerJid;
+		set @buddyJid = _buddyJid;
+		set @from = _from;
+		set @to = _to;
+		set @stanza_hash = _hash;
+		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
+		set @msgs_query = 'select x.position from (
+		select @row_number := @row_number + 1 AS position, m.stanza_hash
+		from tig_ma_msgs m
+			inner join tig_ma_jids o on m.owner_id = o.jid_id
+			inner join tig_ma_jids b on b.jid_id = m.buddy_id,
+			(select @row_number := 0) as t
+		where
+			o.jid_sha1 = SHA1(?) and o.jid = ?
+			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			and (? is null or m.ts >= ?)
+			and (? is null or m.ts <= ?)';
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, ' order by m.ts) x where x.stanza_hash = ?');
+		prepare stmt from @query;
+		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @stanza_hash;
+		deallocate prepare stmt;
+	else
+	    set @row_number = 0;
+	    select x.position from (
+		    select @row_number := @row_number + 1 AS position, m.stanza_hash
+		    from tig_ma_msgs m
+			    inner join tig_ma_jids o on m.owner_id = o.jid_id
+			    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		    where
+			    o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
+			    and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+			    and (_from is null or m.ts >= _from)
+			    and (_to is null or m.ts <= _to)
+			order by m.ts
+		) x where x.stanza_hash = _hash;
 	end if;
 end //
 -- QUERY END:

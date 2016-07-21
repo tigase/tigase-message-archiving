@@ -19,7 +19,7 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-package tigase.archive.module;
+package tigase.archive.modules;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
@@ -41,7 +41,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static tigase.archive.MessageArchivePlugin.OWNER_JID;
+import static tigase.archive.processors.MessageArchivePlugin.OWNER_JID;
 
 /**
  * Created by andrzej on 16.07.2016.

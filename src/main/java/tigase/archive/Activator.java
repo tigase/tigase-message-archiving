@@ -28,6 +28,9 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import tigase.archive.db.JDBCMessageArchiveRepository;
+import tigase.archive.processors.MessageArchivePlugin;
+import tigase.archive.processors.Xep0136MessageArchivingProcessor;
+import tigase.archive.processors.Xep0313MessageArchiveManagementProcessor;
 import tigase.osgi.ModulesManager;
 
 /**
@@ -94,6 +97,8 @@ public class Activator implements BundleActivator, ServiceListener {
         private void registerAddons() {
                 if (serviceManager != null) {
                         serviceManager.registerPluginClass(archivePluginClass);
+                        serviceManager.registerPluginClass(Xep0136MessageArchivingProcessor.class);
+                        serviceManager.registerPluginClass(Xep0313MessageArchiveManagementProcessor.class);
                         serviceManager.registerServerComponentClass(archiveComponentClass);
 						serviceManager.registerClass(JDBCMessageArchiveRepository.class);
                         serviceManager.update();

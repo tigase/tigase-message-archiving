@@ -27,6 +27,9 @@ package tigase.archive;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.archive.db.MessageArchiveRepository;
+import tigase.archive.xep0313.modules.GetFormModule;
+import tigase.archive.xep0313.MAMQueryParser;
+import tigase.archive.xep0313.modules.QueryModule;
 import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.modules.impl.DiscoveryModule;
 import tigase.kernel.beans.Bean;
@@ -151,6 +154,9 @@ public class MessageArchiveComponent
 	@Override
 	protected void registerModules(Kernel kernel) {
 		kernel.registerBean(DiscoveryModule.class).exec();
+		kernel.registerBean(MAMQueryParser.class).exec();
+		kernel.registerBean(GetFormModule.class).exec();
+		kernel.registerBean(QueryModule.class).exec();
 	}
 
 	//~--- get methods ----------------------------------------------------------

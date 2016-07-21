@@ -47,7 +47,7 @@ public class TimestampHelper {
 	}	
 	
 	public static Date parseTimestamp(String tmp) throws ParseException {
-		if (tmp == null)
+		if (tmp == null || tmp.isEmpty())
 			return null;
 		
 		Date date = null;

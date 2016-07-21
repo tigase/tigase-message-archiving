@@ -1,7 +1,7 @@
 /*
  * Settings.java
  *
- * Tigase Message Archiving Component
+ * Tigase Jabber/XMPP Server
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,55 +21,137 @@
  */
 package tigase.archive;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import tigase.db.TigaseDBException;
-import tigase.xmpp.NotAuthorizedException;
-import tigase.xmpp.XMPPResourceConnection;
-import static tigase.archive.MessageArchivePlugin.*;
+import tigase.xml.*;
 
 /**
- *
- * @author andrzej
+ * Created by andrzej on 22.07.2016.
  */
 public class Settings {
-	
-	private static final Logger log = Logger.getLogger(Settings.class.getCanonicalName());
-	
-	public static boolean getAutoSave(final XMPPResourceConnection session, StoreMethod globalRequiredStoreMethod)
-					throws NotAuthorizedException {
-		StoreMethod requiredStoreMethod = getRequiredStoreMethod(session, globalRequiredStoreMethod);
 
-		if (requiredStoreMethod != StoreMethod.False)
-			return true;
-		
-		Boolean auto = (Boolean) session.getCommonSessionData(ID + "/" + AUTO);
+	private static final SimpleParser parser = SingletonFactory.getParserInstance();
 
-		if (auto == null) {
-			try {
-				String data = session.getData(SETTINGS, AUTO, "false");
+	private boolean auto = false;
+	private StoreMethod storeMethod = StoreMethod.Message;
+	private boolean archiveMucMessages = false;
+	private boolean archiveOnlyForContactsInRoster = false;
 
-				auto = Boolean.parseBoolean(data);
-				
-				// if message archive is enabled but it is not allowed for domain
-				// then we should disable it
-				if (!VHostItemHelper.isEnabled(session.getDomain()) && auto) {
-					auto = false;
-					session.setData(SETTINGS, AUTO, String.valueOf(auto));
-				}
-				
-				session.putCommonSessionData(ID + "/" + AUTO, auto);
-			} catch (TigaseDBException ex) {
-				log.log(Level.WARNING, "Error getting Message Archive state: {0}", ex
-						.getMessage());
-				auto = false;
-			}
+	public boolean isAutoArchivingEnabled() {
+		return auto;
+	}
+
+	public boolean archiveOnlyForContactsInRoster() {
+		return archiveOnlyForContactsInRoster;
+	}
+
+	public StoreMethod getStoreMethod() {
+		return storeMethod;
+	}
+
+	public boolean archiveMucMessages() {
+		return archiveMucMessages;
+	}
+
+	public String serialize() {
+		Element prefs = new Element("prefs");
+		if (auto)
+			prefs.setAttribute("auto", "true");
+		if (storeMethod != null)
+			prefs.setAttribute("method", storeMethod.toString());
+		if (archiveMucMessages)
+			prefs.setAttribute("muc", "true");
+		if (archiveOnlyForContactsInRoster)
+			prefs.setAttribute("rosterOnly", "true");
+		return prefs.toString();
+	}
+
+	public void parse(String data) {
+		if (data == null || data.isEmpty())
+			return;
+
+		DomBuilderHandler handler = new DomBuilderHandler();
+		char[] ch = data.toCharArray();
+		parser.parse(handler, ch, 0, ch.length);
+		Element pref = handler.getParsedElements().poll();
+		if (pref == null)
+			return;
+
+		String val = pref.getAttributeStaticStr("auto");
+		if (val != null) {
+			auto = Boolean.parseBoolean(val);
+		} else {
+			auto = false;
+		}
+		val = pref.getAttributeStaticStr("method");
+		if (val != null) {
+			storeMethod = StoreMethod.valueof(val);
+		} else {
+			storeMethod = StoreMethod.Message;
+		}
+		val = pref.getAttributeStaticStr("muc");
+		if (val != null) {
+			archiveMucMessages = Boolean.parseBoolean(val);
+		} else {
+			archiveMucMessages = false;
+		}
+		val = pref.getAttributeStaticStr("rosterOnly");
+		if (val != null) {
+			archiveOnlyForContactsInRoster = Boolean.parseBoolean(val);
+		} else {
+			archiveOnlyForContactsInRoster = false;
+		}
+	}
+
+	public void setAuto(boolean auto) {
+		this.auto = auto;
+		this.archiveOnlyForContactsInRoster = false;
+	}
+
+	public void setStoreMethod(StoreMethod storeMethod) {
+		this.storeMethod = storeMethod;
+		if (storeMethod == StoreMethod.False) {
+			auto = false;
+		}
+	}
+
+	public void setArchiveMucMessages(boolean archiveMucMessages) {
+		this.archiveMucMessages = archiveMucMessages;
+	}
+
+	public void setArchiveOnlyForContactsInRoster(boolean archiveOnlyForContactsInRoster) {
+		this.archiveOnlyForContactsInRoster = archiveOnlyForContactsInRoster;
+	}
+
+	public boolean updateRequirements(StoreMethod requiredStoreMethod, StoreMuc storeMuc) {
+		boolean change = false;
+
+		if (storeMethod.ordinal() < requiredStoreMethod.ordinal()) {
+			storeMethod = requiredStoreMethod;
+			change = true;
 		}
 
-		return auto;
-	}	
-	
-	protected static StoreMethod getRequiredStoreMethod(XMPPResourceConnection session, StoreMethod globalRequiredStoreMethod) {
-		return StoreMethod.valueof(VHostItemHelper.getRequiredStoreMethod(session.getDomain(), globalRequiredStoreMethod.toString()));
-	}	
+		if (requiredStoreMethod != StoreMethod.False) {
+			auto = true;
+			change = true;
+		}
+
+		switch (storeMuc) {
+			case True:
+				if (!archiveMucMessages) {
+					archiveMucMessages = true;
+					change = true;
+				}
+				break;
+			case False:
+				if (archiveMucMessages) {
+					archiveMucMessages = false;
+					change = true;
+				}
+				break;
+			default:
+				break;
+		}
+
+		return change;
+	}
+
 }

@@ -21,16 +21,13 @@
  */
 package tigase.archive.db;
 
-import tigase.archive.QueryCriteria;
+import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -40,7 +37,7 @@ import java.util.TimeZone;
  * 
  * @author andrzej
  */
-public abstract class AbstractMessageArchiveRepository<Crit extends QueryCriteria, DS extends DataSource> implements MessageArchiveRepository<Crit,DS> {
+public abstract class AbstractMessageArchiveRepository<Q extends Query, DS extends DataSource> implements MessageArchiveRepository<Q,DS> {
 
 	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
@@ -49,44 +46,7 @@ public abstract class AbstractMessageArchiveRepository<Crit extends QueryCriteri
 	static {
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
-	
-	protected Element addCollectionToResults(List<Element> results, Crit criteria, String with, Date start, String type) {
-		String formattedStart = null;
-		synchronized (TIMESTAMP_FORMATTER1) {
-			formattedStart = TIMESTAMP_FORMATTER1.format(start);
-		}
-		Element elem = new Element("chat", new String[] { "with", "start" },
-				new String[] { with, formattedStart });
-		if (type != null && !type.isEmpty()) {
-			elem.addAttribute("type", type);
-		}
-		results.add(elem);
-		return elem;
-	}
-	
-	protected Element addMessageToResults(List<Element> results, Crit criteria, Date collectionStart, Element msg, Date timestamp, Direction direction, String with) {
-		Element item = new Element(direction.toElementName());
 
-		// Now we should send all elements of a message so as we can store not only <body/> 
-		// element. If we will store only <body/> element then only this element will 
-		// be available in store
-		//item.addChild(msg.getChild("body"));
-		item.addChildren(msg.getChildren());
-		item.setAttribute("secs", String.valueOf((timestamp.getTime() - collectionStart.getTime()) / 1000));
-		if (with != null) {
-			item.setAttribute("with", with);
-		}
-		if ("groupchat".equals(msg.getAttributeStaticStr("type"))) {
-			JID from = JID.jidInstanceNS(msg.getAttributeStaticStr("from"));
-			if (from != null && from.getResource() != null) {
-				item.setAttribute("name", from.getResource());
-			}
-		}
-			
-		results.add(item);
-		return item;
-	}
-	
 	protected byte[] generateHashOfMessage(Direction direction, Element msg, Map<String,Object> additionalData) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");

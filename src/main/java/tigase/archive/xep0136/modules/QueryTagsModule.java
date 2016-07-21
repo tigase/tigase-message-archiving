@@ -1,5 +1,5 @@
 /*
- * ListCollectionsModule.java
+ * QueryTagsModule.java
  *
  * Tigase Message Archiving Component
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
@@ -19,11 +19,11 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-package tigase.archive.module.xep0136;
+package tigase.archive.xep0136.modules;
 
 import tigase.archive.QueryCriteria;
 import tigase.archive.MessageArchiveComponent;
-import tigase.archive.module.AbstractModule;
+import tigase.archive.modules.AbstractModule;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.db.TigaseDBException;
@@ -31,21 +31,17 @@ import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.Authorization;
+import tigase.xmpp.RSM;
 
-import java.text.ParseException;
 import java.util.List;
-
-import static tigase.archive.MessageArchivePlugin.LIST;
-import static tigase.archive.MessageArchivePlugin.XEP0136NS;
 
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "listCollections", parent = MessageArchiveComponent.class)
-public class ListCollectionsModule extends AbstractModule {
+@Bean(name = "queryTags", parent = MessageArchiveComponent.class)
+public class QueryTagsModule extends AbstractModule {
 
-	private static final String LIST_ELEM = "list";
+	private static final String TAGS_ELEM = "tags";
 
 	@Override
 	public String[] getFeatures() {
@@ -59,37 +55,34 @@ public class ListCollectionsModule extends AbstractModule {
 
 	@Override
 	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
-		Element list = packet.getElement().getChild(LIST_ELEM, MA_XMLNS);
-		listCollections(packet, list);
+		Element tagsEl = packet.getElement().getChild(TAGS_ELEM, QueryCriteria.QUERTY_XMLNS);
+		try {
+			QueryCriteria query = msg_repo.newQuery();
+			query.getRsm().fromElement(tagsEl);
+
+			String startsWith = tagsEl.getAttributeStaticStr("like");
+			if (startsWith == null)
+				startsWith = "";
+
+			List<String> tags = msg_repo.getTags(packet.getStanzaFrom().getBareJID(), startsWith, query);
+
+			tagsEl = new Element("tags", new String[] {"xmlns" }, new String[] { QueryCriteria.QUERTY_XMLNS});
+			for (String tag : tags) {
+				tagsEl.addChild(new Element("tag", tag));
+			}
+
+			RSM rsm = query.getRsm();
+			if (rsm.getCount() == null || rsm.getCount() != 0)
+				tagsEl.addChild(rsm.toElement());
+
+			packetWriter.write(packet.okResult(tagsEl, 0));
+		} catch (TigaseDBException e) {
+			throw new RuntimeException("Error retrieving list of used tags", e);
+		}
 	}
 
 	@Override
 	public boolean canHandle(Packet packet) {
-		return packet.getElement().getChild(LIST_ELEM, MA_XMLNS) != null;
+		return config.isTagSupportEnabled() && packet.getElement().getChild(TAGS_ELEM, QueryCriteria.QUERTY_XMLNS) != null;
 	}
-
-	private void listCollections(Packet packet, Element list) throws ComponentException, TigaseStringprepException {
-		try {
-			QueryCriteria criteria = msg_repo.newCriteriaInstance();
-			criteria.fromElement(list, config.isTagSupportEnabled());
-
-			List<Element> chats = msg_repo.getCollections(packet.getStanzaFrom().getBareJID(), criteria);
-
-			Element retList = new Element(LIST);
-			retList.setXMLNS(XEP0136NS);
-
-			if (chats != null && !chats.isEmpty()) {
-				retList.addChildren(chats);
-			}
-
-			criteria.prepareResult(retList);
-
-			packetWriter.write(packet.okResult(retList, 0));
-		} catch (ParseException e) {
-			throw new ComponentException(Authorization.BAD_REQUEST, "Date parsing error", e);
-		} catch (TigaseDBException e) {
-			throw new RuntimeException("Error listing collections", e);
-		}
-	}
-
 }

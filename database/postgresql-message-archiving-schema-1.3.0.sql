@@ -240,8 +240,17 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
+do $$
+begin
+if exists( select 1 from pg_proc where proname = 'tig_ma_getmessages' and pg_get_function_result(oid) = 'TABLE(msg text, ts timestamp without time zone, direction smallint, "buddyJid" character varying)') then
+    drop function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
 create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int) returns table(
-	"msg" text, "ts" timestamp, "direction" smallint, "buddyJid" varchar(2049)
+	"msg" text, "ts" timestamp, "direction" smallint, "buddyJid" varchar(2049), "stanza_hash" varchar(50)
 ) as $$
 declare 
 	tags_query text;
@@ -253,7 +262,7 @@ begin
 	if _tags is not null or _contains is not null then
 		select Tig_MA_GetHasTagsQuery(_tags) into tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into contains_query;
-		msgs_query := 'select m.msg, m.ts, m.direction, b.jid 
+		msgs_query := 'select m.msg, m.ts, m.direction, b.jid, m.stanza_hash
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -266,7 +275,7 @@ begin
 		query_sql = msgs_query || tags_query || contains_query || ' order by m.ts' || pagination_query;
 		return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to, _limit, _offset);
 	else
-		return query select m.msg, m.ts, m.direction, b.jid
+		return query select m.msg, m.ts, m.direction, b.jid, m.stanza_hash
 		from tig_ma_msgs m 
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
@@ -319,6 +328,49 @@ begin
 	end if;
 end;
 $$ LANGUAGE 'plpgsql'; 
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_GetMessagePosition(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _hash varchar(50)) returns table(
+	"position" bigint
+) as $$
+declare
+	tags_query text;
+	contains_query text;
+	msgs_query text;
+	query_sql text;
+begin
+	if _tags is not null or _contains is not null then
+		select Tig_MA_GetHasTagsQuery(_tags) into tags_query;
+		select Tig_MA_GetBodyContainsQuery(_contains) into contains_query;
+		msgs_query := 'select x.position from (
+		select row_number() over (w) as position, m.stanza_hash
+		from tig_ma_msgs m
+			inner join tig_ma_jids o on m.owner_id = o.jid_id
+			inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		where
+			o.jid = %L
+			and (%L is null or b.jid = %L)
+			and (%L is null or m.ts >= %L)
+			and (%L is null or m.ts <= %L)';
+		query_sql = msgs_query || tags_query || contains_query || ' window w as (order by ts) ) x where x.stanza_hash = %L';
+		return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to, _hash);
+	else
+		return query select x.position from (
+		select row_number() over (w) as position, m.stanza_hash
+		from tig_ma_msgs m
+			inner join tig_ma_jids o on m.owner_id = o.jid_id
+			inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		where
+			o.jid = _ownerJid
+			and (_buddyJid is null or b.jid = _buddyJid)
+			and (_from is null or m.ts >= _from)
+			and (_to is null or m.ts <= _to)
+		window w as (order by ts)
+        ) x where x.stanza_hash = _hash;
+	end if;
+end;
+$$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
@@ -560,7 +612,7 @@ create or replace function Tig_MA_GetTagsForUser(_ownerJid varchar(2049), _tagSt
 	tag varchar(255)
 ) as $$
 begin
-	return query select tag 
+	return query select t.tag
 		from tig_ma_tags t 
 		inner join tig_ma_jids o on o.jid_id = t.owner_id 
 		where o.jid = _ownerJid
@@ -577,7 +629,8 @@ declare
 	result bigint;
 begin
 	result := 0;
-	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = _ownerJid and t.tag like _tagStartsWith;
+	select count(tag_id) into result from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = _ownerJid and t.tag like _tagStartsWith;
+	return result;
 end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:

@@ -21,7 +21,8 @@
  */
 package tigase.archive.db;
 
-import tigase.archive.QueryCriteria;
+import tigase.archive.xep0313.MAMRepository;
+import tigase.archive.xep0313.Query;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;
@@ -38,7 +39,7 @@ import java.util.Set;
  *
  * @author andrzej
  */
-public interface MessageArchiveRepository<Crit extends QueryCriteria, DS extends DataSource> extends DataSourceAware<DS> {
+public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query, DS extends DataSource> extends DataSourceAware<DS>, MAMRepository<Q, MAMRepository.Item> {
 	
 	enum Direction {
 		incoming((short) 1, "from"),
@@ -94,14 +95,23 @@ public interface MessageArchiveRepository<Crit extends QueryCriteria, DS extends
 	 */
 	default void destroy() {};
 	
-	QueryCriteria newCriteriaInstance();
+	void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
 	
-	List<Element> getCollections(BareJID owner, Crit criteria) throws TigaseDBException;
-	
-	List<Element> getItems(BareJID owner, Crit criteria) throws TigaseDBException;
-	
-	public void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
-	
-	public List<String> getTags(BareJID owner, String startsWith, Crit criteria) throws TigaseDBException;
-	
+	List<String> getTags(BareJID owner, String startsWith, Q criteria) throws TigaseDBException;
+
+	void queryCollections(Q query, CollectionHandler<Q> collectionHandler) throws TigaseDBException;
+
+	interface CollectionHandler<Q extends Query> {
+
+		void collectionFound(Q query, String with, Date start, String type);
+
+	}
+
+	interface Item extends MAMRepository.Item {
+
+		Direction getDirection();
+
+		String getWith();
+
+	}
 }

@@ -19,13 +19,13 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-package tigase.archive.module.xep0136;
+package tigase.archive.xep0136.modules;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
 import tigase.archive.TimestampHelper;
 import tigase.archive.db.MessageArchiveRepository;
-import tigase.archive.module.AbstractModule;
+import tigase.archive.modules.AbstractModule;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;

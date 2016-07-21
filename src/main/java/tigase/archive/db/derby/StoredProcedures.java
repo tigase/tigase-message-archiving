@@ -21,15 +21,10 @@
  */
 package tigase.archive.db.derby;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.logging.Logger;
 import tigase.xmpp.BareJID;
+
+import java.sql.*;
+import java.util.logging.Logger;
 
 /**
  *
@@ -47,7 +42,7 @@ public class StoredProcedures {
 		try {
 			StringBuilder sb = new StringBuilder();
 			
-			sb.append("select m.msg, m.ts, m.direction, b.jid" +
+			sb.append("select m.msg, m.ts, m.direction, b.jid, m.stanza_hash" +
 				" from tig_ma_msgs m" +
 				" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 				" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
@@ -124,8 +119,62 @@ public class StoredProcedures {
 		} finally {
 			conn.close();
 		}		
-	}	
-	
+	}
+
+	public static void getMessagePosition(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, String hash, ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			StringBuilder sb = new StringBuilder();
+
+			sb.append("select m.stanza_hash, row_number() over () as position" +
+					" from tig_ma_msgs m" +
+					" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
+					" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
+					" where " +
+					" o.jid = ?");
+			if (buddyJid != null)
+				sb.append(" and b.jid = ?");
+			if (from != null)
+				sb.append(" and m.ts >= ?");
+			if (to != null)
+				sb.append(" and m.ts <= ?");
+			appendTagsQuery(sb, tags);
+			appendContainsQuery(sb, contains);
+			sb.append(" order by m.ts");
+
+			PreparedStatement ps = conn.prepareStatement(sb.toString());
+
+			int i=0;
+			ps.setString(++i, ownerJid);
+			if (buddyJid != null)
+				ps.setString(++i, buddyJid);
+			if (from != null)
+				ps.setTimestamp(++i, from);
+			if (to != null)
+				ps.setTimestamp(++i, to);
+
+			i=0;
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				if (hash.equals(rs.getString(1))) {
+					i = rs.getInt(2);
+					break;
+				}
+			}
+			rs.close();
+
+			String q = "select " + i + " as position from SYSIBM.SYSDUMMY1 where " + i + " <> 0";
+			data[0] = conn.prepareStatement(q).executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
 	public static void getCollections(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags, String contains, short byType, Integer limit, Integer offset, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 

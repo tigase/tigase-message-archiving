@@ -24,6 +24,8 @@ package tigase.archive.db;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.archive.QueryCriteria;
+import tigase.archive.xep0313.MAMRepository;
+import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.db.TigaseDBException;
@@ -33,6 +35,7 @@ import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
+import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
@@ -55,7 +58,7 @@ import java.util.logging.Logger;
  * @author         Enter your name here...
  */
 @Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" } )
-public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extends AbstractMessageArchiveRepository<Criteria, DataRepository> {
+public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends AbstractMessageArchiveRepository<Q, DataRepository> {
 	private static final Logger log        =
 		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL              = 0;
@@ -70,6 +73,7 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 
 	private static final String DEF_GET_MESSAGES_QUERY = "{ call Tig_MA_GetMessages(?,?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_MESSAGES_COUNT_QUERY = "{ call Tig_MA_GetMessagesCount(?,?,?,?,?,?) }";
+	private static final String DEF_GET_MESSAGES_POSITION_QUERY = "{ call Tig_MA_GetMessagePosition(?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_COLLECTIONS_QUERY = "{ call Tig_MA_GetCollections(?,?,?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_COLLECTIONS_COUNT_QUERY = "{ call Tig_MA_GetCollectionsCount(?,?,?,?,?,?,?) }";
 	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_AddMessage(?,?,?,?,?,?,?,?,?) }";
@@ -83,6 +87,8 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 	protected String GET_MESSAGES_QUERY = DEF_GET_MESSAGES_QUERY;
 	@ConfigField(desc = "Query to retrieve number of messages", alias = "get-messages-count-query")
 	protected String GET_MESSAGES_COUNT_QUERY = DEF_GET_MESSAGES_COUNT_QUERY;
+	@ConfigField(desc = "Query to retrieve message possition", alias = "get-message-position-query")
+	protected String GET_MESSAGE_POSITION_QUERY = DEF_GET_MESSAGES_POSITION_QUERY;
 	@ConfigField(desc = "Query to retrieve list of collections", alias = "get-collections-query")
 	protected String GET_COLLECTIONS_QUERY = DEF_GET_COLLECTIONS_QUERY;
 	@ConfigField(desc = "Query to retrieve number of collections", alias = "get-collections-count-query")
@@ -125,6 +131,7 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 	protected void initPreparedStatements(DataRepository data_repo) throws SQLException {
 		data_repo.initPreparedStatement(GET_MESSAGES_QUERY, GET_MESSAGES_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGES_COUNT_QUERY, GET_MESSAGES_COUNT_QUERY);
+		data_repo.initPreparedStatement(GET_MESSAGE_POSITION_QUERY, GET_MESSAGE_POSITION_QUERY);
 		data_repo.initPreparedStatement(GET_COLLECTIONS_QUERY, GET_COLLECTIONS_QUERY);
 		data_repo.initPreparedStatement(GET_COLLECTIONS_COUNT_QUERY, GET_COLLECTIONS_COUNT_QUERY);
 		data_repo.initPreparedStatement(ADD_MESSAGE_QUERY, ADD_MESSAGE_QUERY);
@@ -134,7 +141,7 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_QUERY, GET_TAGS_FOR_USER_QUERY);
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT_QUERY, GET_TAGS_FOR_USER_COUNT_QUERY);
 	}
-	
+
 	/**
 	 * Method description
 	 *
@@ -253,70 +260,66 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		
 	//~--- get methods ----------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param owner
-	 * @param crit
-	 *
-	 * @return
-	 * @throws tigase.db.TigaseDBException
-	 */
+	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {
+		RSM rsm = query.getRsm();
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+		int limit = rsm.getMax();
+		if (after != null) {
+			// it is ok, if we go out of range we will return empty result
+			index = after + 1;
+		} else if (before != null) {
+			index = before - rsm.getMax();
+			// if we go out of range we need to set index to 0 and reduce limit
+			// to return proper results
+			if (index < 0) {
+				index = 0;
+				limit = before;
+			}
+		} else if (rsm.hasBefore()) {
+			index = count - rsm.getMax();
+			if (index < 0) {
+				index = 0;
+			}
+		}
+		rsm.setIndex(index);
+		rsm.setMax(limit);
+		rsm.setCount(count);
+	}
+
 	@Override
-	public List<Element> getCollections(BareJID owner, Criteria crit)
+	public void queryCollections(Q crit, CollectionHandler<Q> collectionHandler)
 					 throws TigaseDBException {
 		try {
-			Integer count = getCollectionsCount(owner, crit);
+			Integer count = getCollectionsCount(crit);
 			if (count == null)
 				count = 0;
-			crit.setSize(count);
 
-			List<Element> results = getCollectionsItems(owner, crit);
+			Integer after = getColletionPosition(crit.getRsm().getAfter(), crit);
+			Integer before = getColletionPosition(crit.getRsm().getBefore(), crit);
 
-			RSM rsm = crit.getRSM();
-			rsm.setResults(count, crit.getOffset());
-			if (!results.isEmpty()) {
-				rsm.setFirst(String.valueOf(crit.getOffset()));
-				rsm.setLast(String.valueOf(crit.getOffset() + (results.size() - 1)));
-			}
+			calculateOffsetAndPosition(crit, count, before, after);
 
-			return results;
+			getCollectionsItems(crit, collectionHandler);
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Cound not retrieve collections", ex);
 		}		
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param owner
-	 * @param crit
-	 *
-	 * @return
-	 * @throws tigase.db.TigaseDBException
-	 */
 	@Override
-	public List<Element> getItems(BareJID owner, Criteria crit)
-					 throws TigaseDBException {
+	public void queryItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler)
+					 throws TigaseDBException, ComponentException {
 		try {
-			Integer count = getItemsCount(owner, crit);
+			Integer count = getItemsCount(crit);
 			if (count == null) {
 				count = 0;
 			}
-			crit.setSize(count);
 
-			List<Element> items = getItemsItems(owner, crit);
+			Integer after = getItemPosition(crit.getRsm().getAfter(), crit);
+			Integer before = getItemPosition(crit.getRsm().getBefore(), crit);
 
-			RSM rsm = crit.getRSM();
-			rsm.setResults(count, crit.getOffset());
-			if (items!= null && !items.isEmpty()) {
-				rsm.setFirst(String.valueOf(crit.getOffset()));
-				rsm.setLast(String.valueOf(crit.getOffset() + (items.size() - 1)));
-			}
+			calculateOffsetAndPosition(crit, count, before, after);
 
-			return items;
+			getItemsItems(crit, itemHandler);
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Cound not retrieve items", ex);
 		}		
@@ -324,17 +327,6 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 
 	//~--- methods --------------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param owner
-	 * @param withJid
-	 * @param start
-	 * @param end
-	 *
-	 * @throws TigaseDBException
-	 */
 	@Override
 	public void removeItems(BareJID owner, String withJid, Date start, Date end)
 					throws TigaseDBException {
@@ -364,17 +356,8 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		}
 	}
 
-	/**
-	 * Method description
-	 * 
-	 * @param owner
-	 * @param startsWith
-	 * @param crit
-	 * @return
-	 * @throws TigaseDBException 
-	 */
 	@Override
-	public List<String> getTags(BareJID owner, String startsWith, QueryCriteria crit) throws TigaseDBException {
+	public List<String> getTags(BareJID owner, String startsWith, Q crit) throws TigaseDBException {
 		List<String> results = new ArrayList<String>();
 		try {
 			ResultSet rs = null;
@@ -395,7 +378,9 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 					data_repo.release(null, rs);
 				}
 			}
-			crit.setSize(count);
+			String beforeStr = crit.getRsm().getBefore();
+			String afterStr = crit.getRsm().getAfter();
+			calculateOffsetAndPosition(crit, count, beforeStr == null ? null : Integer.parseInt(beforeStr), afterStr == null ? null : Integer.parseInt(afterStr));
 
 			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_QUERY);
 			synchronized (get_tags_st) {
@@ -404,8 +389,8 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 					get_tags_st.setString(i++, owner.toString());
 					get_tags_st.setString(i++, startsWith);
 
-					get_tags_st.setInt(i++, crit.getLimit());
-					get_tags_st.setInt(i++, crit.getOffset());
+					get_tags_st.setInt(i++, crit.getRsm().getMax());
+					get_tags_st.setInt(i++, crit.getRsm().getIndex());
 
 					rs = get_tags_st.executeQuery();
 					while (rs.next()) {
@@ -416,11 +401,11 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 				}
 			}
 			
-			RSM rsm = crit.getRSM();
-			rsm.setResults(count, crit.getOffset());
+			RSM rsm = crit.getRsm();
+			rsm.setResults(count, rsm.getIndex());
 			if (results!= null && !results.isEmpty()) {
-				rsm.setFirst(String.valueOf(crit.getOffset()));
-				rsm.setLast(String.valueOf(crit.getOffset() + (results.size() - 1)));
+				rsm.setFirst(String.valueOf(rsm.getIndex()));
+				rsm.setLast(String.valueOf(rsm.getIndex() + (results.size() - 1)));
 			}			
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Could not retrieve known tags from database", ex);
@@ -429,10 +414,10 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		return results;
 	}
 
-	private List<Element> getCollectionsItems(BareJID owner, Criteria crit)
+	private void getCollectionsItems(Q crit, CollectionHandler<Q> collectionHandler)
 					throws SQLException {
-		List<Element> results = new LinkedList<Element>();
 		ResultSet selectRs = null;
+		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_QUERY);
 
 		int i = 2;
@@ -445,18 +430,25 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 					Timestamp startTs = selectRs.getTimestamp(1);
 					String with = selectRs.getString(2);
 					String type = selectRs.getString(3);
-					addCollectionToResults(results, crit, with, startTs, type);
+					collectionHandler.collectionFound(crit, with, startTs, type);
 				}
 			} finally {
 				data_repo.release(null, selectRs);
 			}
 		}
-		return results;
-	}	
+
+		List<Element> collections = crit.getCollections();
+		if (collections != null) {
+			int first = crit.getRsm().getIndex();
+			crit.getRsm().setFirst(String.valueOf(first));
+			crit.getRsm().setLast(String.valueOf(first + collections.size() - 1));
+		}
+	}
 	
-	private Integer getCollectionsCount(BareJID owner, Criteria crit) throws SQLException {
+	private Integer getCollectionsCount(Q crit) throws SQLException {
 		ResultSet countRs = null;
 		Integer count = null;
+		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_COUNT_QUERY);
 		synchronized (get_collections_count) {
 			try {
@@ -471,10 +463,18 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		}
 		return count;
 	}
+
+	private Integer getColletionPosition(String uid, Q query) {
+		if (uid == null || uid.isEmpty())
+			return null;
+
+		return Integer.parseInt(uid);
+	}
 	
-	private List<Element> getItemsItems(BareJID owner, Criteria crit) throws SQLException {
+	private void getItemsItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler) throws SQLException {
 		ResultSet rs      = null;		
 		Queue<Item> results = new ArrayDeque<Item>();
+		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
 		synchronized (get_messages_st) {
 			try {
@@ -491,62 +491,51 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 			}
 		}
 
-		List<Element> msgs = new LinkedList<Element>();
-
 		if (!results.isEmpty()) {
 			DomBuilderHandler domHandler = new DomBuilderHandler();
 
 			Date startTimestamp = crit.getStart();
 			Item item = null;
+			int idx = crit.getRsm().getIndex();
+			int i = 0;
 			while ((item = results.poll()) != null) {
 				// workaround for case in which start was not specified
 				if (startTimestamp == null)
 					startTimestamp = item.timestamp;
 				
-				parser.parse(domHandler, item.message.toCharArray(), 0, item.message.length());
+				parser.parse(domHandler, item.messageStr.toCharArray(), 0, item.messageStr.length());
 
 				Queue<Element> queue = domHandler.getParsedElements();
 				Element msg = null;
 
-				while ((msg = queue.poll()) != null) {
-					addMessageToResults(msgs, crit, startTimestamp, item, msg);
-				}			
+				item.messageStr = null;
+				item.messageEl = queue.poll();
+				if (!crit.getUseMessageIdInRsm()) {
+					item.id = String.valueOf(idx + i);
+				}
+				itemHandler.itemFound(crit, item);
+				queue.clear();
+				i++;
 			}
 
 			crit.setStart(startTimestamp);
-			
-			// no point in sorting messages by secs attribute as messages are already
-			// sorted in SQL query and also this sorting is incorrect
-//			Collections.sort(msgs, new Comparator<Element>() {
-//				@Override
-//				public int compare(Element m1, Element m2) {
-//					return m1.getAttributeStaticStr("secs").compareTo(
-//							m2.getAttributeStaticStr("secs"));
-//				}
-//			});
 		}
-
-		return msgs;		
 	}
 	
-	protected Element addMessageToResults(List<Element> msgs, Criteria crit, Date startTimestamp, Item item, Element msg) {
-		return addMessageToResults(msgs, crit, startTimestamp, msg, item.timestamp, item.direction, item.with);
-	}
-
 	protected Timestamp convertToTimestamp(Date date) {
 		if (date == null)
 			return null;
 		return new Timestamp(date.getTime());
 	}
 
-	protected int setCountQueryParams(PreparedStatement stmt, String ownerJid, Criteria crit, Boolean groupByType) throws SQLException {
+	protected int setCountQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType) throws SQLException {
 		stmt.setString(1, ownerJid);
 		return setQueryParams(stmt, crit, groupByType, 2);
 	}
 
-	protected int setQueryParams(PreparedStatement stmt, Criteria crit, Boolean groupByType, int i) throws SQLException {
+	protected int setQueryParams(PreparedStatement stmt, Q crit, Boolean groupByType, int i) throws SQLException {
 		if (crit.getWith() != null) {
-			stmt.setString(i++, crit.getWith());
+			stmt.setString(i++, crit.getWith().getBareJID().toString());
 		} else {
 			stmt.setObject(i++, null);
 		}
@@ -588,20 +577,21 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		return i;
 	}
 
-	public void setItemsQueryParams(PreparedStatement stmt, String ownerJid, Criteria crit, Boolean groupByType) throws SQLException {
+	public void setItemsQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType) throws SQLException {
 		stmt.setString(1, ownerJid);
 		int i = setQueryParams(stmt, crit, groupByType, 2);
-		stmt.setInt(i++, crit.getLimit());
-		stmt.setInt(i++, crit.getOffset());
+		stmt.setInt(i++, crit.getRsm().getMax());
+		stmt.setInt(i++, crit.getRsm().getIndex());
 	}
 
 	protected Item newItemInstance() {
 		return new Item();
 	}
 	
-	private Integer getItemsCount(BareJID owner, Criteria crit) throws SQLException {
+	private Integer getItemsCount(Q crit) throws SQLException {
 		Integer count = null;
 		ResultSet rs = null;
+		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_COUNT_QUERY);
 		synchronized (get_messages_st) {
 			try {
@@ -617,32 +607,92 @@ public class JDBCMessageArchiveRepository<Criteria extends QueryCriteria> extend
 		}
 		return count;
 	}
-		
+
+	private Integer getItemPosition(String uid, Q query) throws SQLException, ComponentException {
+		if (uid == null || uid.isEmpty())
+			return null;
+
+		if (!query.getUseMessageIdInRsm())
+			return Integer.parseInt(uid);
+
+		Integer position = null;
+		ResultSet rs = null;
+		BareJID owner = query.getQuestionerJID().getBareJID();
+		PreparedStatement get_message_position_st = data_repo.getPreparedStatement(owner, GET_MESSAGE_POSITION_QUERY);
+		synchronized (get_message_position_st) {
+			try {
+				int i = setCountQueryParams(get_message_position_st, owner.toString(), query, null);
+				get_message_position_st.setString(i++, uid);
+
+				rs = get_message_position_st.executeQuery();
+				if (rs.next()) {
+					position = rs.getInt(1);
+				}
+			} finally {
+				data_repo.release(null, rs);
+			}
+		}
+
+		if (position == null || position < 1)
+			throw new ComponentException(Authorization.BAD_REQUEST, "Item with " + uid + " not found");
+
+		return position - 1;
+	}
+
 	private String generateHashOfMessageAsString(Direction direction, Element msg, Map<String,Object> additionalData) {
 		byte[] result = generateHashOfMessage(direction, msg, additionalData);
 		return result != null ? Base64.encode(result) : null;
 	}
 
 	@Override
-	public QueryCriteria newCriteriaInstance() {
-		return new QueryCriteria();
+	public Q newQuery() {
+		return (Q) new QueryCriteria();
 	}
-	
-	public static class Item<Crit extends QueryCriteria> {
-		String message;
+
+	public static class Item<Q extends QueryCriteria> implements MessageArchiveRepository.Item {
+		String id;
+		String messageStr;
+		Element messageEl;
 		Date timestamp;
 		Direction direction;
 		String with;
 		
-		protected int read(ResultSet rs, Crit crit) throws SQLException {
+		protected int read(ResultSet rs, Q crit) throws SQLException {
 			int i = 1;
-			message = rs.getString(i++);
+			messageStr = rs.getString(i++);
 			timestamp = rs.getTimestamp(i++);
 			direction = Direction.getDirection(rs.getShort(i++));
 			if (crit.getWith() == null) {
-				with = rs.getString(i++);
+				with = rs.getString(i);
 			}
+			i++;
+			id = rs.getString(i++);
 			return i;
+		}
+
+		@Override
+		public String getId() {
+			return id;
+		}
+
+		@Override
+		public Direction getDirection() {
+			return direction;
+		}
+
+		@Override
+		public Element getMessage() {
+			return messageEl;
+		}
+
+		@Override
+		public Date getTimestamp() {
+			return timestamp;
+		}
+
+		@Override
+		public String getWith() {
+			return with;
 		}
 	}
 	

@@ -144,6 +144,15 @@ create procedure Tig_MA_GetMessagesCount(ownerJid varchar(2049), buddyJid varcha
 -- QUERY END:
 
 -- QUERY START:
+create procedure Tig_MA_GetMessagePosition(ownerJid varchar(2049), buddyJid varchar(2049), "from" timestamp, "to" timestamp, "tags" varchar(32672), "contains" varchar(32672), "hash" varchar(50))
+	PARAMETER STYLE JAVA
+	LANGUAGE JAVA
+	READS SQL DATA
+	DYNAMIC RESULT SETS 1
+	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getMessagePosition';
+-- QUERY END:
+
+-- QUERY START:
 create procedure Tig_MA_GetCollections(ownerJid varchar(2049), buddyJid varchar(2049), "from" timestamp, "to" timestamp, "tags" varchar(32672), "contains" varchar(32672), byType smallint, "limit" int, "offset" int)
 	PARAMETER STYLE JAVA
 	LANGUAGE JAVA
