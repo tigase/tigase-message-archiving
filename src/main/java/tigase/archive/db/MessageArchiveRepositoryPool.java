@@ -23,7 +23,6 @@ package tigase.archive.db;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
-import tigase.archive.xep0313.MAMRepository;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
@@ -34,6 +33,7 @@ import tigase.kernel.beans.Bean;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -78,7 +78,7 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
-	public void queryItems(Q query, ItemHandler<Q,MAMRepository.Item> itemHandler) throws TigaseDBException, ComponentException {
+	public void queryItems(Q query, MAMRepository.ItemHandler<Q,MAMRepository.Item> itemHandler) throws TigaseDBException, ComponentException {
 		getRepository(query.getQuestionerJID().getDomain()).queryItems(query, itemHandler);
 	}
 

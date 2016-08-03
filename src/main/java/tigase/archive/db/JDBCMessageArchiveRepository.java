@@ -24,7 +24,6 @@ package tigase.archive.db;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.archive.QueryCriteria;
-import tigase.archive.xep0313.MAMRepository;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
@@ -39,6 +38,7 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
+import tigase.xmpp.mam.MAMRepository;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

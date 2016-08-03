@@ -21,57 +21,13 @@
  */
 package tigase.archive.xep0313;
 
-import tigase.archive.xep0313.modules.QueryModule;
-import tigase.component.PacketWriter;
 import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.Inject;
-import tigase.server.Message;
-import tigase.server.Priority;
-import tigase.xml.Element;
-
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import tigase.xmpp.mam.modules.QueryModule;
 
 /**
  * Created by andrzej on 19.07.2016.
  */
 @Bean(name = "mamItemHandler", parent = QueryModule.class)
-public class MAMItemHandler implements MAMRepository.ItemHandler {
-
-	private static final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
-
-	static {
-		TIMESTAMP_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
-
-	@Inject
-	private PacketWriter packetWriter;
-
-	@Override
-	public void itemFound(Query query, MAMRepository.Item item) {
-		Element m = new Element("message");
-		Element result = new Element("result", new String[] { "xmlns", "id" }, new String[] { "urn:xmpp:mam:1", item.getId() });
-		if (query.getId() != null) {
-			result.setAttribute("queryid", query.getId());
-		}
-		m.addChild(result);
-		Element forwarded = new Element("forwarded", new String[] { "xmlns" }, new String[] { "urn:xmpp:forward:0" });
-		result.addChild(forwarded);
-
-		String timestampStr;
-		synchronized (TIMESTAMP_FORMATTER) {
-			timestampStr = TIMESTAMP_FORMATTER.format(item.getTimestamp());
-		}
-
-		Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay", timestampStr });
-		forwarded.addChild(delay);
-
-		forwarded.addChild(item.getMessage());
-
-		Message packet = new Message(m, query.getComponentJID(), query.getQuestionerJID());
-		packet.setPriority(Priority.HIGH);
-
-		packetWriter.write(packet);
-	}
+public class MAMItemHandler extends tigase.xmpp.mam.MAMItemHandler {
 
 }

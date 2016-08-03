@@ -23,7 +23,6 @@ package tigase.archive.xep0136.modules;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
-import tigase.archive.TimestampHelper;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.archive.modules.AbstractModule;
 import tigase.component.exceptions.ComponentException;
@@ -31,6 +30,7 @@ import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.util.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
@@ -48,6 +48,8 @@ import java.util.Set;
 public class SaveItemsModule extends AbstractModule {
 
 	private static final String SAVE_ELEM = "save";
+
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Override
 	public String[] getFeatures() {
@@ -73,7 +75,7 @@ public class SaveItemsModule extends AbstractModule {
 						continue;
 					}
 
-					Date start = TimestampHelper.parseTimestamp(chat.getAttributeStaticStr("start"));
+					Date start = timestampHelper.parseTimestamp(chat.getAttributeStaticStr("start"));
 					BareJID owner = packet.getStanzaFrom().getBareJID();
 					String with = chat.getAttributeStaticStr("with");
 					if (with == null) {
@@ -97,7 +99,7 @@ public class SaveItemsModule extends AbstractModule {
 								long secs = Long.parseLong(secsAttr);
 								timestamp = new Date(start.getTime() + (secs * 1000));
 							} else if (utcAttr != null) {
-								timestamp = TimestampHelper.parseTimestamp(utcAttr);
+								timestamp = timestampHelper.parseTimestamp(utcAttr);
 							}
 							if (timestamp == null) {
 								// if timestamp is not set assume that secs was 0

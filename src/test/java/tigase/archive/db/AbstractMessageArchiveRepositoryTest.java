@@ -27,7 +27,6 @@ import org.junit.runner.Description;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.model.Statement;
 import tigase.archive.QueryCriteria;
-import tigase.archive.xep0313.MAMRepository;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.*;
 import tigase.util.SchemaLoader;
@@ -37,6 +36,7 @@ import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
+import tigase.xmpp.mam.MAMRepository;
 
 import java.io.File;
 import java.sql.SQLException;

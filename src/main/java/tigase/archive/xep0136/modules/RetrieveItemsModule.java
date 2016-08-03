@@ -23,11 +23,9 @@ package tigase.archive.xep0136.modules;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
-import tigase.archive.TimestampHelper;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.archive.modules.AbstractModule;
 import tigase.archive.xep0136.Xep0136QueryParser;
-import tigase.archive.xep0313.MAMRepository;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.db.TigaseDBException;
@@ -35,8 +33,10 @@ import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.util.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
 
 import java.util.List;
 
@@ -49,6 +49,8 @@ import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136
 public class RetrieveItemsModule extends AbstractModule {
 
 	private static final String RETRIEVE_ELEM = "retrieve";
+
+	private TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Inject
 	private Xep0136QueryParser queryParser;
@@ -92,7 +94,7 @@ public class RetrieveItemsModule extends AbstractModule {
 			if (query.getWith() != null)
 				retList.setAttribute("with", query.getWith().toString());
 			if (query.getStart() != null)
-				retList.setAttribute("start", TimestampHelper.format(query.getStart()));
+				retList.setAttribute("start", timestampHelper.format(query.getStart()));
 
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {

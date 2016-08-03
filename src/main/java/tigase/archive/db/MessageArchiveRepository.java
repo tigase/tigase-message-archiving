@@ -21,14 +21,14 @@
  */
 package tigase.archive.db;
 
-import tigase.archive.xep0313.MAMRepository;
-import tigase.archive.xep0313.Query;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.Query;
 
 import java.time.LocalDateTime;
 import java.util.Date;

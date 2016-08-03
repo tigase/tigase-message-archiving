@@ -21,80 +21,9 @@
  */
 package tigase.archive.xep0313;
 
-import tigase.xmpp.JID;
-import tigase.xmpp.RSM;
-
-import java.util.Date;
-
 /**
  * Created by andrzej on 21.07.2016.
  */
-public class QueryImpl implements Query {
-
-	private JID questionerJID;
-	private JID componentJID;
-
-	private String id;
-	private Date start;
-	private Date end;
-	private JID with;
-
-	private final RSM rsm = new RSM();
-
-	public QueryImpl() {
-
-	}
-
-	public JID getQuestionerJID() {
-		return questionerJID;
-	}
-
-	public void setQuestionerJID(JID questionerJID) {
-		this.questionerJID = questionerJID;
-	}
-
-	public JID getComponentJID() {
-		return componentJID;
-	}
-
-	public void setComponentJID(JID componentJID) {
-		this.componentJID = componentJID;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public Date getStart() {
-		return start;
-	}
-
-	public void setStart(Date start) {
-		this.start = start;
-	}
-
-	public Date getEnd() {
-		return end;
-	}
-
-	public void setEnd(Date end) {
-		this.end = end;
-	}
-
-	public JID getWith() {
-		return with;
-	}
-
-	public void setWith(JID with) {
-		this.with = with;
-	}
-
-	public RSM getRsm() {
-		return rsm;
-	}
+public class QueryImpl extends tigase.xmpp.mam.QueryImpl {
 
 }

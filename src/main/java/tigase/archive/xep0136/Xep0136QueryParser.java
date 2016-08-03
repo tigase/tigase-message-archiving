@@ -21,17 +21,21 @@
  */
 package tigase.archive.xep0136;
 
-import tigase.archive.*;
+import tigase.archive.MessageArchiveComponent;
+import tigase.archive.MessageArchiveConfig;
+import tigase.archive.QueryCriteria;
+import tigase.archive.TagsHelper;
 import tigase.archive.processors.Xep0136MessageArchivingProcessor;
-import tigase.archive.xep0313.QueryParser;
 import tigase.component.exceptions.ComponentException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.util.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.QueryParser;
 
 import java.text.ParseException;
 import java.util.HashSet;
@@ -51,6 +55,8 @@ public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<
 
 	@Inject
 	private MessageArchiveConfig config;
+
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Override
 	public Q parseQuery(Q query, Packet packet) throws ComponentException {
@@ -72,14 +78,14 @@ public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<
 
 		String start = el.getAttributeStaticStr("start");
 		try {
-			query.setStart(TimestampHelper.parseTimestamp(start));
+			query.setStart(timestampHelper.parseTimestamp(start));
 		} catch (ParseException ex) {
 			throw new ComponentException(Authorization.BAD_REQUEST, "Invalid value in 'start' field", ex);
 		}
 
 		String end = el.getAttributeStaticStr("end");
 		try {
-			query.setEnd(TimestampHelper.parseTimestamp(end));
+			query.setEnd(timestampHelper.parseTimestamp(end));
 		} catch (ParseException ex) {
 			throw new ComponentException(Authorization.BAD_REQUEST, "Invalid value in 'end' field", ex);
 		}

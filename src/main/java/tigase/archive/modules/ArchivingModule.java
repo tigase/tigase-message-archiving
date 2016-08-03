@@ -23,7 +23,6 @@ package tigase.archive.modules;
 
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
-import tigase.archive.TimestampHelper;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
@@ -31,6 +30,7 @@ import tigase.kernel.beans.Bean;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.util.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -50,6 +50,8 @@ import static tigase.archive.processors.MessageArchivePlugin.OWNER_JID;
 public class ArchivingModule extends AbstractModule {
 
 	private static final Logger log = Logger.getLogger(ArchivingModule.class.getCanonicalName());
+
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Override
 	public String[] getFeatures() {
@@ -84,7 +86,7 @@ public class ArchivingModule extends AbstractModule {
 			if (delay != null) {
 				try {
 					String stamp = delay.getAttributeStaticStr("stamp");
-					timestamp = TimestampHelper.parseTimestamp(stamp);
+					timestamp = timestampHelper.parseTimestamp(stamp);
 				} catch (ParseException e1) {
 					// we need to set timestamp to current date if parsing of timestamp failed
 					timestamp = new java.util.Date();
