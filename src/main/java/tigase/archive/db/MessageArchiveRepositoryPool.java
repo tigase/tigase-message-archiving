@@ -49,7 +49,7 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 		implements MessageArchiveRepository<Q, DataSource> {
 
 	public MessageArchiveRepositoryPool() {
-		dataSourceSelection = SelectorType.MainOnly;
+
 	}
 
 	@Override
@@ -69,7 +69,7 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 
 	@Override
 	public Q newQuery() {
-		return getRepository(defaultDataSourceName).newQuery();
+		return getRepository("default").newQuery();
 	}
 
 	@Override
@@ -97,4 +97,12 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 		// nothing to do
 	}
 
+	@Override
+	public Class<?> getDefaultBeanClass() {
+		return MessageArchiveRepositoryConfigBean.class;
+	}
+
+	public static class MessageArchiveRepositoryConfigBean extends MDRepositoryConfigBean<MessageArchiveRepository<QueryCriteria, DataSource>> {
+
+	}
 }
