@@ -21,20 +21,7 @@
  */
 package tigase.archive.db;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.TimeZone;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.MethodSorters;
 import tigase.archive.AbstractCriteria;
 import tigase.db.DBInitException;
@@ -43,6 +30,9 @@ import tigase.db.TigaseDBException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  *
@@ -53,21 +43,20 @@ import tigase.xmpp.StanzaType;
 public class AbstractMessageArchiveRepositoryTest {
 	
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ssZ");	
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 	
 	static {
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}		
 	
-	//private String uri = "jdbc:sqlserver://172.16.0.94:1433;databaseName=test;user=test;password=test";
 	private String uri = System.getProperty("testDbUri");
 	private MessageArchiveRepository repo;
 	
 	// this is static to pass date from first test to next one
 	private static Date testStart = null;
 
-	private JID owner = JID.jidInstanceNS("test1@zeus/tigase-1");
-	private JID buddy = JID.jidInstanceNS("test2@zeus/tigase-2");	
+	private JID owner = JID.jidInstanceNS("TeSt1@zeus/tigase-1");
+	private JID buddy = JID.jidInstanceNS("tesT2@zeus/tigase-2");
 	
 	
 	@Before
@@ -138,7 +127,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 		
 		Element chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString().toLowerCase(), chat.getAttribute("with").toLowerCase());
 		Assert.assertEquals("Incorrect timestamp", formatter2.format(testStart), chat.getAttribute("start"));
 	}
 
@@ -154,7 +143,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 		
 		Element chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString().toLowerCase(), chat.getAttribute("with").toLowerCase());
 	}
 	
 	@Test
@@ -202,7 +191,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 		
 		Element chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.getAttribute("with"));
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString().toLowerCase(), chat.getAttribute("with").toLowerCase());
 		Assert.assertEquals("Incorrect timestamp", formatter2.format(testStart), chat.getAttribute("start"));		
 		
 		crit = repo.newCriteriaInstance();

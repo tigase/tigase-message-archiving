@@ -23,52 +23,26 @@ package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.archive.AbstractCriteria;
 import tigase.archive.db.JDBCMessageArchiveRepository.Criteria;
-
-import tigase.db.DBInitException;
-import tigase.db.DataRepository;
+import tigase.db.*;
 import tigase.db.DataRepository.dbTypes;
-
-import static tigase.db.DataRepository.dbTypes.derby;
-
-import tigase.db.Repository;
-import tigase.db.RepositoryFactory;
-import tigase.db.TigaseDBException;
-
 import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
-
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.RSM;
-import tigase.xmpp.StanzaType;
+
+import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class description
@@ -1108,6 +1082,23 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		} finally {
 			data_repo.release(stmt, null);
 		}
+		// convert localpart of JID and domain part to lowercase
+		try {
+			String query = "select 1 from " + JIDS_TABLE + " where " + JIDS_TABLE + "." + JIDS_JID + " <> LOWER(" + JIDS_TABLE + "." + JIDS_JID +")";
+			stmt = data_repo.createStatement(null);
+			ResultSet rs = stmt.executeQuery(query);
+			if (rs.next()) {
+				stmt.executeUpdate("update " + JIDS_TABLE + " set " + JIDS_JID + " = LOWER(" + JIDS_JID + "), "
+						+ JIDS_DOMAIN + " = LOWER(" + JIDS_DOMAIN + ") where " + JIDS_JID + " <> LOWER(" + JIDS_JID + ") or " + JIDS_DOMAIN + " <> LOWER(" + JIDS_DOMAIN + ")");
+			}
+			rs.close();
+			log.log(Level.FINEST, "lowercased domain and local part of barejid ");
+		} catch (SQLException ex1) {
+			log.log(Level.SEVERE, "could not update '" + JIDS_JID  + "' and '" + JIDS_DOMAIN + "' with lowercased values", ex1);
+		} finally {
+			data_repo.release(stmt, null);
+		}
+
 	}
 	
 	/**
@@ -1232,7 +1223,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				}
 				delete_expired_msgs_st.setQueryTimeout(delete_expired_timeout);
 				delete_expired_msgs_st.setTimestamp(1, ts);
-				delete_expired_msgs_st.setString(2, owner.toString());
+				delete_expired_msgs_st.setString(2, owner.toString().toLowerCase());
 				delete_expired_msgs_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
@@ -1443,7 +1434,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT);
 			synchronized (get_tags_count_st) {
 				try {
-					get_tags_count_st.setString(1, owner.toString());
+					get_tags_count_st.setString(1, owner.toString().toLowerCase());
 					get_tags_count_st.setString(2, startsWith);
 
 					rs = get_tags_count_st.executeQuery();
@@ -1460,7 +1451,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			synchronized (get_tags_st) {
 				try {
 					int i = 1;
-					get_tags_st.setString(i++, owner.toString());
+					get_tags_st.setString(i++, owner.toString().toLowerCase());
 					get_tags_st.setString(i++, startsWith);
 
 					switch (data_repo.getDatabaseType()) {
@@ -1667,7 +1658,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 			synchronized (get_jid_id_st) {
 				try {
-					get_jid_id_st.setString(1, jids[0]);
+					get_jid_id_st.setString(1, jids[0].toLowerCase());
 					rs = get_jid_id_st.executeQuery();
 					if (rs.next()) {
 						results[0] = rs.getLong("jid_id");
@@ -1687,7 +1678,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			synchronized (get_jids_id_st) {
 				try {
 					for (int i = 0; i < jids.length; i++) {
-						get_jids_id_st.setString(i + 1, jids[i]);
+						get_jids_id_st.setString(i + 1, jids[i].toLowerCase());
 					}
 					rs = get_jids_id_st.executeQuery();
 
@@ -1697,7 +1688,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						String db_jid = rs.getString("jid");
 
 						for (int i = 0; i < jids.length; i++) {
-							if (db_jid.equals(jids[i])) {
+							if (db_jid.equals(jids[i].toLowerCase())) {
 								results[i] = rs.getLong("jid_id");
 								++cnt;
 							}
@@ -1719,8 +1710,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
 		try {
 			synchronized (add_jid_st) {
-				add_jid_st.setString(1, jid.toString());
-				add_jid_st.setString(2, jid.getDomain());
+				add_jid_st.setString(1, jid.toString().toLowerCase());
+				add_jid_st.setString(2, jid.getDomain().toLowerCase());
 				add_jid_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
