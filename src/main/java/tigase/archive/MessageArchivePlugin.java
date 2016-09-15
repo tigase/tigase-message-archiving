@@ -120,6 +120,7 @@ public class MessageArchivePlugin
 	
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
+	private tigase.xmpp.impl.Message message = new tigase.xmpp.impl.Message();
 
 	//~--- methods --------------------------------------------------------------
 
@@ -199,6 +200,11 @@ public class MessageArchivePlugin
 		}
 		try {
 			if (Message.ELEM_NAME == packet.getElemName()) {
+				if (!message.hasConnectionForMessageDelivery(session) ) {
+					if (packet.getStanzaTo() == null || packet.getStanzaTo().getResource() == null) {
+						return;
+					}
+				}
 				processMessage(packet, session, results);
 			} else if (Iq.ELEM_NAME == packet.getElemName()) {
 				if (ma_jid.equals(packet.getPacketFrom())) {
