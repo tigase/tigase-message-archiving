@@ -58,12 +58,12 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 		super.setUp();
 
 		kernel = new Kernel();
-		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 		kernel.registerBean(Xep0313MessageArchiveManagementProcessor.class).setActive(true).exec();
 
+		xep0313Processor = kernel.getInstance(Xep0313MessageArchiveManagementProcessor.class);
 		maPlugin = kernel.getInstance(MessageArchivePlugin.class);
 		maPlugin.init(new HashMap<>());
-		xep0313Processor = kernel.getInstance(Xep0313MessageArchiveManagementProcessor.class);
 	}
 
 	@After

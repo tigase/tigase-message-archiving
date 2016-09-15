@@ -41,9 +41,7 @@ import java.util.HashMap;
 import java.util.Queue;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by andrzej on 23.07.2016.
@@ -60,12 +58,12 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		super.setUp();
 
 		kernel = new Kernel();
-		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
 
+		xep0136Processor = kernel.getInstance(Xep0136MessageArchivingProcessor.class);
 		maPlugin = kernel.getInstance(MessageArchivePlugin.class);
 		maPlugin.init(new HashMap<>());
-		xep0136Processor = kernel.getInstance(Xep0136MessageArchivingProcessor.class);
 	}
 
 	@After

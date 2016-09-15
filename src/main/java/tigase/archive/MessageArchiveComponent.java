@@ -35,7 +35,6 @@ import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.kernel.core.Kernel;
 import tigase.server.Message;
-import tigase.server.MessageRouter;
 import tigase.server.Packet;
 import tigase.stats.StatisticsList;
 import tigase.vhosts.VHostItem;
@@ -54,7 +53,7 @@ import java.util.logging.Logger;
  *
  * @author andrzej
  */
-@Bean(name = "message-archive", parent = MessageRouter.class, active = false)
+@Bean(name = "message-archive", parent = Kernel.class, active = false)
 public class MessageArchiveComponent
 				extends AbstractKernelBasedComponent implements MessageArchiveConfig {
 	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class
