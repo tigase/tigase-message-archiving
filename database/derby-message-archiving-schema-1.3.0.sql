@@ -230,3 +230,7 @@ create procedure Tig_MA_GetTagsForUserCount(ownerJid varchar(2049), tagStartsWit
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getTagsForUserCount';
 -- QUERY END:
+
+-- QUERY START:
+update tig_ma_jids set jid = LOWER(jid), domain = LOWER(domain) where jid <> LOWER(jid) or domain <> LOWER(domain);
+-- QUERY END:

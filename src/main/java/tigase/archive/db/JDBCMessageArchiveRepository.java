@@ -176,8 +176,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 			synchronized (add_message_st) {
 				try {
 					int i = 1;
-					add_message_st.setString(i++, owner.toString());
-					add_message_st.setString(i++, buddy.getBareJID().toString());
+					add_message_st.setString(i++, owner.toString().toLowerCase());
+					add_message_st.setString(i++, buddy.getBareJID().toString().toLowerCase());
 					add_message_st.setString(i++, buddy.getResource());
 					add_message_st.setTimestamp(i++, mtime);
 					add_message_st.setShort(i++, direction.getValue());
@@ -249,7 +249,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 							new Object[]{owner, delete_expired_timeout});
 				}
 				delete_expired_msgs_st.setQueryTimeout(delete_expired_timeout);
-				delete_expired_msgs_st.setString(1, owner.toString());
+				delete_expired_msgs_st.setString(1, owner.toString().toLowerCase());
 				delete_expired_msgs_st.setTimestamp(2, ts);
 				delete_expired_msgs_st.executeUpdate();
 			}
@@ -344,8 +344,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 
 			synchronized (remove_msgs_st) {
 				synchronized (remove_msgs_st) {
-					remove_msgs_st.setString(1, owner.toString());
-					remove_msgs_st.setString(2, withJid);
+					remove_msgs_st.setString(1, owner.toString().toLowerCase());
+					remove_msgs_st.setString(2, withJid.toLowerCase());
 					remove_msgs_st.setTimestamp(3, start_);
 					remove_msgs_st.setTimestamp(4, end_);
 					remove_msgs_st.executeUpdate();
@@ -367,7 +367,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 			PreparedStatement get_tags_count_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_COUNT_QUERY);
 			synchronized (get_tags_count_st) {
 				try {
-					get_tags_count_st.setString(1, owner.toString());
+					get_tags_count_st.setString(1, owner.toString().toLowerCase());
 					get_tags_count_st.setString(2, startsWith);
 
 					rs = get_tags_count_st.executeQuery();
@@ -386,7 +386,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 			synchronized (get_tags_st) {
 				try {
 					int i = 1;
-					get_tags_st.setString(i++, owner.toString());
+					get_tags_st.setString(i++, owner.toString().toLowerCase());
 					get_tags_st.setString(i++, startsWith);
 
 					get_tags_st.setInt(i++, crit.getRsm().getMax());
@@ -529,13 +529,13 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 	}
 
 	protected int setCountQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType) throws SQLException {
-		stmt.setString(1, ownerJid);
+		stmt.setString(1, ownerJid.toLowerCase());
 		return setQueryParams(stmt, crit, groupByType, 2);
 	}
 
 	protected int setQueryParams(PreparedStatement stmt, Q crit, Boolean groupByType, int i) throws SQLException {
 		if (crit.getWith() != null) {
-			stmt.setString(i++, crit.getWith().getBareJID().toString());
+			stmt.setString(i++, crit.getWith().getBareJID().toString().toLowerCase());
 		} else {
 			stmt.setObject(i++, null);
 		}
@@ -578,7 +578,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 	}
 
 	public void setItemsQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType) throws SQLException {
-		stmt.setString(1, ownerJid);
+		stmt.setString(1, ownerJid.toLowerCase());
 		int i = setQueryParams(stmt, crit, groupByType, 2);
 		stmt.setInt(i++, crit.getRsm().getMax());
 		stmt.setInt(i++, crit.getRsm().getIndex());

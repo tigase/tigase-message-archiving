@@ -635,3 +635,11 @@ end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
+-- QUERY START:
+do $$
+begin
+if exists (select 1 from tig_ma_jids where tig_ma_jids.jid <> LOWER(tig_ma_jids.jid)) then
+	update tig_ma_jids set jid = LOWER(jid), domain = LOWER(domain) where jid <> LOWER(jid) or domain <> LOWER(domain);
+end if;
+end$$;
+-- QUERY END:

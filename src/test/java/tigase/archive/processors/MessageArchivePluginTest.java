@@ -26,11 +26,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tigase.archive.Settings;
+import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.XMPPResourceConnection;
+import tigase.xmpp.impl.Message;
 import tigase.xmpp.impl.ProcessorTestCase;
 
 import java.util.ArrayDeque;
@@ -48,11 +50,18 @@ public class MessageArchivePluginTest extends ProcessorTestCase {
 	private static final Logger log = Logger.getLogger(MessageArchivePluginTest.class.getCanonicalName());
 	
 	private MessageArchivePlugin messageArchivePlugin;
+	private Kernel kernel;
 
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		messageArchivePlugin = new MessageArchivePlugin();
+
+		kernel = new Kernel();
+		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		kernel.registerBean(Message.class).setActive(true).exec();
+		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+
+		messageArchivePlugin = kernel.getInstance(MessageArchivePlugin.class);
 		messageArchivePlugin.init(new HashMap<String,Object>());
 	}
 	
@@ -76,7 +85,7 @@ public class MessageArchivePluginTest extends ProcessorTestCase {
 		Packet packet = Packet.packetInstance(new Element("message", new Element[]{
 			new Element("body", "Test message 123")
 		}, new String[] { "from", "to" }, new String[] { "from@example.com/res1", "to@example.com/res2" }));
-		
+
 		messageArchivePlugin.process(packet, session1, null, results, null);
 		Assert.assertFalse("should sent packet " + packet + " for storage", results.isEmpty());
 		

@@ -33,6 +33,7 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
+import tigase.xmpp.impl.Message;
 import tigase.xmpp.impl.ProcessorTestCase;
 
 import java.lang.reflect.Field;
@@ -58,7 +59,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 		super.setUp();
 
 		kernel = new Kernel();
-		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();                                                                  x
+		kernel.registerBean(Message.class).setActive(true).exec();
 		kernel.registerBean(Xep0313MessageArchiveManagementProcessor.class).setActive(true).exec();
 
 		xep0313Processor = kernel.getInstance(Xep0313MessageArchiveManagementProcessor.class);

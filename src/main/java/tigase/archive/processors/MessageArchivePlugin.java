@@ -32,6 +32,7 @@ import tigase.archive.VHostItemHelper;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.server.Message;
 import tigase.server.Packet;
@@ -104,7 +105,8 @@ public class MessageArchivePlugin
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
 	@ConfigField(desc = "Store MUC messages in archive using automatic archiving", alias = STORE_MUC_MESSAGES_KEY)
 	private StoreMuc globalStoreMucMessages = StoreMuc.User;
-
+	@Inject
+	private tigase.xmpp.impl.Message message;
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID componentJid = null;
 
@@ -158,7 +160,14 @@ public class MessageArchivePlugin
 		if (session == null) {
 			return;
 		}
+
 		try {
+			if (!message.hasConnectionForMessageDelivery(session) ) {
+				if (packet.getStanzaTo() == null || packet.getStanzaTo().getResource() == null) {
+					return;
+				}
+			}
+
 			processMessage(packet, session, results);
 		} catch (NotAuthorizedException ex) {
 			log.log(Level.WARNING, "NotAuthorizedException for packet: {0}", packet);

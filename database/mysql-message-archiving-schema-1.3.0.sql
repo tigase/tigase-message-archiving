@@ -625,3 +625,7 @@ end //
 -- QUERY END:
 
 delimiter ;
+
+-- QUERY START:
+update tig_ma_jids set jid = LOWER(jid), jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) where jid <> LOWER(jid) or `domain` <> LOWER(`domain`);
+-- QUERY END:

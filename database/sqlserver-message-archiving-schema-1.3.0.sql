@@ -804,3 +804,7 @@ end
 -- QUERY END:
 GO
 
+-- QUERY START:
+update tig_ma_jids set jid = LOWER(jid), domain = LOWER(domain), domain_sha1 = HASHBYTES('SHA1', LOWER(domain)), jid_sha1 = HASHBYTES('SHA1', LOWER(jid)) WHERE jid <> LOWER(jid) or domain <> LOWER(domain);
+-- QUERY END:
+GO

@@ -53,11 +53,11 @@ import java.util.*;
 public class AbstractMessageArchiveRepositoryTest {
 
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ssZ");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 	private static final String PROJECT_ID = "message-archiving";
 	private static final String VERSION = "1.3.0";
-	
+
 	static {
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
@@ -81,7 +81,7 @@ public class AbstractMessageArchiveRepositoryTest {
 	};
 	
 	private MessageArchiveRepository<QueryCriteria, DataSource> repo;
-	
+
 	// this is static to pass date from first test to next one
 	private static Date testStart = null;
 
@@ -183,8 +183,8 @@ public class AbstractMessageArchiveRepositoryTest {
 			loader.shutdown(props);			
 		} 
 
-		owner = JID.jidInstanceNS("ua-" + UUID.randomUUID(), "test", "tigase-1");
-		buddy = JID.jidInstanceNS("ua-" + UUID.randomUUID(), "test", "tigase-2");
+		owner = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-1");
+		buddy = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-2");
 	}
 	
 	@AfterClass
@@ -204,7 +204,7 @@ public class AbstractMessageArchiveRepositoryTest {
 			}			
 		}
 	}
-	
+
 	
 	@Before
 	public void setup() throws DBInitException, InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
@@ -296,7 +296,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 		
 		ColItem chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.with);
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID(), BareJID.bareJIDInstanceNS(chat.with));
 		Assert.assertEquals("Incorrect timestamp", testStart.getTime() / 1000, chat.ts.getTime() / 1000);
 	}
 
@@ -311,8 +311,9 @@ public class AbstractMessageArchiveRepositoryTest {
 		List<ColItem> chats = new ArrayList<>();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
+
 		ColItem chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.with);
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID(), BareJID.bareJIDInstanceNS(chat.with));
 	}
 	
 	@Test
@@ -538,7 +539,7 @@ public class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 		
 		ColItem chat = chats.get(0);
-		Assert.assertEquals("Incorrect buddy", buddy.getBareJID().toString(), chat.with);
+		Assert.assertEquals("Incorrect buddy", buddy.getBareJID(), BareJID.bareJIDInstanceNS(chat.with));
 		Assert.assertEquals("Incorrect timestamp", testStart.getTime()/1000, chat.ts.getTime()/1000);
 
 		crit = repo.newQuery();
