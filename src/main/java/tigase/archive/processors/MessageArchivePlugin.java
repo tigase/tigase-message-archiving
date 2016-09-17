@@ -33,7 +33,9 @@ import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.RegistrarBean;
 import tigase.kernel.beans.config.ConfigField;
+import tigase.kernel.core.Kernel;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.DNSResolverFactory;
@@ -67,7 +69,7 @@ import java.util.logging.Logger;
 @Bean(name = MessageArchivePlugin.ID, parents = {Xep0136MessageArchivingProcessor.class, Xep0313MessageArchiveManagementProcessor.class})
 public class MessageArchivePlugin
 		extends AnnotatedXMPPProcessor
-		implements XMPPProcessorIfc {
+		implements XMPPProcessorIfc, RegistrarBean {
 
 	public static final String DEFAULT_SAVE = "default-save";
 	public static final String MUC_SAVE = "muc-save";
@@ -174,6 +176,15 @@ public class MessageArchivePlugin
 			results.offer(Authorization.NOT_AUTHORIZED.getResponseMessage(packet,
 					"You must authorize session first.", true));
 		}
+	}
+
+	@Override
+	public void register(Kernel kernel) {
+		kernel.registerBean(tigase.xmpp.impl.Message.class).setActive(true).exec();
+	}
+
+	public void unregister(Kernel kernel) {
+
 	}
 
 	private void processMessage(Packet packet, XMPPResourceConnection session, Queue<Packet> results) throws NotAuthorizedException {

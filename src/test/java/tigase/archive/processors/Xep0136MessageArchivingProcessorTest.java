@@ -59,8 +59,6 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		super.setUp();
 
 		kernel = new Kernel();
-		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
-		kernel.registerBean(Message.class).setActive(true).exec();
 		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
 
 		xep0136Processor = kernel.getInstance(Xep0136MessageArchivingProcessor.class);

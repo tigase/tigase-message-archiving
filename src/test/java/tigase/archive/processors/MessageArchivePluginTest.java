@@ -32,7 +32,6 @@ import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.XMPPResourceConnection;
-import tigase.xmpp.impl.Message;
 import tigase.xmpp.impl.ProcessorTestCase;
 
 import java.util.ArrayDeque;
@@ -57,8 +56,6 @@ public class MessageArchivePluginTest extends ProcessorTestCase {
 		super.setUp();
 
 		kernel = new Kernel();
-		//kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
-		kernel.registerBean(Message.class).setActive(true).exec();
 		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 
 		messageArchivePlugin = kernel.getInstance(MessageArchivePlugin.class);
