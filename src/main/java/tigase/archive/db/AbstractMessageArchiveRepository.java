@@ -24,6 +24,7 @@ package tigase.archive.db;
 import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
 import tigase.xml.Element;
+import tigase.xmpp.RSM;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -69,4 +70,36 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			return null;
 		}
 	}
+
+	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {
+		RSM rsm = query.getRsm();
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+		int limit = rsm.getMax();
+
+		System.out.println("for index = " + index + ", limit = " + limit + ", before = " + before + ", after = " + after);
+
+		if (after != null) {
+			// it is ok, if we go out of range we will return empty result
+			index = after + 1;
+		} else if (before != null) {
+			index = before - rsm.getMax();
+			// if we go out of range we need to set index to 0 and reduce limit
+			// to return proper results
+			if (index < 0) {
+				index = 0;
+				limit = before;
+			}
+		} else if (rsm.hasBefore()) {
+			index = count - rsm.getMax();
+			if (index < 0) {
+				index = 0;
+			}
+		}
+		rsm.setIndex(index);
+		rsm.setMax(limit);
+		rsm.setCount(count);
+
+		System.out.println("calculated index = " + index + ", limit = " + limit + ", count = " + count);
+	}
+
 }

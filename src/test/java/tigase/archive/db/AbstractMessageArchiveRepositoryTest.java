@@ -29,8 +29,6 @@ import org.junit.runners.model.Statement;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.*;
-import tigase.util.SchemaLoader;
-import tigase.util.SchemaLoader.Result;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -38,7 +36,6 @@ import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.mam.MAMRepository;
 
-import java.io.File;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -55,14 +52,11 @@ public class AbstractMessageArchiveRepositoryTest {
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssXX");
 
-	private static final String PROJECT_ID = "message-archiving";
-	private static final String VERSION = "1.3.0";
-
 	static {
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
-	private static String uri = System.getProperty("testDbUri");
+	protected static String uri = System.getProperty("testDbUri");
 
 	@ClassRule
 	public static TestRule rule = new TestRule() {
@@ -86,134 +80,24 @@ public class AbstractMessageArchiveRepositoryTest {
 	private static Date testStart = null;
 
 	private static JID owner = null;
-	private static JID buddy = null;	
-	
+	private static JID buddy = null;
+
 	@BeforeClass
-	public static void loadSchema() {
-		if (uri.startsWith("jdbc:")) {
-			String dbType;
-			String dbName = null;
-			String dbHostname = null;
-			String dbUser = null;
-			String dbPass = null;
-			
-			int idx = uri.indexOf(":", 5);
-			dbType = uri.substring(5, idx);
-			if ("jtds".equals(dbType)) dbType = "sqlserver";
-			
-			String rest = null;
-			switch (dbType) {
-				case "derby":
-					dbName = uri.substring(idx+1, uri.indexOf(";"));
-					cleanDerby();
-					break;
-				case "sqlserver":
-					idx = uri.indexOf("//", idx) + 2;
-					rest = uri.substring(idx);
-					for (String x : rest.split(";")) {
-						if (!x.contains("=")) {
-							dbHostname = x;
-						} else {
-							String p[] = x.split("=");
-							switch (p[0]) {
-								case "databaseName":
-									dbName = p[1];
-									break;
-								case "user":
-									dbUser = p[1];
-									break;
-								case "password":
-									dbPass = p[1];
-									break;
-								default:
-									// unknown setting
-									break;
-							}
-						}
-					}
-					break;
-				default:
-					idx = uri.indexOf("//", idx) + 2;
-					rest = uri.substring(idx);
-					idx = rest.indexOf("/");
-					dbHostname = rest.substring(0, idx);
-					rest = rest.substring(idx+1);
-					idx = rest.indexOf("?");
-					dbName = rest.substring(0, idx);
-					rest = rest.substring(idx + 1);
-					for (String x : rest.split("&")) {
-						String p[] = x.split("=");
-						if (p.length < 2)
-							continue;
-						switch (p[0]) {
-							case "user":
-								dbUser = p[1];
-								break;
-							case "password":
-								dbPass = p[1];
-								break;
-							default:
-								break;
-						}
-					}
-					break;
-			}
-
-			Properties props = new Properties();
-			if (dbType != null)
-				props.put("dbType", dbType);
-			if (dbName != null)		
-				props.put("dbName", dbName);
-			if (dbHostname != null)
-				props.put("dbHostname", dbHostname);
-			if (dbUser != null)
-				props.put("rootUser", dbUser);
-			if (dbPass != null)
-				props.put("rootPass", dbPass);
-			if (dbUser != null)
-				props.put("dbUser", dbUser);
-			if (dbPass != null)
-				props.put("dbPass", dbPass);
-
-			SchemaLoader loader = SchemaLoader.newInstance(props);
-			loader.validateDBConnection(props);
-			loader.validateDBExists(props);
-			props.put("file", "database/" + dbType + "-" + PROJECT_ID + "-schema-" + VERSION + ".sql");
-			Assert.assertEquals(Result.ok, loader.loadSchemaFile(props));
-			loader.shutdown(props);			
-		} 
-
+	public static void initialize() {
 		owner = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-1");
 		buddy = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-2");
 	}
-	
-	@AfterClass
-	public static void cleanDerby() {
-		if (uri.contains("jdbc:derby:")) {
-			File f = new File("derby_test");
-			if (f.exists()) {
-				if (f.listFiles() != null) {
-					Arrays.asList(f.listFiles()).forEach(f2 -> {
-						if (f2.listFiles() != null) {
-							Arrays.asList(f2.listFiles()).forEach(f3 -> f3.delete());
-						}
-						f2.delete();
-					});
-				}
-				f.delete();
-			}			
-		}
-	}
 
-	
 	@Before
 	public void setup() throws DBInitException, InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
 		if (uri == null)
 			return;
 
-		DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, new HashMap<>());
+		//DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, new HashMap<>());
+		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
+		dataSource.initRepository(uri, new HashMap<>());
 		repo = DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, uri).newInstance();
-		repo.setDataSource(dataRepo);
+		repo.setDataSource(dataSource);
 	}
 	
 	@After
