@@ -73,8 +73,9 @@ public class AbstractMessageArchiveRepositoryTest {
 			return stmnt;
 		}
 	};
-	
-	private MessageArchiveRepository<QueryCriteria, DataSource> repo;
+
+	protected DataSource dataSource;
+	protected MessageArchiveRepository<QueryCriteria, DataSource> repo;
 
 	// this is static to pass date from first test to next one
 	private static Date testStart = null;
@@ -94,7 +95,7 @@ public class AbstractMessageArchiveRepositoryTest {
 			return;
 
 		//DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, new HashMap<>());
-		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
+		dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
 		dataSource.initRepository(uri, new HashMap<>());
 		repo = DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, uri).newInstance();
 		repo.setDataSource(dataSource);
