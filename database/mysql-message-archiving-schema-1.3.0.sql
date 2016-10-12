@@ -153,7 +153,7 @@ call TigAddIndexIfNotExists('tig_ma_msgs', 'tig_ma_msgs_ts_index', 0, '(ts)');
 call TigAddColumnIfNotExists('tig_ma_jids', 'jid_sha1', 'char(40)');
 -- QUERY END:
 -- QUERY START:
-update tig_ma_jids set jid_sha1 = SHA1(jid) where jid_sha1 is null;
+update tig_ma_jids set jid_sha1 = SHA1(LOWER(jid));
 -- QUERY END:
 -- QUERY START:
 call TigAddIndexIfNotExists('tig_ma_jids', 'tig_ma_jids_jid_sha1', 1, '(jid_sha1)');
@@ -285,14 +285,14 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(?) and o.jid = ?
-			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			o.jid_sha1 = SHA1(LOWER(?))
+			and (? is null or b.jid_sha1 = SHA1(LOWER(?)))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)';
 		set @pagination_query = ' limit ? offset ?';
 		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, ' order by m.ts', @pagination_query);
 		prepare stmt from @query;
-		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
+		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
 		deallocate prepare stmt;
 	else
 		select m.msg, m.ts, m.direction, b.jid, m.stanza_hash
@@ -300,8 +300,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-			and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+			o.jid_sha1 = SHA1(LOWER(_ownerJid))
+			and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to)
 		order by m.ts
@@ -325,13 +325,13 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(?) and o.jid = ?
-			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			o.jid_sha1 = SHA1(LOWER(?))
+			and (? is null or b.jid_sha1 = SHA1(LOWER(?)))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)';
 		set @query = CONCAT(@msgs_query, @tags_query, @contains_query);
 		prepare stmt from @query;
-		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to;
+		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to;
 		deallocate prepare stmt;
 	else
 		select count(m.msg_id)
@@ -339,8 +339,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-			and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+			o.jid_sha1 = SHA1(LOWER(_ownerJid))
+			and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to);
 	end if;
@@ -365,13 +365,13 @@ begin
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id,
 			(select @row_number := 0) as t
 		where
-			o.jid_sha1 = SHA1(?) and o.jid = ?
-			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			o.jid_sha1 = SHA1(LOWER(?))
+			and (? is null or b.jid_sha1 = SHA1(LOWER(?)))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)';
 		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, ' order by m.ts) x where x.stanza_hash = ?');
 		prepare stmt from @query;
-		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @stanza_hash;
+		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @stanza_hash;
 		deallocate prepare stmt;
 	else
 	    set @row_number = 0;
@@ -381,8 +381,8 @@ begin
 			    inner join tig_ma_jids o on m.owner_id = o.jid_id
 			    inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		    where
-			    o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-			    and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+			    o.jid_sha1 = SHA1(LOWER(_ownerJid))
+			    and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 			    and (_from is null or m.ts >= _from)
 			    and (_to is null or m.ts <= _to)
 			order by m.ts
@@ -413,8 +413,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(?) and o.jid = ?
-			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			o.jid_sha1 = SHA1(LOWER(?))
+			and (? is null or b.jid_sha1 = SHA1(LOWER(?)))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)');
 		set @groupby_query = '';
@@ -426,7 +426,7 @@ begin
 		set @pagination_query = ' limit ? offset ?';
 		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' order by m.ts, b.jid', @pagination_query);
 		prepare stmt from @query;
-		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
+		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
 		deallocate prepare stmt;
 	else
 		if _byType = 1 then
@@ -435,8 +435,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-				and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+				o.jid_sha1 = SHA1(LOWER(_ownerJid))
+				and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 				and (_from is null or m.ts >= _from)
 				and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end 
@@ -448,8 +448,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-				and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+				o.jid_sha1 = SHA1(LOWER(_ownerJid))
+				and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 				and (_from is null or m.ts >= _from)
 				and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid
@@ -478,8 +478,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = SHA1(?) and o.jid = ?
-			and (? is null or (b.jid_sha1 = SHA1(?) and b.jid = ?))
+			o.jid_sha1 = SHA1(LOWER(?))
+			and (? is null or b.jid_sha1 = SHA1(LOWER(?)))
 			and (? is null or m.ts >= ?)
 			and (? is null or m.ts <= ?)');
 		if _byType = 1 then
@@ -489,7 +489,7 @@ begin
 		end if;
 		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' ) x');
 		prepare stmt from @query;
-		execute stmt using @ownerJid, @ownerJid, @buddyJid, @buddyJid, @buddyJid, @from, @from, @to, @to;
+		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to;
 		deallocate prepare stmt;
 	else
 		if _byType = 1 then
@@ -499,8 +499,8 @@ begin
 					inner join tig_ma_jids o on m.owner_id = o.jid_id 
 					inner join tig_ma_jids b on b.jid_id = m.buddy_id
 				where 
-					o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-					and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+					o.jid_sha1 = SHA1(LOWER(_ownerJid))
+					and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 					and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 				group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end 
@@ -512,8 +512,8 @@ begin
 					inner join tig_ma_jids o on m.owner_id = o.jid_id 
 					inner join tig_ma_jids b on b.jid_id = m.buddy_id
 				where 
-					o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
-					and (_buddyJid is null or (b.jid_sha1 = SHA1(_buddyJid) and b.jid = _buddyJid))
+					o.jid_sha1 = SHA1(LOWER(_ownerJid))
+					and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
 					and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 				group by date(m.ts), m.buddy_id, b.jid
@@ -529,7 +529,7 @@ begin
 	declare _jid_id bigint;
 	declare _jid_sha1 char(40);
 
-	select SHA1(_jid) into _jid_sha1;
+	select SHA1(LOWER(_jid)) into _jid_sha1;
 	select jid_id into _jid_id from tig_ma_jids where jid_sha1 = _jid_sha1;
 	if _jid_id is null then
 		insert into tig_ma_jids (jid, jid_sha1, `domain`)
@@ -591,8 +591,8 @@ create procedure Tig_MA_RemoveMessages(_ownerJid varchar(2049) CHARSET utf8, _bu
 begin
 	set @_owner_id = 0;
 	set @_buddy_id = 0;
-	select jid_id into @_owner_id from tig_ma_jids j where j.jid_sha1 = SHA1(_ownerJid) and jid = _ownerJid;
-	select jid_id into @_buddy_id from tig_ma_jids j where j.jid_sha1 = SHA1(_buddyJid) and jid = _buddyJid;
+	select jid_id into @_owner_id from tig_ma_jids j where j.jid_sha1 = SHA1(LOWER(_ownerJid));
+	select jid_id into @_buddy_id from tig_ma_jids j where j.jid_sha1 = SHA1(LOWER(_buddyJid));
 	delete from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts >= _from and ts <= _to;
 end //
 -- QUERY END:
@@ -610,7 +610,7 @@ begin
 	select tag 
 		from tig_ma_tags t 
 		inner join tig_ma_jids o on o.jid_id = t.owner_id 
-		where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid
+		where o.jid_sha1 = SHA1(LOWER(_ownerJid))
 			and t.tag like _tagStartsWith
 		order by t.tag
 		limit _limit offset _offset;
@@ -620,12 +620,12 @@ end //
 -- QUERY START:
 create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8)
 begin
-	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(_ownerJid) and o.jid = _ownerJid and t.tag like _tagStartsWith;
+	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(LOWER(_ownerJid)) and t.tag like _tagStartsWith;
 end //
 -- QUERY END:
 
 delimiter ;
 
 -- QUERY START:
-update tig_ma_jids set jid = LOWER(jid), jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) where jid <> LOWER(jid) or `domain` <> LOWER(`domain`);
+update tig_ma_jids set jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) where jid <> LOWER(jid) or `domain` <> LOWER(`domain`);
 -- QUERY END:

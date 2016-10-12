@@ -21,8 +21,11 @@
  */
 package tigase.archive.db.derby;
 
+import tigase.util.Algorithms;
 import tigase.xmpp.BareJID;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.logging.Logger;
 
@@ -47,9 +50,9 @@ public class StoredProcedures {
 				" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 				" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
 				" where " +
-				" o.jid = ?");
+				" o.jid_sha1 = ?");
 			if (buddyJid != null)
-				sb.append(" and b.jid = ?");
+				sb.append(" and b.jid_sha1 = ?");
 			if (from != null)
 				sb.append(" and m.ts >= ?");
 			if (to != null)
@@ -63,9 +66,9 @@ public class StoredProcedures {
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
-			ps.setString(++i, ownerJid);
+			ps.setString(++i, sha1OfLower(ownerJid));
 			if (buddyJid != null)
-				ps.setString(++i, buddyJid);
+				ps.setString(++i, sha1OfLower(buddyJid));
 			if (from != null)
 				ps.setTimestamp(++i, from);
 			if (to != null)
@@ -93,9 +96,9 @@ public class StoredProcedures {
 				" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 				" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
 				" where " +
-				" o.jid = ?");
+				" o.jid_sha1 = ?");
 			if (buddyJid != null)
-				sb.append(" and b.jid = ?");
+				sb.append(" and b.jid_sha1 = ?");
 			if (from != null)
 				sb.append(" and m.ts >= ?");
 			if (to != null)
@@ -106,9 +109,9 @@ public class StoredProcedures {
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
-			ps.setString(++i, ownerJid);
+			ps.setString(++i, sha1OfLower(ownerJid));
 			if (buddyJid != null)
-				ps.setString(++i, buddyJid);
+				ps.setString(++i, sha1OfLower(buddyJid));
 			if (from != null)
 				ps.setTimestamp(++i, from);
 			if (to != null)
@@ -134,9 +137,9 @@ public class StoredProcedures {
 					" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 					" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
 					" where " +
-					" o.jid = ?");
+					" o.jid_sha1 = ?");
 			if (buddyJid != null)
-				sb.append(" and b.jid = ?");
+				sb.append(" and b.jid_sha1 = ?");
 			if (from != null)
 				sb.append(" and m.ts >= ?");
 			if (to != null)
@@ -148,9 +151,9 @@ public class StoredProcedures {
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
-			ps.setString(++i, ownerJid);
+			ps.setString(++i, sha1OfLower(ownerJid));
 			if (buddyJid != null)
-				ps.setString(++i, buddyJid);
+				ps.setString(++i, sha1OfLower(buddyJid));
 			if (from != null)
 				ps.setTimestamp(++i, from);
 			if (to != null)
@@ -193,9 +196,9 @@ public class StoredProcedures {
 				" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 				" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
 				" where " +
-				" o.jid = ?");
+				" o.jid_sha1 = ?");
 			if (buddyJid != null)
-				sb.append(" and b.jid = ?");
+				sb.append(" and b.jid_sha1 = ?");
 			if (from != null)
 				sb.append(" and m.ts >= ?");
 			if (to != null)
@@ -213,9 +216,9 @@ public class StoredProcedures {
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
-			ps.setString(++i, ownerJid);
+			ps.setString(++i, sha1OfLower(ownerJid));
 			if (buddyJid != null)
-				ps.setString(++i, buddyJid);
+				ps.setString(++i, sha1OfLower(buddyJid));
 			if (from != null)
 				ps.setTimestamp(++i, from);
 			if (to != null)
@@ -248,9 +251,9 @@ public class StoredProcedures {
 				" inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 				" inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
 				" where " +
-				" o.jid = ?");
+				" o.jid_sha1 = ?");
 			if (buddyJid != null)
-				sb.append(" and b.jid = ?");
+				sb.append(" and b.jid_sha1 = ?");
 			if (from != null)
 				sb.append(" and m.ts >= ?");
 			if (to != null)
@@ -263,13 +266,14 @@ public class StoredProcedures {
 				sb.append(" group by date(m.ts), m.buddy_id, b.jid");			
 						
 			sb.append(") x");
-			
+
+			System.out.println("executing query = " + sb.toString());
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
-			ps.setString(++i, ownerJid);
+			ps.setString(++i, sha1OfLower(ownerJid));
 			if (buddyJid != null)
-				ps.setString(++i, buddyJid);
+				ps.setString(++i, sha1OfLower(buddyJid));
 			if (from != null)
 				ps.setTimestamp(++i, from);
 			if (to != null)
@@ -289,18 +293,20 @@ public class StoredProcedures {
 
 		try {
 			BareJID bareJid = BareJID.bareJIDInstanceNS(jid);
+			String jidSha1 = sha1OfLower(jid);
 			PreparedStatement ps =
-				conn.prepareStatement("select jid_id from tig_ma_jids where jid = ?");
+				conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ?");
 
-			ps.setString(1, jid);
+			ps.setString(1, jidSha1);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				return rs.getLong(1);
 			} else {
-				ps = conn.prepareStatement("insert into tig_ma_jids (jid, \"domain\") values (?, ?)",
+				ps = conn.prepareStatement("insert into tig_ma_jids (jid, \"domain\", jid_sha1) values (?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 				ps.setString(1, jid);
 				ps.setString(2, bareJid.getDomain());
+				ps.setString(3, jidSha1);
 				ps.executeUpdate();
 				rs = ps.getGeneratedKeys();
 				if (rs.next())
@@ -313,6 +319,13 @@ public class StoredProcedures {
 			conn.close();
 		}		
 	}	
+
+	private static int countMessages(Connection conn) throws SQLException {
+		ResultSet rs = conn.prepareStatement("select count(msg_id) from tig_ma_msgs").executeQuery();
+		if (rs.next())
+			return rs.getInt(1);
+		return -1;
+	}
 
 	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, short direction, String type, String body, String msg, String hash, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
@@ -348,12 +361,13 @@ public class StoredProcedures {
 
 			ps.execute();
 			
-			ResultSet rs = ps.getGeneratedKeys();
-			long id = 0;
-			if (rs.next()) {
-				id = rs.getLong(1);
-			}
-			ps = conn.prepareStatement("select msg_id from tig_ma_msgs where msg_id = " + id);
+			ps = conn.prepareStatement("select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and ts = ? and stanza_hash = ?");
+			i = 0;
+			ps.setLong(++i, ownerId);
+			ps.setLong(++i, buddyId);
+			ps.setTimestamp(++i, ts);
+			ps.setString(++i, hash);
+
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
 			throw e;
@@ -403,7 +417,9 @@ public class StoredProcedures {
 			ps.setLong(2, tagId);
 			ps.setLong(3, msgId);
 			ps.setLong(4, tagId);
-			
+
+			System.out.println("adding tag '" + tag + "' with id = " + tagId + " to message id = " + msgId);
+
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw e;
@@ -419,15 +435,15 @@ public class StoredProcedures {
 
 		try {
 			PreparedStatement ps =
-				conn.prepareStatement("select jid_id from tig_ma_jids where jid = ?");
+				conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ?");
 
-			ps.setString(1, ownerJid);
+			ps.setString(1, sha1OfLower(ownerJid));
 			ResultSet rs = ps.executeQuery();
 			rs.next();
 			long ownerId = rs.getLong(1);
 			rs.close();
 			
-			ps.setString(1, buddyJid);
+			ps.setString(1, sha1OfLower(buddyJid));
 			rs = ps.executeQuery();
 			rs.next();
 			long buddyId = rs.getLong(1);
@@ -473,9 +489,9 @@ public class StoredProcedures {
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			PreparedStatement ps = conn.prepareStatement("select t.tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = ? and t.tag like ? order by t.tag offset ? rows fetch next ? rows only");
+			PreparedStatement ps = conn.prepareStatement("select t.tag from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = ? and t.tag like ? order by t.tag offset ? rows fetch next ? rows only");
 			
-			ps.setString(1, ownerJid);
+			ps.setString(1, sha1OfLower(ownerJid));
 			ps.setString(2, tagStartsWith);
 			ps.setInt(3, offset);
 			ps.setInt(4, limit);
@@ -494,9 +510,9 @@ public class StoredProcedures {
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			PreparedStatement ps = conn.prepareStatement("select count(t.tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = ? and t.tag like ?");
+			PreparedStatement ps = conn.prepareStatement("select count(t.tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = ? and t.tag like ?");
 			
-			ps.setString(1, ownerJid);
+			ps.setString(1, sha1OfLower(ownerJid));
 			ps.setString(2, tagStartsWith);
 			
 			data[0] = ps.executeQuery();
@@ -523,6 +539,16 @@ public class StoredProcedures {
 				.append(contains.replace("','", "' and m.body like '"));
 		}
 		return sb;
+	}
+
+	protected static String sha1OfLower(String data) throws SQLException {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			byte[] hash = md.digest(data.toLowerCase().getBytes());
+			return Algorithms.bytesToHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new SQLException(e);
+		}
 	}
 
 }

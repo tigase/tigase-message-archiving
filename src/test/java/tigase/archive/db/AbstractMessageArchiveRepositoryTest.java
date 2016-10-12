@@ -47,7 +47,7 @@ import java.util.*;
  * @author andrzej
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class AbstractMessageArchiveRepositoryTest {
+public abstract class AbstractMessageArchiveRepositoryTest {
 
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssXX");
@@ -175,7 +175,6 @@ public class AbstractMessageArchiveRepositoryTest {
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
 		
-		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		List<ColItem> chats = new ArrayList<>();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
@@ -192,7 +191,6 @@ public class AbstractMessageArchiveRepositoryTest {
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
 		crit.addTag("#Test123");
-		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		List<ColItem> chats = new ArrayList<>();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
@@ -218,8 +216,6 @@ public class AbstractMessageArchiveRepositoryTest {
 			qc.getRsm().setLast(item.getId());
 		});
 		Assert.assertEquals("Incorrect number of message", 2, msgs.size());
-
-		System.out.println(msgs);
 
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(), res.getName());
@@ -418,7 +414,6 @@ public class AbstractMessageArchiveRepositoryTest {
 		crit.setStart(testStart);
 		crit.addContains("Test 1");
 		
-		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		List<ColItem> chats = new ArrayList<>();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
@@ -433,7 +428,6 @@ public class AbstractMessageArchiveRepositoryTest {
 		crit.setStart(testStart);
 		crit.addContains("Test 123");
 		
-		System.out.println("owner: " + owner + " buddy: " + buddy + " date: " + testStart);
 		chats.clear();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 0, chats.size());	

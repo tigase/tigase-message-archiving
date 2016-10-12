@@ -76,8 +76,6 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 		int limit = rsm.getMax();
 
-		System.out.println("for index = " + index + ", limit = " + limit + ", before = " + before + ", after = " + after);
-
 		if (after != null) {
 			// it is ok, if we go out of range we will return empty result
 			index = after + 1;
@@ -98,8 +96,6 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		rsm.setIndex(index);
 		rsm.setMax(limit);
 		rsm.setCount(count);
-
-		System.out.println("calculated index = " + index + ", limit = " + limit + ", count = " + count);
 	}
 
 }

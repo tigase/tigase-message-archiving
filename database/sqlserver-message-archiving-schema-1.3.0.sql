@@ -280,8 +280,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		set @query_sql = N';with results_cte as (' + @msgs_query + @tags_query + @contains_query + N') select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num'
@@ -295,8 +295,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)
 		)
@@ -339,8 +339,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		set @query_sql = @msgs_query + @tags_query + @contains_query;
@@ -353,8 +353,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)
 		end
@@ -397,8 +397,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
-			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		set @query_sql = @msgs_query + @tags_query + @contains_query + N') x where x.stanza_hash = @_hash';
@@ -412,8 +412,8 @@ begin
 			    inner join tig_ma_jids o on m.owner_id = o.jid_id
 			    inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		    where
-			    o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-			    and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+			    o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			    and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 			    and (@_from is null or m.ts >= @_from)
 			    and (@_to is null or m.ts <= @_to)) x
 	    where x.stanza_hash = @_hash
@@ -465,8 +465,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		if @_byType = 1
@@ -487,8 +487,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-				and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+				o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+				and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 				and (@_from is null or m.ts >= @_from)
 				and (@_to is null or m.ts <= @_to)
 			group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end
@@ -503,8 +503,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-				and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+				o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+				and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 				and (@_from is null or m.ts >= @_from)
 				and (@_to is null or m.ts <= @_to)
 			group by cast(m.ts as date), m.buddy_id, b.jid
@@ -557,8 +557,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid_sha1 = HASHBYTES(''SHA1'', @_ownerJid) and o.jid = @_ownerJid
-			and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES(''SHA1'', @_buddyJid) and b.jid = @_buddyJid))
+			o.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_ownerJid))
+			and (@_buddyJid is null or b.jid_sha1 = HASHBYTES(''SHA1'', LOWER(@_buddyJid)))
 			and (@_from is null or m.ts >= @_from)
 			and (@_to is null or m.ts <= @_to)';
 		if @_byType = 1
@@ -579,8 +579,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-				and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+				o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+				and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 				and (@_from is null or m.ts >= @_from)
 				and (@_to is null or m.ts <= @_to)
 			group by cast(m.ts as date), m.buddy_id, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end
@@ -595,8 +595,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and o.jid = @_ownerJid
-				and (@_buddyJid is null or (b.jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and b.jid = @_buddyJid))
+				o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+				and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 				and (@_from is null or m.ts >= @_from)
 				and (@_to is null or m.ts <= @_to)
 			group by cast(m.ts as date), m.buddy_id, b.jid
@@ -623,22 +623,22 @@ begin
 	declare @_jid_sha1 varbinary(20),
 			@_domain nvarchar(1024);
 
-		set @_jid_sha1 = HASHBYTES('SHA1', @_jid);
+		set @_jid_sha1 = HASHBYTES('SHA1', LOWER(@_jid));
 		select @_jid_id=jid_id from tig_ma_jids
-			where jid_sha1 = @_jid_sha1 and jid = @_jid;
+			where jid_sha1 = @_jid_sha1;
 		if @_jid_id is null
 		begin
 			BEGIN TRY
 			select @_domain = SUBSTRING(@_jid, CHARINDEX('@',@_jid) + 1, LEN(@_jid));
 			insert into tig_ma_jids (jid,jid_sha1,[domain],[domain_sha1])
 				select @_jid, @_jid_sha1, @_domain, HASHBYTES('SHA1', @_domain) where not exists(
-							select 1 from tig_ma_jids where jid_sha1 = @_jid_sha1 and jid = @_jid);
+							select 1 from tig_ma_jids where jid_sha1 = @_jid_sha1);
 			select @_jid_id = @@IDENTITY;
 			END TRY
 			BEGIN CATCH
 					IF ERROR_NUMBER() = 2627
 						select @_jid_id=jid_id from tig_ma_jids
-							where jid_sha1 = @_jid_sha1 and jid = @_jid;
+							where jid_sha1 = @_jid_sha1;
 					ELSE
 						declare @ErrorMessage nvarchar(max), @ErrorSeverity int, @ErrorState int;
 						select @ErrorMessage = ERROR_MESSAGE() + ' Line ' + cast(ERROR_LINE() as nvarchar(5)), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
@@ -737,8 +737,8 @@ begin
 	declare @_buddy_id bigint;
 	set @_owner_id = 0;
 	set @_buddy_id = 0;
-	select @_owner_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', @_ownerJid) and jid = @_ownerJid;
-	select @_buddy_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', @_buddyJid) and jid = @_buddyJid;
+	select @_owner_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid));
+	select @_buddy_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid));
 	delete from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts >= @_from and ts <= @_to;
 end
 -- QUERY END:
@@ -779,7 +779,7 @@ begin
 		select tag, ROW_NUMBER() over (order by t.tag) as row_num
 			from tig_ma_tags t
 			inner join tig_ma_jids o on o.jid_id = t.owner_id 
-			where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid
+			where o.jid_sha1 = HASHBYTES('SHA1',LOWER(@_ownerJid))
 				and t.tag like @_tagStartsWith
 	)
 	select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
@@ -799,12 +799,12 @@ create procedure Tig_MA_GetTagsForUserCount
 	@_tagStartsWith nvarchar(255)
 AS
 begin
-	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = HASHBYTES('SHA1',@_ownerJid) and o.jid = @_ownerJid and t.tag like @_tagStartsWith;
+	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid)) and t.tag like @_tagStartsWith;
 end
 -- QUERY END:
 GO
 
 -- QUERY START:
-update tig_ma_jids set jid = LOWER(jid), domain = LOWER(domain), domain_sha1 = HASHBYTES('SHA1', LOWER(domain)), jid_sha1 = HASHBYTES('SHA1', LOWER(jid)) WHERE jid <> LOWER(jid) or domain <> LOWER(domain);
+update tig_ma_jids set domain = LOWER(domain), domain_sha1 = HASHBYTES('SHA1', LOWER(domain)), jid_sha1 = HASHBYTES('SHA1', LOWER(jid)) WHERE jid <> LOWER(jid) or domain <> LOWER(domain);
 -- QUERY END:
 GO

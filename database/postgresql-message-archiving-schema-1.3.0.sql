@@ -28,7 +28,17 @@ create table if not exists tig_ma_jids (
 do $$
 begin
 if exists (select 1 where (select to_regclass('public.tig_ma_jids_jid')) is null) then
-	create unique index tig_ma_jids_jid on tig_ma_jids (jid);
+	create unique index tig_ma_jids_jid on tig_ma_jids ( lower(jid) );
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+do $$
+begin
+if exists (select 1 where (select pg_get_indexdef(oid) from pg_class i  where i.relname = 'tig_ma_jids_jid') not like '%lower(jid)%') then
+    drop index tig_ma_jids_jid;
+    create unique index tig_ma_jids_jid on tig_ma_jids ( lower(jid) );
 end if;
 end$$;
 -- QUERY END:
@@ -267,8 +277,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid = %L
-			and (%L is null or b.jid = %L)
+			lower(o.jid) = lower(%L)
+			and (%L is null or lower(b.jid) = lower(%L))
 			and (%L is null or m.ts >= %L)
 			and (%L is null or m.ts <= %L)';
 		pagination_query := ' limit %s offset %s';
@@ -280,8 +290,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid = _ownerJid
-			and (_buddyJid is null or b.jid = _buddyJid)
+			lower(o.jid) = lower(_ownerJid)
+			and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to)
 		order by m.ts
@@ -309,8 +319,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid = %L
-			and (%L is null or b.jid = %L)
+			lower(o.jid) = lower(%L)
+			and (%L is null or lower(b.jid) = lower(%L))
 			and (%L is null or m.ts >= %L)
 			and (%L is null or m.ts <= %L)';
 		query_sql = msgs_query || tags_query || contains_query;
@@ -321,8 +331,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid = _ownerJid
-			and (_buddyJid is null or b.jid = _buddyJid)
+			lower(o.jid) = lower(_ownerJid)
+			and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to);
 	end if;
@@ -349,8 +359,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
-			o.jid = %L
-			and (%L is null or b.jid = %L)
+			lower(o.jid) = lower(%L)
+			and (%L is null or lower(b.jid) = lower(%L))
 			and (%L is null or m.ts >= %L)
 			and (%L is null or m.ts <= %L)';
 		query_sql = msgs_query || tags_query || contains_query || ' window w as (order by ts) ) x where x.stanza_hash = %L';
@@ -362,8 +372,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
-			o.jid = _ownerJid
-			and (_buddyJid is null or b.jid = _buddyJid)
+			lower(o.jid) = lower(_ownerJid)
+			and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 			and (_from is null or m.ts >= _from)
 			and (_to is null or m.ts <= _to)
 		window w as (order by ts)
@@ -399,8 +409,8 @@ begin
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
-			o.jid = %L
-			and (%L is null or b.jid = %L)
+			lower(o.jid) = lower(%L)
+			and (%L is null or lower(b.jid) = lower(%L))
 			and (%L is null or m.ts >= %L)
 			and (%L is null or m.ts <= %L)';
 		if byType = 1 then
@@ -418,8 +428,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid = _ownerJid
-				and (_buddyJid is null or b.jid = _buddyJid)
+				lower(o.jid) = lower(_ownerJid)
+				and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 				and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end
@@ -431,8 +441,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid = _ownerJid
-				and (_buddyJid is null or b.jid = _buddyJid)
+				lower(o.jid) = lower(_ownerJid)
+				and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 				and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid
@@ -487,8 +497,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid = _ownerJid
-				and (_buddyJid is null or b.jid = _buddyJid)
+				lower(o.jid) = lower(_ownerJid)
+				and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 				and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end) x;
@@ -498,8 +508,8 @@ begin
 				inner join tig_ma_jids o on m.owner_id = o.jid_id 
 				inner join tig_ma_jids b on b.jid_id = m.buddy_id
 			where 
-				o.jid = _ownerJid
-				and (_buddyJid is null or b.jid = _buddyJid)
+				lower(o.jid) = lower(_ownerJid)
+				and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
 				and (_from is null or m.ts >= _from)
 					and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid) x;
@@ -516,7 +526,7 @@ declare
 	_jid alias for $1;
 	_jid_id bigint;
 begin
-	select jid_id into _jid_id from tig_ma_jids where jid = _jid;
+	select jid_id into _jid_id from tig_ma_jids where lower(jid) = lower(_jid);
 	if _jid_id is null then
 		with inserted as (
 			insert into tig_ma_jids (jid, "domain") select _jid, substr(_jid, strpos(_jid, '@') + 1) where not exists(
@@ -525,7 +535,7 @@ begin
 		)
 		select jid_id into _jid_id from inserted;
 		if _jid_id is null then
-			select jid_id into _jid_id from tig_ma_jids where jid = _jid;
+			select jid_id into _jid_id from tig_ma_jids where lower(jid) = lower(_jid);
 		end if;
 	end if;
 	return _jid_id;
@@ -592,8 +602,8 @@ declare
 begin
 	_owner_id = 0;
 	_buddy_id = 0;
-	select jid_id into _owner_id from tig_ma_jids where jid = _ownerJid;
-	select jid_id into _buddy_id from tig_ma_jids where jid = _buddyJid;
+	select jid_id into _owner_id from tig_ma_jids where lower(jid) = lower(_ownerJid);
+	select jid_id into _buddy_id from tig_ma_jids where lower(jid) = lower(_buddyJid);
 	delete from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts >= _from and ts <= _to;
 end;
 $$ LANGUAGE 'plpgsql';
@@ -615,7 +625,7 @@ begin
 	return query select t.tag
 		from tig_ma_tags t 
 		inner join tig_ma_jids o on o.jid_id = t.owner_id 
-		where o.jid = _ownerJid
+		where lower(o.jid) = lower(_ownerJid)
 			and t.tag like _tagStartsWith
 		order by t.tag
 		limit _limit offset _offset;
@@ -629,17 +639,9 @@ declare
 	result bigint;
 begin
 	result := 0;
-	select count(tag_id) into result from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid = _ownerJid and t.tag like _tagStartsWith;
+	select count(tag_id) into result from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where lower(o.jid) = lower(_ownerJid) and t.tag like _tagStartsWith;
 	return result;
 end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
--- QUERY START:
-do $$
-begin
-if exists (select 1 from tig_ma_jids where tig_ma_jids.jid <> LOWER(tig_ma_jids.jid)) then
-	update tig_ma_jids set jid = LOWER(jid), domain = LOWER(domain) where jid <> LOWER(jid) or domain <> LOWER(domain);
-end if;
-end$$;
--- QUERY END:

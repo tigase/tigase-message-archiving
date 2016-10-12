@@ -37,7 +37,6 @@ import java.util.*;
  *
  * @author andrzej
  */
-@Ignore
 public class JDBCMessageArchiveRepositoryTest extends AbstractMessageArchiveRepositoryTest {
 
 	private static final String PROJECT_ID = "message-archiving";
