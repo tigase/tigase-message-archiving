@@ -519,6 +519,34 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		Assert.assertEquals("Incorrect number of messages", 0, msgs.size());
 	}
 
+	@Test
+	public void test9_jidComparison() throws TigaseStringprepException, ComponentException, TigaseDBException {
+		Date date = new Date();
+		String uuid = UUID.randomUUID().toString();
+		testStart = date;
+		String body = "Test 1 " + uuid;
+		// owner and buddy jids starts with "UA-" so using lowercased version of this jid will ensure proper
+		// comparison of jids
+		BareJID ownerLower = BareJID.bareJIDInstance(owner.getLocalpart().toLowerCase(), owner.getDomain());
+		JID buddyLower = JID.jidInstance(buddy.getLocalpart().toLowerCase(), buddy.getDomain(), buddy.getResource());
+		Element msg = new Element("message", new String[]{"from", "to", "type"},
+								  new String[]{ownerLower.toString(), buddyLower.toString(), StanzaType.chat.name()});
+		msg.addChild(new Element("body", body));
+		repo.archiveMessage(ownerLower, buddyLower, MessageArchiveRepository.Direction.outgoing, testStart, msg, null);
+
+		QueryCriteria crit = repo.newQuery();
+		crit.setQuestionerJID(owner.copyWithoutResource());
+		crit.setWith(buddy.copyWithoutResource());
+		crit.addContains(uuid);
+		crit.getRsm().setIndex(0);
+		crit.getRsm().setMax(1);
+		List<Element> msgs = new ArrayList<>();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
+		Assert.assertEquals("Incorrect number of messages", 1, msgs.size());
+
+		repo.removeItems(owner.getBareJID(), buddy.getBareJID().toString(), new Date(date.getTime() - 1000), new Date());
+	}
+
 	private class ColItem {
 		private String with;
 		private Date ts;

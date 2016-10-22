@@ -267,7 +267,6 @@ public class StoredProcedures {
 						
 			sb.append(") x");
 
-			System.out.println("executing query = " + sb.toString());
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i=0;
@@ -417,8 +416,6 @@ public class StoredProcedures {
 			ps.setLong(2, tagId);
 			ps.setLong(3, msgId);
 			ps.setLong(4, tagId);
-
-			System.out.println("adding tag '" + tag + "' with id = " + tagId + " to message id = " + msgId);
 
 			ps.executeUpdate();
 		} catch (SQLException e) {
