@@ -24,6 +24,7 @@ package tigase.archive.db.derby;
 import tigase.util.Algorithms;
 import tigase.xmpp.BareJID;
 
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
@@ -538,10 +539,12 @@ public class StoredProcedures {
 		return sb;
 	}
 
+	private static final Charset UTF8 = Charset.forName("UTF-8");
+
 	protected static String sha1OfLower(String data) throws SQLException {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			byte[] hash = md.digest(data.toLowerCase().getBytes());
+			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
 			return Algorithms.bytesToHex(hash);
 		} catch (NoSuchAlgorithmException e) {
 			throw new SQLException(e);
