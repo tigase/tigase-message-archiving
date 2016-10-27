@@ -1688,7 +1688,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 						String db_jid = rs.getString("jid");
 
 						for (int i = 0; i < jids.length; i++) {
-							if (db_jid.equals(jids[i].toLowerCase())) {
+							if (db_jid.equalsIgnoreCase(jids[i])) {
 								results[i] = rs.getLong("jid_id");
 								++cnt;
 							}
