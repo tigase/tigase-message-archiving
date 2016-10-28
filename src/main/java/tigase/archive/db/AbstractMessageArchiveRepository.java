@@ -86,7 +86,7 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 		return item;
 	}
 	
-	protected byte[] generateHashOfMessage(Direction direction, Element msg, Map<String,Object> additionalData) {
+	protected byte[] generateHashOfMessage(Direction direction, Element msg, Date ts, Map<String,Object> additionalData) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 
@@ -97,6 +97,10 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
 				md.update(id.getBytes());
+			}
+			String type = msg.getAttributeStaticStr("type");
+			if (type == null || !"groupchat".equals(type)) {
+				md.update(new Long(ts.getTime() / 1000).toString().getBytes());
 			}
 			String body = msg.getChildCData(MSG_BODY_PATH);
 			if (body != null) {

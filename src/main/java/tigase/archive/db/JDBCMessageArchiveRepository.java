@@ -314,7 +314,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						" from SYSIBM.SYSDUMMY1 " +
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" +
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
-																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
+																						" m." + MSGS_TIMESTAMP + " between ? and ? and m." + MSGS_HASH + " = ? )";
 	private static final String PGSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -324,7 +324,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						//" from " + MSGS_TABLE +
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
-																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ? )";
+																						" m." + MSGS_TIMESTAMP + " between ? and ? and m." + MSGS_HASH + " = ? )";
 	private static final String MYSQL_ADD_MESSAGE = "insert into " + MSGS_TABLE + " (" +
 																						MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " + MSGS_BUDDY_RESOURCE + ", " +
 																						MSGS_TIMESTAMP + ", " + MSGS_DIRECTION +
@@ -347,7 +347,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 																						//" from " + MSGS_TABLE +
 																						" where not exists (select 1 from " + MSGS_TABLE + " m where" + 
 																						" m." + MSGS_OWNER_ID + " = ? and m." + MSGS_BUDDY_ID + " = ? and" +
-																						" m." + MSGS_TIMESTAMP + " = ? and m." + MSGS_HASH + " = ?)";	
+																						" m." + MSGS_TIMESTAMP + " between ? and ? and m." + MSGS_HASH + " = ?)";
 
 	private static final String DELETE_EXPIRED_MSGS = "delete from " + MSGS_TABLE + " where " + MSGS_TIMESTAMP + " < ? and EXISTS( select 1 from " + JIDS_TABLE + " j " +
 																						"where j." + JIDS_ID + " = " + MSGS_OWNER_ID + " and j." + JIDS_DOMAIN + " = ? ) ";
@@ -1099,6 +1099,18 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			data_repo.release(stmt, null);
 		}
 
+		try {
+			if (data_repo.getDatabaseType() == dbTypes.mysql) {
+				alterTable = "create unique index " + MSGS_TABLE + "_" + MSGS_OWNER_ID + "_" + MSGS_BUDDY_ID + "_" +
+						MSGS_HASH + "_index on " + MSGS_TABLE + " (" + MSGS_OWNER_ID + ", " + MSGS_BUDDY_ID + ", " +
+						MSGS_HASH + ")";
+				stmt = data_repo.createStatement(null);
+				stmt.execute(alterTable);
+			}
+		} catch (SQLException ex) {
+		} finally {
+			data_repo.release(stmt, null);
+		}
 	}
 	
 	/**
@@ -1135,7 +1147,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
 			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
-			String hash						 = generateHashOfMessageAsString(direction, msg, additionalData);
+			String hash						 = generateHashOfMessageAsString(direction, msg, mtime, additionalData);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 																					 ADD_MESSAGE);
 
@@ -1159,7 +1171,13 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					if (data_repo.getDatabaseType() != dbTypes.mysql) {
 						add_message_st.setLong(i++, owner_id);
 						add_message_st.setLong(i++, buddy_id);
-						add_message_st.setTimestamp(i++, mtime);
+						if ("groupchat".equals(type)) {
+							add_message_st.setTimestamp(i++, new java.sql.Timestamp(mtime.getTime() - 30 * 60 * 1000));
+							add_message_st.setTimestamp(i++, new java.sql.Timestamp(mtime.getTime() + 30 * 60 * 1000));
+						} else {
+							add_message_st.setTimestamp(i++, mtime);
+							add_message_st.setTimestamp(i++, mtime);
+						}
 						add_message_st.setString(i++, hash);
 					}
 					add_message_st.executeUpdate();
@@ -1735,8 +1753,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		}
 	}
 	
-	private String generateHashOfMessageAsString(Direction direction, Element msg, Map<String,Object> additionalData) {
-		byte[] result = generateHashOfMessage(direction, msg, additionalData);
+	private String generateHashOfMessageAsString(Direction direction, Element msg, Date ts, Map<String,Object> additionalData) {
+		byte[] result = generateHashOfMessage(direction, msg, ts, additionalData);
 		return result != null ? Base64.encode(result) : null;
 	}
 
