@@ -88,8 +88,16 @@ end$$;
 -- QUERY START:
 do $$
 begin
-if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')) is null) then
-	create unique index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index on tig_ma_msgs (owner_id, ts, buddy_id, stanza_hash);
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')) is not null) then
+	drop index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index;
+end if;
+end$$;
+-- QUERY END:
+-- QUERY START:
+do $$
+begin
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index')) is null) then
+	create unique index tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index on tig_ma_msgs (owner_id, buddy_id, stanza_hash, ts);
 end if;
 end$$;
 -- QUERY END:
@@ -550,7 +558,15 @@ declare
 	_owner_id bigint;
 	_buddy_id bigint;
 	_msg_id bigint;
+	_tsFrom timestamp;
+	_tsTo timestamp;
 begin
+    if _type = 'groupchat' then
+        select _ts - interval '30 minutes', _ts + interval '30 minutes' into _tsFrom, _tsTo;
+    else
+        select _ts, _ts into _tsFrom, _tsTo;
+    end if;
+
 	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
 	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
 
@@ -558,7 +574,12 @@ begin
 		insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, stanza_hash)
 		select _owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash
 		where not exists (
-			select 1 from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts = _ts and stanza_hash = _hash 
+			select 1
+			from tig_ma_msgs
+			where owner_id = _owner_id
+			    and buddy_id = _buddy_id
+			    and stanza_hash = _hash
+			    and ts between _tsFrom  and _tsTo
 		)
 		returning msg_id
 	)

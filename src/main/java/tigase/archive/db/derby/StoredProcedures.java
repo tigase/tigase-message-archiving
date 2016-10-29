@@ -340,8 +340,16 @@ public class StoredProcedures {
 					" select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 					" from SYSIBM.SYSDUMMY1" +
 					" where not exists (" +
-					" select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and ts = ? and stanza_hash = ?" +
+					" select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and stanza_hash = ? and ts between ? and ?" +
 					")", Statement.RETURN_GENERATED_KEYS);
+
+			Timestamp from = ts;
+			Timestamp to = ts;
+
+			if ("groupchat".equals(type)) {
+				from = new Timestamp(ts.getTime() - 30 * 60 * 1000);
+				to = new Timestamp(ts.getTime() + 30 * 60 * 1000);
+			}
 
 			int i=0;
 			ps.setLong(++i, ownerId);
@@ -356,17 +364,19 @@ public class StoredProcedures {
 
 			ps.setLong(++i, ownerId);
 			ps.setLong(++i, buddyId);
-			ps.setTimestamp(++i, ts);
 			ps.setString(++i, hash);
+			ps.setTimestamp(++i, from);
+			ps.setTimestamp(++i, to);
 
 			ps.execute();
-			
-			ps = conn.prepareStatement("select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and ts = ? and stanza_hash = ?");
+
+			ps = conn.prepareStatement("select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and stanza_hash = ? and ts between ? and ?");
 			i = 0;
 			ps.setLong(++i, ownerId);
 			ps.setLong(++i, buddyId);
-			ps.setTimestamp(++i, ts);
 			ps.setString(++i, hash);
+			ps.setTimestamp(++i, from);
+			ps.setTimestamp(++i, to);
 
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {

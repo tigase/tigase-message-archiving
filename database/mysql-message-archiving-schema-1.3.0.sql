@@ -42,7 +42,7 @@ create table if not exists tig_ma_msgs (
 	key tig_ma_msgs_owner_id (owner_id),
 	key tig_ma_msgs_owner_id_buddy_id (owner_id, buddy_id),
 	key tig_ma_msgs_owner_id_ts_buddy_id (owner_id, ts, buddy_id),
-	unique index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index using hash (owner_id, ts, buddy_id, stanza_hash)
+	unique index tig_ma_msgs_owner_id_buddy_id_stanza_hash_index using hash (owner_id, buddy_id, stanza_hash)
 )
 ENGINE=InnoDB default character set utf8 ROW_FORMAT=DYNAMIC;
 -- QUERY END:

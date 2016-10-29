@@ -29,6 +29,7 @@ import tigase.xmpp.RSM;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -48,7 +49,7 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
-	protected byte[] generateHashOfMessage(Direction direction, Element msg, Map<String,Object> additionalData) {
+	protected byte[] generateHashOfMessage(Direction direction, Element msg, Date ts, Map<String,Object> additionalData) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 
@@ -59,6 +60,10 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
 				md.update(id.getBytes());
+			}
+			String type = msg.getAttributeStaticStr("type");
+			if (type == null || !"groupchat".equals(type)) {
+				md.update(new Long(ts.getTime() / 1000).toString().getBytes());
 			}
 			String body = msg.getChildCData(MSG_BODY_PATH);
 			if (body != null) {

@@ -64,7 +64,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 	private static final long LONG_NULL              = 0;
 	
 	private static final SimpleParser parser      = SingletonFactory.getParserInstance();
-			
+
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
 	private static final String GROUP_BY_TYPE_KEY = "group-by-chat-type";
 	
@@ -167,7 +167,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 			String type                      = msg.getAttributeStaticStr("type");
 			String msgStr                    = msg.toString();
 			String body                      = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
-			String hash						 = generateHashOfMessageAsString(direction, msg, additionalData);
+			String hash						 = generateHashOfMessageAsString(direction, msg, mtime, additionalData);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
 					ADD_MESSAGE_QUERY);
 
@@ -613,8 +613,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 		return position - 1;
 	}
 
-	private String generateHashOfMessageAsString(Direction direction, Element msg, Map<String,Object> additionalData) {
-		byte[] result = generateHashOfMessage(direction, msg, additionalData);
+	private String generateHashOfMessageAsString(Direction direction, Element msg, Date ts, Map<String,Object> additionalData) {
+		byte[] result = generateHashOfMessage(direction, msg, ts, additionalData);
 		return result != null ? Base64.encode(result) : null;
 	}
 

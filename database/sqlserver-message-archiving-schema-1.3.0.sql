@@ -77,8 +77,13 @@ CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_ts_index ON [dbo].[tig_ma_msgs] ([
 -- QUERY END:
 GO
 -- QUERY START:
-IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')
-CREATE INDEX IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index ON [dbo].[tig_ma_msgs] ([owner_id], [ts], [buddy_id], [stanza_hash]);
+IF EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')
+DROP INDEX IX_tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index ON [dbo].[tig_ma_msgs];
+-- QUERY END:
+GO
+-- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index')
+CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index ON [dbo].[tig_ma_msgs] ([owner_id], [buddy_id], [stanza_hash], [ts]);
 -- QUERY END:
 GO
 
@@ -670,14 +675,26 @@ AS
 begin
 	declare @_owner_id bigint;
 	declare @_buddy_id bigint;
-	
+	declare @_tsFrom datetime;
+	declare @_tsTo datetime;
+
+	if @_type = 'groupchat'
+	    select @_tsFrom = DATEADD(minute, -30, @_ts), @_tsTo = DATEADD(minute, 30, @_ts);
+	else
+	    select @_tsFrom = @_ts, @_tsTo = @_ts;
+
+
 	exec Tig_MA_EnsureJid @_jid=@_ownerJid, @_jid_id=@_owner_id output;
 	exec Tig_MA_EnsureJid @_jid=@_buddyJid, @_jid_id=@_buddy_id output;
 
 	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, type, body, msg, stanza_hash)
 		select @_owner_id, @_buddy_id, @_buddyRes, @_ts, @_direction, @_type, @_body, @_msg, @_hash
 		where not exists (
-			select 1 from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts = @_ts and stanza_hash = @_hash 
+			select 1 from tig_ma_msgs
+			    where owner_id = @_owner_id
+			        and buddy_id = @_buddy_id
+			        and stanza_hash = @_hash
+			        and ts between @_tsFrom and @_tsTo
 		);
 	select @@IDENTITY as msg_id
 end
