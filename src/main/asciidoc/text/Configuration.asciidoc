@@ -1,0 +1,137 @@
+
+= Configuration
+:author: Andrzej Wójcik
+:date: 2016-11-11 11:38
+
+To enable Tigase Message Archiving Component you need to add following block to `etc/init.properties` file:
+----
+message-archive () {
+}
+----
+It will enable component and configure it under name `message-archive`.
+By default it will also use database configured as `default` data source to store data.
+
+== Support for XEP-0136
+To be able to use Message Archiving component with http://xmpp.org/extensions/xep-0136.html:[XEP-0136: Message Archiving] protocol, you additionally need to enable `message-archive-xep-0136` SessionManager processor:
+----
+sess-man {
+    message-archive-xep-0136 () {
+    }
+}
+----
+
+== Support for MAM
+If you want to use Message Archiving component with http://xmpp.org/extensions/xep-0313.html:[XEP-0313: Message Archive Management] protocol, then you need to enable `urn:xmpp:mam:1` SessionManager processor:
+----
+sess-man {
+    'urn:xmpp:mam:1' () {
+    }
+}
+----
+
+== Configuration of archiving processor
+If you enable any of SessionManager processors mentioned above then `message-archive` processor responsible for actual archiving of messages will be enabled as well.
+
+Additionally you can provide additional configuration options for this processor.
+
+== Setting default value of archiving level for message on a server
+Setting this property will change default archiving level for messages for every account on server for which per account default archiving level is not set. User will be able to change this value setting default modes as described in http://xmpp.org/extensions/xep-0136.html#pref-default[XEP-0136 section 2.4]
+
+To set default level to `message` you need to set `default-store-method` of `message-archive` processor to `message`:
+----
+sess-man {
+    message-archive {
+        default-store-method = 'message'
+    }
+}
+----
+
+== Setting required value of archiving level for messages on a server
+Settting this property will change required archiving level for messages for every account on server. User will be able to change this to any lower value by setting default modes as described in http://xmpp.org/extensions/xep-0136.html#pref-default[XEP-0136 section 2.4]
+but user will be allowed to set higher archiving level. If this property is set to higher value then default archiving level is set then this setting will be used as default archiving level setting.
+
+To set required level to `body` you need to set `required-store-method` of `message-archive` processor to `body`:
+----
+sess-man {
+    message-archive {
+        required-store-method = `body`
+    }
+}
+----
+
+== Enabling support for tags
+To enable this feature Message Archiving component needs to be configured properly. You need to add `tags-support = true` line to `message-archiving` configuration section of `etc/init.properties` file. Like in following example:
+----
+message-archiving {
+    tags-support = true
+}
+----
+where:
+
+* `message-archiving` - is name of configuration section under which Message Archiving component is configured to run
+
+== Configuration of automatic archivization of MUC messages
+As mentioned above no additional configuration options than default configuration of Message Archiving component and plugin is needed to let user decide if he wants to enable or disable this feature (but it is disabled by default).
+In this case user to enable this feature needs to set settings of message archiving adding `muc-save` attribute to `<default/>` element of request with value set to `true` (or to `false` to disable this feature).
+
+To configure state of this feature on installation level, it is required to set `store-muc-messages` property of `message-archive` SessionManager processor:
+----
+sess-man {
+    message-archive {
+        store-muc-messages = 'value'
+    }
+}
+----
+
+where `value` may be one of following values:
+
+`user`:: allows value to be set on domain level or by user if domain level setting allows that
+`true`:: enables feature for every user in every hosted domain (cannot be overridden by on domain or user level)
+`false`:: disables feature for every user in every hosted domain (cannot be overridden by on domain or user level)
+
+To configure state of this feature on domain level, you need to execute vhost configuration command. In list of fields to configure domain, field to set this will be available with following values:
+
+`user`:: allows user to stat of this feature (if allowed on installation level)
+`true`:: enables feature for users of configured domain (user will not be able to disable)
+`false`:: disables feature for users of configured domain (user will not be able to disable)
+
+== Using separate store for archived messages
+It is possible to use separate store for archived messages, to do so you need to configure new `DataSource` in `dataSource` section.
+Here we will use `message-archive-store` as a name of a data source.
+Additionally you need to pass name of newly configured data source to `dataSourceName` property of `default` repository of Message Archiving component.
+
+Example:
+----
+dataSource {
+    message-archive-store () {
+        uri = 'jdbc:postgresql://server/message-archive-database'
+    }
+}
+
+message-archive {
+    repositoryPool {
+        default () {
+            dataSourceName = 'message-archive-store'
+        }
+    }
+}
+----
+
+It is also possible to configure separate store for particular domain, ie. `example.com`. Here we will configure data source with name `example.com` and use it to store data for archive:
+----
+dataSource {
+    'example.com' () {
+        uri = 'jdbc:postgresql://server/example-database'
+    }
+}
+
+message-archive {
+    repositoryPool {
+        'example.com' () {
+          # we may not set dataSourceName as it matches name of domain
+        }
+    }
+}
+----
+[NOTE]
+With this configuration messages for other domains than `example.com` will be stored in default data source.
