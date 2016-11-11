@@ -22,7 +22,7 @@ as child element of @retrieve@ or @list@ element of request.
 
 === Example query requests
 ==== Example 1
-Retrieving messages with "test failed" string with user @juliet@capulet.com@ between @2014-01-01 00:00:00@ and @2014-05-01 00:00:00@
+Retrieving messages with "test failed" string with user `juliet@capulet.com` between `2014-01-01 00:00:00` and `2014-05-01 00:00:00`
 [source,xml]
 ----
 <iq type="get" id="query2">
@@ -37,7 +37,7 @@ Retrieving messages with "test failed" string with user @juliet@capulet.com@ bet
 </iq>
 ----
 ==== Example 2
-Retrieving collections containing messages with "test failed" string with user @juliet@capulet.com@ between @2014-01-01 00:00:00@ and @2014-05-01 00:00:00@
+Retrieving collections containing messages with "test failed" string with user `juliet@capulet.com` between `2014-01-01 00:00:00` and `2014-05-01 00:00:00`
 [source,xml]
 ----
 <iq type="get" id="query2">

@@ -29,11 +29,6 @@ sess-man {
 }
 ----
 
-== Configuration of archiving processor
-If you enable any of SessionManager processors mentioned above then `message-archive` processor responsible for actual archiving of messages will be enabled as well.
-
-Additionally you can provide additional configuration options for this processor.
-
 == Setting default value of archiving level for message on a server
 Setting this property will change default archiving level for messages for every account on server for which per account default archiving level is not set. User will be able to change this value setting default modes as described in http://xmpp.org/extensions/xep-0136.html#pref-default[XEP-0136 section 2.4]
 
@@ -62,13 +57,30 @@ sess-man {
 == Enabling support for tags
 To enable this feature Message Archiving component needs to be configured properly. You need to add `tags-support = true` line to `message-archiving` configuration section of `etc/init.properties` file. Like in following example:
 ----
-message-archiving {
+message-archive {
     tags-support = true
 }
 ----
 where:
 
-* `message-archiving` - is name of configuration section under which Message Archiving component is configured to run
+* `message-archive` - is name of configuration section under which Message Archiving component is configured to run
+
+=== Saving Options
+By default, Tigase Message Archive will only store the message body with some metadata, this can exclude messages that are lacking a body.
+If you decide you wish to save non-body elements within Message Archive, you can now can now configure this by setting `msg-archive-paths` to list of elements paths which should trigger saving to Message Archive.
+To additionally store messages with `<subject/>` element:
+-----
+sess-man {
+    message-archive {
+        msg-archive-paths = [ '-/message/result[urn:xmpp:mam:1]' '/message/body', '/message/subject' ]
+    }
+}
+-----
+Where above will set the archive to store messages with <body/> or <subject/> elements and for message with `<result xmlns="urn:xmpp:mam:1"/>` element not to be stored.
+
+WARNING: It is recommended to keep entry for not storing message with `<result xmlns="urn:xmpp:mam:1"/>` element as this are results of MAM query and contain messages already stored in archive!
+
+TIP: Enabling this for elements such as iq, or presence will quickly load the archive.  Configure this setting carefully!
 
 == Configuration of automatic archivization of MUC messages
 As mentioned above no additional configuration options than default configuration of Message Archiving component and plugin is needed to let user decide if he wants to enable or disable this feature (but it is disabled by default).
@@ -94,6 +106,37 @@ To configure state of this feature on domain level, you need to execute vhost co
 `user`:: allows user to stat of this feature (if allowed on installation level)
 `true`:: enables feature for users of configured domain (user will not be able to disable)
 `false`:: disables feature for users of configured domain (user will not be able to disable)
+
+== Configuration of automatic removal of old messages
+Tigase Message Archiving component is able to automatically remove messages older than configured number of days.
+Number of days after which messages are removed is configurable in VHost settings of particular domain hosted by Tigase XMPP Server.
+If it is set to 1 day and entry is older than 24 hours then it will be removed, ie. entry from yesterday from 10:11 will be removed after 10:11 after next execution of purge.
+
+To enable this feature you need to set `removeExpiredMessages` property of component to `true`.
+message-archive {
+    removeExpiredMessages = true
+}
+
+Then by default component will execute removal of old messages after an hour of server startup and then after 24 hours since previous execution.
+This is also configurable and may be changed to first exection after 30 minutes by setting `removeExpiredMessagesDelay` property to `PT30M` and next execution every 12 hours by setting `removeExpiredMessagesPeriod` to `PT12H`.
+----
+message-archive {
+    removeExpiredMessages = true
+    removeExpiredMessagesDelay = 'PT30M'
+    removeExpiredMessagesPeriod = 'PT12H'
+}
+----
+
+TIP: Value of `remove-expired-messages-delay` and `remove-expired-messages-period` is in format described at Duration.parse() in Java documentation.
+
+=== Configuration of number of days in VHost
+VHost holds a setting that determines how long a message needs to be in archive for it to be considered old and removed.  This can be set independently per Vhost.  This setting can be modified by either using the HTTP admin, or the update item execution in adhoc command.
+
+This configuration is done by execution of Update item configuration adhoc command of vhost-man component, where you should select domain for which messages should be removed and then in field XEP-0136 - retention type select value Number of days and in field XEP-0136 - retention period (in days) enter number of days after which events should be removed from MA.
+
+In adhoc select domain for which messages should be removed and then in field XEP-0136 - retention type select value Number of days and in field XEP-0136 - retention period (in days) enter number of days after which events should be removed from MA.
+
+In HTTP UI select Other, then Update Item Configuration (Vhost-man), select the domain, and from there you can set XEP-0136 retention type, and set number of days at XEP-0136 retention period (in days).
 
 == Using separate store for archived messages
 It is possible to use separate store for archived messages, to do so you need to configure new `DataSource` in `dataSource` section.
