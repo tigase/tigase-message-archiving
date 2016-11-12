@@ -11,6 +11,7 @@ Welcome to Tigase Message Archiving component guide
 :leveloffset: 1
 
 include::text/Overview.asciidoc[]
+include::text/Announcement.asciidoc[]
 include::text/Additional_features.asciidoc[]
 include::text/Database.asciidoc[]
 include::text/Configuration.asciidoc[]
