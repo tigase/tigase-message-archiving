@@ -536,12 +536,15 @@ declare
 begin
 	select jid_id into _jid_id from tig_ma_jids where lower(jid) = lower(_jid);
 	if _jid_id is null then
-		with inserted as (
-			insert into tig_ma_jids (jid, "domain") select _jid, substr(_jid, strpos(_jid, '@') + 1) where not exists(
-				select 1 from tig_ma_jids where jid = _jid
-			) returning jid_id
-		)
-		select jid_id into _jid_id from inserted;
+	    begin
+		    with inserted as (
+			    insert into tig_ma_jids (jid, "domain") select _jid, substr(_jid, strpos(_jid, '@') + 1) where not exists(
+				    select 1 from tig_ma_jids where lower(jid) = lower(_jid)
+			    ) returning jid_id
+		    )
+		    select jid_id into _jid_id from inserted;
+		exception when unique_violation then
+		end;
 		if _jid_id is null then
 			select jid_id into _jid_id from tig_ma_jids where lower(jid) = lower(_jid);
 		end if;
@@ -570,20 +573,24 @@ begin
 	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
 	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
 
-	with inserted_msg as (
-		insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, stanza_hash)
-		select _owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash
-		where not exists (
-			select 1
-			from tig_ma_msgs
-			where owner_id = _owner_id
-			    and buddy_id = _buddy_id
-			    and stanza_hash = _hash
-			    and ts between _tsFrom  and _tsTo
-		)
-		returning msg_id
-	)
-	select msg_id into _msg_id from inserted_msg;
+    begin
+	    with inserted_msg as (
+		    insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, "type", body, msg, stanza_hash)
+		    select _owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash
+		    where not exists (
+			    select 1
+			    from tig_ma_msgs
+			    where owner_id = _owner_id
+			        and buddy_id = _buddy_id
+			        and stanza_hash = _hash
+			        and ts between _tsFrom  and _tsTo
+		    )
+		    returning msg_id
+	    )
+	    select msg_id into _msg_id from inserted_msg;
+	exception when unique_violation then
+	end;
+
 	return _msg_id;
 end;
 $$ LANGUAGE 'plpgsql';
@@ -598,12 +605,16 @@ begin
 	select owner_id into _owner_id from tig_ma_msgs where msg_id = _msgId;
 	select tag_id into _tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
 	if _tag_id is null then
-		with inserted as (
-			insert into tig_ma_tags (owner_id, tag) select _owner_id, _tag where not exists(
-				select 1 from tig_ma_tags where owner_id = _owner_id and tag = _tag
-			) returning tag_id
-		)
-		select tag_id into _tag_id from inserted;
+	    begin
+    		with inserted as (
+	    		insert into tig_ma_tags (owner_id, tag) select _owner_id, _tag where not exists(
+				    select 1 from tig_ma_tags where owner_id = _owner_id and tag = _tag
+			    ) returning tag_id
+		    )
+		    select tag_id into _tag_id from inserted;
+		exception when unique_violation then
+		end;
+
 		if _tag_id is null then
 			select tag_id into _tag_id  from tig_ma_tags where owner_id = _owner_id and tag = _tag;
 		end if;

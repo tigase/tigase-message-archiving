@@ -130,7 +130,14 @@ public class RetrieveItemsModule extends AbstractModule {
 			//item.addChild(msg.getChild("body"));
 			Element msg = item.getMessage();
 			itemEl.addChildren(msg.getChildren());
-			itemEl.setAttribute("secs", String.valueOf((item.getTimestamp().getTime() - query.getStart().getTime()) / 1000));
+
+			if (query.getStart() == null) {
+				query.setStart(item.getTimestamp());
+			    itemEl.setAttribute("secs", "0");
+			} else {
+				itemEl.setAttribute("secs", String.valueOf(
+						(item.getTimestamp().getTime() - query.getStart().getTime()) / 1000));
+			}
 			if (item.getWith() != null) {
 				itemEl.setAttribute("with", item.getWith());
 			}

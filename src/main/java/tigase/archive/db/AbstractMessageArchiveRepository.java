@@ -43,8 +43,9 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 
 	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
-	protected static final String[] MSG_BODY_PATH = { "message", "body" };	
-	
+	protected static final String[] MSG_BODY_PATH = { "message", "body" };
+	protected static final String[] MSG_SUBJECT_PATH = { "message", "subject" };
+
 	static {
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
@@ -68,6 +69,10 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			String body = msg.getChildCData(MSG_BODY_PATH);
 			if (body != null) {
 				md.update(body.getBytes());
+			}
+			String subject = msg.getCData(MSG_SUBJECT_PATH);
+			if (subject != null) {
+				md.update(subject.getBytes());
 			}
 			
 			return md.digest();
