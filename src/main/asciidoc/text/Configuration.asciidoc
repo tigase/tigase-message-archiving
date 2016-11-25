@@ -32,6 +32,13 @@ sess-man {
 == Setting default value of archiving level for message on a server
 Setting this property will change default archiving level for messages for every account on server for which per account default archiving level is not set. User will be able to change this value setting default modes as described in http://xmpp.org/extensions/xep-0136.html#pref-default[XEP-0136 section 2.4]
 
+Possible values are:
+
+false:: Messages are not archived
+body:: Only message body will be stored. Message without a body will not be stored with this value set
+message:: While message stanza will be archived (if message should be stored, see <<Saving Options>>)
+stream:: In this mode every stanza should be archived. _(Not supported)_
+
 To set default level to `message` you need to set `default-store-method` of `message-archive` processor to `message`:
 ----
 sess-man {
@@ -44,6 +51,8 @@ sess-man {
 == Setting required value of archiving level for messages on a server
 Settting this property will change required archiving level for messages for every account on server. User will be able to change this to any lower value by setting default modes as described in http://xmpp.org/extensions/xep-0136.html#pref-default[XEP-0136 section 2.4]
 but user will be allowed to set higher archiving level. If this property is set to higher value then default archiving level is set then this setting will be used as default archiving level setting.
+
+Possible values for this setting are the same as values for default archiving level setting, see <<Setting default value of archiving level for message on a server>> for list of possible values.
 
 To set required level to `body` you need to set `required-store-method` of `message-archive` processor to `body`:
 ----

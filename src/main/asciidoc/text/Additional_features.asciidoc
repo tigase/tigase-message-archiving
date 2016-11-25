@@ -6,7 +6,9 @@
 Tigase Message Archiving Component contains few additional features useful for working with message archives.
 
 == Querying in all messages
-Component allows user to search for messages with all users stored in archive. In this case when with attribute is omitted chat element of response will not contain with attribute but every to and from element will contain with attribute.
+Feature allows user to search all of his archived messages without a need to specify who was send/receiver of this message.
+To search in all messages, request sent to retrieve archived messages should not contain `with` attribute.
+As a result, when `with` attribute is omitted `<chat/>` element of response will not contain `with` attribute but every `<to/>` and `<from/>` element will contain `with` attribute.
 
 == Querying by part of message body
 This feature allows user to query for messages or collections containing messages which in body of a message contained text passed by user.

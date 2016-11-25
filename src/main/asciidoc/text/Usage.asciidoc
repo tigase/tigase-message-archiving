@@ -29,7 +29,7 @@ See below for what these settings mean.
   - *Required Attributes*
   * +save=+ Boolean turning archiving on or off
   - *Optional Settings*
-  * +scope=+ Determines scope of archiving, default is +\'stream'+ which turns off after stream end, or may be +\'global'+ which keeps auto save permanent,
+  * +scope=+ Determines scope of archiving, default is +'stream'+ which turns off after stream end, or may be +'global'+ which keeps auto save permanent,
 
 <default/>::
   Default element sets default settings for OTR and save modes, includes an option for archive expiration.
