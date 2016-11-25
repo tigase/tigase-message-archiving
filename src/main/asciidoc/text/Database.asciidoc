@@ -26,7 +26,7 @@ This table stores all jids related to stored messages, ie. from `to` and `from` 
 | jid | Value of a bare JID |
 | jid_sha1 | SHA1 value of lowercased bare JID | Used for proper bare JID comparison during lookup.
 
-(Not exists in PostgreSQL schema)
+(N/A to PostgreSQL schema)
 | domain | Domain part of a bare JID | Stored for easier lookup of messages owned by users of a particular domain
 |============
 
