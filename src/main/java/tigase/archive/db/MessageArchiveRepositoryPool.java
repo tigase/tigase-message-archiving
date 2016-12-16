@@ -28,8 +28,9 @@ import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
 import tigase.db.TigaseDBException;
-import tigase.db.beans.MDRepositoryBean;
+import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
+import tigase.server.BasicComponent;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -39,22 +40,33 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "repositoryPool", parent = MessageArchiveComponent.class)
 public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends MessageArchiveRepository<Q, DataSource>>
-		extends MDRepositoryBean<R>
+		extends MDRepositoryBeanWithStatistics<R>
 		implements MessageArchiveRepository<Q, DataSource> {
 
 	public MessageArchiveRepositoryPool() {
+		super(MessageArchiveRepository.class, MAMRepository.class);
+	}
 
+	public MessageArchiveRepositoryPool(Class<? extends MessageArchiveRepository>... classess) {
+		super(Stream.concat(Stream.of(classess), Stream.of(MessageArchiveRepository.class, MAMRepository.class))
+					  .toArray(value -> new Class[value]));
 	}
 
 	@Override
 	protected Class findClassForDataSource(DataSource dataSource) throws DBInitException {
 		return DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, dataSource.getResourceUri());
+	}
+
+	@Override
+	public boolean belongsTo(Class<? extends BasicComponent> component) {
+		return MessageArchiveComponent.class.isAssignableFrom(component);
 	}
 
 	@Override
