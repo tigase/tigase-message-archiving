@@ -24,6 +24,7 @@ package tigase.archive.db;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
@@ -90,7 +91,8 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
-	public void queryItems(Q query, MAMRepository.ItemHandler<Q,MAMRepository.Item> itemHandler) throws TigaseDBException, ComponentException {
+	public void queryItems(Q query, MAMRepository.ItemHandler<Q, MAMRepository.Item> itemHandler)
+			throws RepositoryException, ComponentException {
 		getRepository(query.getQuestionerJID().getDomain()).queryItems(query, itemHandler);
 	}
 

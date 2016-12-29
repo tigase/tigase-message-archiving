@@ -27,7 +27,6 @@ package tigase.archive;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.archive.db.MessageArchiveRepository;
-import tigase.archive.xep0313.MAMQueryParser;
 import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.modules.impl.DiscoveryModule;
 import tigase.kernel.beans.Bean;
@@ -40,7 +39,6 @@ import tigase.stats.StatisticsList;
 import tigase.vhosts.VHostItem;
 import tigase.xmpp.JID;
 import tigase.xmpp.mam.modules.GetFormModule;
-import tigase.xmpp.mam.modules.QueryModule;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -153,9 +151,7 @@ public class MessageArchiveComponent
 	@Override
 	protected void registerModules(Kernel kernel) {
 		kernel.registerBean(DiscoveryModule.class).exec();
-		kernel.registerBean(MAMQueryParser.class).exec();
 		kernel.registerBean(GetFormModule.class).exec();
-		kernel.registerBean(QueryModule.class).exec();
 	}
 
 	//~--- get methods ----------------------------------------------------------

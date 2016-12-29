@@ -1,5 +1,5 @@
 /*
- * MAMItemHandler.java
+ * MAMQueryModule.java
  *
  * Tigase Message Archiving Component
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
@@ -21,12 +21,14 @@
  */
 package tigase.archive.xep0313;
 
+import tigase.archive.MessageArchiveComponent;
 import tigase.kernel.beans.Bean;
+import tigase.xmpp.mam.modules.QueryModule;
 
 /**
- * Created by andrzej on 19.07.2016.
+ * Created by andrzej on 29.12.2016.
  */
-@Bean(name = "mamItemHandler", parent = MAMQueryModule.class)
-public class MAMItemHandler extends tigase.xmpp.mam.MAMItemHandler {
+@Bean(name = "mamQueryModule", parent = MessageArchiveComponent.class)
+public class MAMQueryModule extends QueryModule {
 
 }

@@ -21,6 +21,7 @@
  */
 package tigase.archive.xep0313;
 
+import tigase.archive.MessageArchiveComponent;
 import tigase.archive.MessageArchiveConfig;
 import tigase.component.exceptions.ComponentException;
 import tigase.kernel.beans.Bean;
@@ -34,7 +35,7 @@ import tigase.xmpp.mam.Query;
 /**
  * Created by andrzej on 19.07.2016.
  */
-@Bean(name = "mamQueryParser")
+@Bean(name = "mamQueryParser", parent = MessageArchiveComponent.class)
 public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
 
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";

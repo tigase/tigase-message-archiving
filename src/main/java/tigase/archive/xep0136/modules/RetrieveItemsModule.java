@@ -27,8 +27,8 @@ import tigase.archive.db.MessageArchiveRepository;
 import tigase.archive.modules.AbstractModule;
 import tigase.archive.xep0136.Xep0136QueryParser;
 import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
-import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
@@ -104,7 +104,7 @@ public class RetrieveItemsModule extends AbstractModule {
 			query.prepareResult(retList);
 
 			packetWriter.write(packet.okResult(retList, 0));
-		} catch (TigaseDBException e) {
+		} catch (RepositoryException e) {
 			throw new RuntimeException("Error retrieving items", e);
 		}
 	}

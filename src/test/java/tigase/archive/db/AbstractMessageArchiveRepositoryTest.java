@@ -28,6 +28,7 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.model.Statement;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.db.*;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -111,7 +112,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 	
 	@Test
-	public void test1_archiveMessage1() throws TigaseDBException, ComponentException {
+	public void test1_archiveMessage1() throws RepositoryException, ComponentException {
 		if (uri == null)
 			return;
 		Date date = new Date();
@@ -140,7 +141,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 	
 	@Test
-	public void test2_archiveMessage2withTags() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test2_archiveMessage2withTags() throws InterruptedException, RepositoryException, ComponentException {
 		Thread.sleep(2000);
 		Date date = new Date();
 		String body = "Test 2 with #Test123";
@@ -200,7 +201,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 	
 	@Test
-	public void test4_getItems_withIndex() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test4_getItems_withIndex() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setUseMessageIdInRsm(false);
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -259,7 +260,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Test
-	public void test4_getItems_withUID() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test4_getItems_withUID() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
@@ -314,7 +315,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Test
-	public void test4_getItemsWithTag_withIndex() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test4_getItemsWithTag_withIndex() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setUseMessageIdInRsm(false);
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -362,7 +363,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Test
-	public void test4_getItemsWithTag_withUID() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test4_getItemsWithTag_withUID() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
@@ -434,7 +435,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 	
 	@Test
-	public void test6_getItems() throws InterruptedException, TigaseDBException, ComponentException {
+	public void test6_getItems() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
@@ -454,7 +455,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}	
 	
 	@Test
-	public void test7_removeItems() throws TigaseDBException, ComponentException {
+	public void test7_removeItems() throws RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
@@ -470,7 +471,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Test
-	public void test8_removeExpiredItems() throws TigaseDBException, TigaseStringprepException, ComponentException {
+	public void test8_removeExpiredItems() throws RepositoryException, TigaseStringprepException, ComponentException {
 		Date date = new Date();
 		String uuid = UUID.randomUUID().toString();
 		testStart = date;
@@ -520,7 +521,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Test
-	public void test9_jidComparison() throws TigaseStringprepException, ComponentException, TigaseDBException {
+	public void test9_jidComparison() throws TigaseStringprepException, ComponentException, RepositoryException {
 		Date date = new Date();
 		String uuid = UUID.randomUUID().toString();
 		testStart = date;
