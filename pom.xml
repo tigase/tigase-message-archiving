@@ -176,13 +176,22 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
+            <resource>
+                <directory>src/main/asciidoc</directory>
+                <targetPath>documentation</targetPath>
+                <includes>
+                    <include>**/*.asciidoc</include>
+                    <include>**/*.css</include>
+                </includes>
+            </resource>
+            
         </resources>
     </build>
     <profiles>
         <profile>
             <id>dist</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
                 <property>
                     <name>dist</name>
                 </property>
