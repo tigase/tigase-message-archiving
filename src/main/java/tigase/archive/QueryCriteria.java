@@ -94,6 +94,9 @@ public class QueryCriteria extends QueryImpl implements Query {
 	}
 
 	public List<Element> getItems() {
+		if (items == null) {
+			return Collections.emptyList();
+		}
 		return items;
 	}
 }
