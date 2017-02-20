@@ -26,18 +26,6 @@ package tigase.archive;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import java.text.ParseException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import static tigase.archive.MessageArchivePlugin.*;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.archive.db.MessageArchiveRepository.Direction;
 import tigase.conf.Configurable;
@@ -54,6 +42,17 @@ import tigase.util.TigaseStringprepException;
 import tigase.vhosts.VHostItem;
 import tigase.xml.Element;
 import tigase.xmpp.*;
+
+import java.text.ParseException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static tigase.archive.MessageArchivePlugin.*;
 
 /**
  *
@@ -321,6 +320,68 @@ public class MessageArchiveComponent
 
 	//~--- methods --------------------------------------------------------------
 
+	protected void processActionElement(Packet packet, Element child)
+			throws PacketErrorTypeException, XMPPException {
+		if (child.getName() == "list") {
+			switch (packet.getType()) {
+				case get :
+					listCollections(packet, child);
+
+					break;
+
+				default :
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+																			  "Request type is incorrect", false));
+
+					break;
+			}
+		} else if (child.getName() == "retrieve") {
+			switch (packet.getType()) {
+				case get :
+					getMessages(packet, child);
+
+					break;
+
+				default :
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+																			  "Request type is incorrect", false));
+
+					break;
+			}
+		} else if (child.getName() == "remove") {
+			switch (packet.getType()) {
+				case set :
+					removeMessages(packet, child);
+
+					break;
+
+				default :
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+																			  "Request type is incorrect", false));
+
+					break;
+			}
+		} else if (child.getName() == "save") {
+			switch (packet.getType()) {
+				case set :
+					saveMessages(packet, child);
+					break;
+				default:
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet, "Request type is incorrect", false));
+					break;
+			}
+		} else if (child.getName() == "tags") {
+			switch (packet.getType()) {
+				case set :
+					queryTags(packet, child);
+					break;
+				default:
+					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
+																			  "Request type is incorrect", false));
+			}
+		}
+	}
+
 	/**
 	 * Method description
 	 *
@@ -333,64 +394,7 @@ public class MessageArchiveComponent
 	protected void processActionPacket(Packet packet)
 					throws PacketErrorTypeException, XMPPException {
 		for (Element child : packet.getElement().getChildren()) {
-			if (child.getName() == "list") {
-				switch (packet.getType()) {
-				case get :
-					listCollections(packet, child);
-
-					break;
-
-				default :
-					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
-							"Request type is incorrect", false));
-
-					break;
-				}
-			} else if (child.getName() == "retrieve") {
-				switch (packet.getType()) {
-				case get :
-					getMessages(packet, child);
-
-					break;
-
-				default :
-					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
-							"Request type is incorrect", false));
-
-					break;
-				}
-			} else if (child.getName() == "remove") {
-				switch (packet.getType()) {
-				case set :
-					removeMessages(packet, child);
-
-					break;
-
-				default :
-					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
-							"Request type is incorrect", false));
-
-					break;
-				}
-			} else if (child.getName() == "save") {
-				switch (packet.getType()) {
-				case set :
-					saveMessages(packet, child);
-					break;
-				default:
-					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet, "Request type is incorrect", false));
-					break;
-				}
-			} else if (child.getName() == "tags") {
-				switch (packet.getType()) {
-				case set :
-					queryTags(packet, child);
-					break;
-				default:
-					addOutPacket(Authorization.BAD_REQUEST.getResponseMessage(packet,
-						"Request type is incorrect", false));						
-				}
-			}
+			processActionElement(packet, child);
 		}
 	}
 
