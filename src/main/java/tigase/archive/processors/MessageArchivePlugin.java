@@ -135,7 +135,7 @@ public class MessageArchivePlugin
 
 		if (componentJidStr != null) {
 			componentJid = JID.jidInstanceNS(componentJidStr);
-		} else {
+		} else if (componentJid == null) {
 			String defHost = DNSResolverFactory.getInstance().getDefaultHost();
 
 			componentJid = JID.jidInstanceNS("message-archive", defHost, null);
