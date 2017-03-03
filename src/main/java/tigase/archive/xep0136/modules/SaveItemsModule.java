@@ -44,7 +44,7 @@ import java.util.Set;
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "saveItems", parent = MessageArchiveComponent.class)
+@Bean(name = "saveItems", parent = MessageArchiveComponent.class, active = true)
 public class SaveItemsModule extends AbstractModule {
 
 	private static final String SAVE_ELEM = "save";

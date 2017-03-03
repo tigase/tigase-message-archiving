@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "repositoryPool", parent = MessageArchiveComponent.class)
+@Bean(name = "repositoryPool", parent = MessageArchiveComponent.class, active = true)
 public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends MessageArchiveRepository<Q, DataSource>>
 		extends MDRepositoryBeanWithStatistics<R>
 		implements MessageArchiveRepository<Q, DataSource> {

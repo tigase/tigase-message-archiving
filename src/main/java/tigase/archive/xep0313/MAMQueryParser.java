@@ -35,7 +35,7 @@ import tigase.xmpp.mam.Query;
 /**
  * Created by andrzej on 19.07.2016.
  */
-@Bean(name = "mamQueryParser", parent = MessageArchiveComponent.class)
+@Bean(name = "mamQueryParser", parent = MessageArchiveComponent.class, active = true)
 public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
 
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";

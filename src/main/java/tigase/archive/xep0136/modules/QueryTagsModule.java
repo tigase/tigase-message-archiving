@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "queryTags", parent = MessageArchiveComponent.class)
+@Bean(name = "queryTags", parent = MessageArchiveComponent.class, active = true)
 public class QueryTagsModule extends AbstractModule {
 
 	private static final String TAGS_ELEM = "tags";

@@ -46,7 +46,7 @@ import static tigase.archive.processors.MessageArchivePlugin.OWNER_JID;
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "archiving", parent = MessageArchiveComponent.class)
+@Bean(name = "archiving", parent = MessageArchiveComponent.class, active = true)
 public class ArchivingModule extends AbstractModule {
 
 	private static final Logger log = Logger.getLogger(ArchivingModule.class.getCanonicalName());

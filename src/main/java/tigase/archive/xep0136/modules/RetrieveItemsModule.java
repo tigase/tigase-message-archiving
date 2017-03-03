@@ -45,7 +45,7 @@ import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136
 /**
  * Created by andrzej on 16.07.2016.
  */
-@Bean(name = "retrieveItems", parent = MessageArchiveComponent.class)
+@Bean(name = "retrieveItems", parent = MessageArchiveComponent.class, active = true)
 public class RetrieveItemsModule extends AbstractModule {
 
 	private static final String RETRIEVE_ELEM = "retrieve";
@@ -109,7 +109,7 @@ public class RetrieveItemsModule extends AbstractModule {
 		}
 	}
 
-	@Bean(name = "xep0136ItemHandler", parent = MessageArchiveComponent.class)
+	@Bean(name = "xep0136ItemHandler", parent = MessageArchiveComponent.class, active = true)
 	public static class Xep0136ItemHandler<Q extends QueryCriteria,I extends MessageArchiveRepository.Item> implements MAMRepository.ItemHandler<Q, MAMRepository.Item> {
 
 		@Override

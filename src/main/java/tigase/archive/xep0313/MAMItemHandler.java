@@ -26,7 +26,7 @@ import tigase.kernel.beans.Bean;
 /**
  * Created by andrzej on 19.07.2016.
  */
-@Bean(name = "mamItemHandler", parent = MAMQueryModule.class)
+@Bean(name = "mamItemHandler", parent = MAMQueryModule.class, active = true)
 public class MAMItemHandler extends tigase.xmpp.mam.MAMItemHandler {
 
 }

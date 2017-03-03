@@ -44,7 +44,7 @@ import java.util.List;
 /**
  * Created by andrzej on 19.07.2016.
  */
-@Bean(name = "xep0136QueryParser", parent = MessageArchiveComponent.class)
+@Bean(name = "xep0136QueryParser", parent = MessageArchiveComponent.class, active = true)
 public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<Q> {
 
 	private static final String CONTAINS = "contains";
