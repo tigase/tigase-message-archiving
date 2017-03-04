@@ -51,7 +51,7 @@ import java.util.logging.Logger;
  *
  * @author andrzej
  */
-@Bean(name = "message-archive", parent = Kernel.class, active = false)
+@Bean(name = "message-archive", parent = Kernel.class, active = true)
 public class MessageArchiveComponent
 				extends AbstractKernelBasedComponent implements MessageArchiveConfig {
 	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class

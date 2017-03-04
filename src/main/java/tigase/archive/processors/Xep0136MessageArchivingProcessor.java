@@ -49,7 +49,7 @@ import static tigase.archive.processors.MessageArchivePlugin.ARCHIVE;
  * with type set to "chat" to MessageArchivingComponent to store this messages
  * in message archive.
  */
-@Bean(name = Xep0136MessageArchivingProcessor.ID, parent = SessionManager.class, active = false)
+@Bean(name = Xep0136MessageArchivingProcessor.ID, parent = SessionManager.class, active = true)
 public class Xep0136MessageArchivingProcessor
 				extends XMPPProcessor
 				implements XMPPProcessorIfc {

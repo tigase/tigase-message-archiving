@@ -53,7 +53,7 @@ import static tigase.archive.processors.Xep0313MessageArchiveManagementProcessor
 	@Handle(path = {"iq", "query"}, xmlns = ID),
 	@Handle(path = {"iq", "prefs"}, xmlns = ID)
 })
-@Bean(name = ID, parent = SessionManager.class, active = false)
+@Bean(name = ID, parent = SessionManager.class, active = true)
 public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProcessor implements XMPPProcessorIfc {
 
 	private static final Logger log = Logger.getLogger(Xep0313MessageArchiveManagementProcessor.class.getCanonicalName());
