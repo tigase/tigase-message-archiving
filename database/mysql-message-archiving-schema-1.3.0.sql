@@ -29,7 +29,7 @@ create table if not exists tig_ma_msgs (
 	msg_id bigint unsigned NOT NULL auto_increment,
 	owner_id bigint unsigned NOT NULL,
 	buddy_id bigint unsigned NOT NULL,
-	ts timestamp,
+	ts timestamp(6),
 	`direction` smallint,
 	`type` varchar(20),
 	body text, 
@@ -269,7 +269,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _limit int, _offset int)
+create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -311,7 +311,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8)
+create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -348,7 +348,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessagePosition( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _hash varchar(50) CHARSET utf8)
+create procedure Tig_MA_GetMessagePosition( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _hash varchar(50) CHARSET utf8)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -392,7 +392,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint, _limit int, _offset int)
+create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -409,7 +409,7 @@ begin
 		else
 			set @msgs_query = CONCAT( @msgs_query, ', null as `type`');
 		end if;
-		set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m 
+		set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m
 			inner join tig_ma_jids o on m.owner_id = o.jid_id 
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where 
@@ -424,7 +424,7 @@ begin
 			select ' group by date(m.ts), m.buddy_id, b.jid' into @groupby_query;
 		end if;
 		set @pagination_query = ' limit ? offset ?';
-		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' order by m.ts, b.jid', @pagination_query);
+		set @query = CONCAT(@msgs_query, @tags_query, @contains_query, @groupby_query, ' order by min(m.ts), b.jid', @pagination_query);
 		prepare stmt from @query;
 		execute stmt using @ownerJid, @buddyJid, @buddyJid, @from, @from, @to, @to, @limit, @offset;
 		deallocate prepare stmt;
@@ -440,7 +440,7 @@ begin
 				and (_from is null or m.ts >= _from)
 				and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then 'groupchat' else '' end 
-			order by m.ts, b.jid
+			order by min(m.ts), b.jid
 			limit _limit offset _offset;
 		else
 			select min(m.ts), b.jid, null as `type`
@@ -453,7 +453,7 @@ begin
 				and (_from is null or m.ts >= _from)
 				and (_to is null or m.ts <= _to)
 			group by date(m.ts), m.buddy_id, b.jid
-			order by m.ts, b.jid
+			order by min(m.ts), b.jid
 			limit _limit offset _offset;
 		end if;
 	end if;
@@ -461,7 +461,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp, _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint)
+create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -544,17 +544,19 @@ end //
 
 -- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8,
-	 _buddyRes varchar(1024)  CHARSET utf8, _ts timestamp, _direction smallint, _type varchar(20) CHARSET utf8,
+	 _buddyRes varchar(1024)  CHARSET utf8, _ts timestamp(6), _direction smallint, _type varchar(20) CHARSET utf8,
 	 _body text CHARSET utf8, _msg text CHARSET utf8, _hash varchar(50) CHARSET utf8)
 begin
 	declare _owner_id bigint;
 	declare _buddy_id bigint;
 	declare _msg_id bigint;
+	declare x bigint;
 
 	START TRANSACTION;
 	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
 	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
 
+    set x = LAST_INSERT_ID();
 	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, stanza_hash)
 		values (_owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, _hash)
 		on duplicate key update direction = direction;
@@ -562,7 +564,11 @@ begin
 	select LAST_INSERT_ID() into _msg_id;
 	COMMIT;
 
-	select _msg_id as msg_id;
+    if x <> _msg_id then
+        select null as msg_id;
+    else
+	    select _msg_id as msg_id;
+	end if;
 end //
 -- QUERY END:
 
@@ -571,15 +577,20 @@ create procedure Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255) CHARSET
 begin
 	declare _owner_id bigint;
 	declare _tag_id bigint;
+	declare x bigint;
 
 	START TRANSACTION;
 	select owner_id into _owner_id from tig_ma_msgs where msg_id = _msgId;
 	select tag_id into _tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
 	if _tag_id is null then
-		insert into tig_ma_tags (owner_id, tag) 
+        set x = LAST_INSERT_ID();
+		insert into tig_ma_tags (owner_id, tag)
 			values (_owner_id, _tag)
 			on duplicate key update tag_id = LAST_INSERT_ID(tag_id);
-		select LAST_INSERT_ID() into _tag_id;
+      	select LAST_INSERT_ID() into _tag_id;
+		if _tag_id = x then
+		    select tag_id into _tag_id from tig_ma_tags where owner_id = _owner_id and tag = _tag;
+	    end if;
 	end if;
 	insert into tig_ma_msgs_tags (msg_id, tag_id) values (_msgId, _tag_id) on duplicate key update tag_id = tag_id;
 	COMMIT;
@@ -587,7 +598,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_RemoveMessages(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp, _to timestamp)
+create procedure Tig_MA_RemoveMessages(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6))
 begin
 	set @_owner_id = 0;
 	set @_buddy_id = 0;
@@ -598,7 +609,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_DeleteExpiredMessages(_domain varchar(1024) CHARSET utf8, _before timestamp)
+create procedure Tig_MA_DeleteExpiredMessages(_domain varchar(1024) CHARSET utf8, _before timestamp(6))
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and `domain` = _domain);
 end //
@@ -628,4 +639,8 @@ delimiter ;
 
 -- QUERY START:
 update tig_ma_jids set jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) where jid <> LOWER(jid) or `domain` <> LOWER(`domain`);
+-- QUERY END:
+
+-- QUERY START:
+alter table tig_ma_msgs modify ts timestamp(6);
 -- QUERY END:
