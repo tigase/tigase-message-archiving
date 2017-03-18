@@ -29,7 +29,7 @@ create table if not exists tig_ma_msgs (
 	msg_id bigint unsigned NOT NULL auto_increment,
 	owner_id bigint unsigned NOT NULL,
 	buddy_id bigint unsigned NOT NULL,
-	ts timestamp(6),
+	ts timestamp(6) null default null,
 	`direction` smallint,
 	`type` varchar(20),
 	body text, 
@@ -565,9 +565,9 @@ begin
 	COMMIT;
 
     if x <> _msg_id then
-        select null as msg_id;
-    else
 	    select _msg_id as msg_id;
+    else
+        select null as msg_id;
 	end if;
 end //
 -- QUERY END:
@@ -642,5 +642,5 @@ update tig_ma_jids set jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) w
 -- QUERY END:
 
 -- QUERY START:
-alter table tig_ma_msgs modify ts timestamp(6);
+alter table tig_ma_msgs modify ts timestamp(6) null default null;
 -- QUERY END:
