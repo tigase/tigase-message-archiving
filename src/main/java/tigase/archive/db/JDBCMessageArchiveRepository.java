@@ -224,10 +224,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 						add_message_tag_st.setLong(1, msgId);
 						add_message_tag_st.setString(2, tag);
 						add_message_tag_st.addBatch();
-						log.log(Level.WARNING, "Adding tag for " + msgId + " = " + tag);
 					}
 					add_message_tag_st.executeBatch();
-					log.log(Level.WARNING, "Executing batch!");
 				}
 			}
 		} catch (SQLException ex) {
