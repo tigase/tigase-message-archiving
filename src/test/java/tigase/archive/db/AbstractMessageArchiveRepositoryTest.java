@@ -57,6 +57,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		formatter2.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
+	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
 	protected static String uri = System.getProperty("testDbUri");
 
 	@ClassRule
@@ -75,6 +76,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		}
 	};
 
+	protected boolean checkEmoji = true;
 	protected DataSource dataSource;
 	protected MessageArchiveRepository<QueryCriteria, DataSource> repo;
 
@@ -118,6 +120,9 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		Date date = new Date();
 		testStart = date;
 		String body = "Test 1";
+		if (checkEmoji) {
+			body += emoji;
+		}
 		Element msg = new Element("message", new String[] { "from", "to", "type"}, new String[] { owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, null);
@@ -145,10 +150,17 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		Thread.sleep(2000);
 		Date date = new Date();
 		String body = "Test 2 with #Test123";
+		if (checkEmoji) {
+			body += emoji;
+		}
 		Element msg = new Element("message", new String[] { "from", "to", "type"}, new String[] { owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
 		Set<String> tags = new HashSet<String>();
-		tags.add("#Test123");
+		if (checkEmoji) {
+			tags.add("#Test123" + emoji);
+		} else {
+			tags.add("#Test123");
+		}
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.incoming, date, msg, tags);
 		
 		QueryCriteria crit = repo.newQuery();
@@ -191,7 +203,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 		List<ColItem> chats = new ArrayList<>();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
@@ -220,11 +236,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 1", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 1" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 		
 		res = msgs.get(1);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 
 		String first = crit.getRsm().getFirst();
 		String last = crit.getRsm().getLast();
@@ -278,11 +294,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 1", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 1" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 
 		res = msgs.get(1);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 
 		String first = crit.getRsm().getFirst();
 		String last = crit.getRsm().getLast();
@@ -321,7 +337,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 
 		List<Element> msgs = new ArrayList<>();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
@@ -335,7 +355,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 
 		String first = crit.getRsm().getFirst();
 
@@ -344,7 +364,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 		crit.getRsm().setAfter(first);
 
 		msgs.clear();
@@ -355,7 +379,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setUseMessageIdInRsm(false);
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
@@ -368,7 +396,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 
 		List<Element> msgs = new ArrayList<>();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
@@ -382,7 +414,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 
 		String first = crit.getRsm().getFirst();
 
@@ -390,7 +422,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 		crit.getRsm().setAfter(first);
 
 		msgs.clear();
@@ -400,7 +436,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addTag("#Test123");
+		if (checkEmoji) {
+			crit.addTag("#Test123" + emoji);
+		} else {
+			crit.addTag("#Test123");
+		}
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
@@ -427,7 +467,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
 		crit.setStart(testStart);
-		crit.addContains("Test 123");
+		if (checkEmoji) {
+			crit.addContains("Test 123" + emoji);
+		} else {
+			crit.addContains("Test 123");
+		}
 		
 		chats.clear();
 		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(new ColItem(with, ts)));
@@ -451,7 +495,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		
 		Element res = msgs.get(0);
 		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(), res.getName());
-		Assert.assertEquals("Incorrect message body", "Test 1", res.getChildCData(res.getName()+"/body"));
+		Assert.assertEquals("Incorrect message body", "Test 1" + (checkEmoji ? emoji : ""), res.getChildCData(res.getName()+"/body"));
 	}	
 	
 	@Test

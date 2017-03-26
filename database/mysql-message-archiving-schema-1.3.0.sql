@@ -32,8 +32,8 @@ create table if not exists tig_ma_msgs (
 	ts timestamp(6) null default null,
 	`direction` smallint,
 	`type` varchar(20),
-	body text, 
-	msg text,
+	body text character set utf8mb4 collate utf8mb4_bin,
+	msg text character set utf8mb4 collate utf8mb4_bin,
 	stanza_hash varchar(50),
 
 	primary key (msg_id),
@@ -51,12 +51,12 @@ ENGINE=InnoDB default character set utf8 ROW_FORMAT=DYNAMIC;
 create table if not exists tig_ma_tags (
 	tag_id bigint unsigned NOT NULL auto_increment,
 	owner_id bigint unsigned not null,
-	tag varchar(255),
+	tag varchar(255) character set utf8mb4 collate utf8mb4_bin,
 
 	primary key (tag_id),
 	foreign key (owner_id) references tig_ma_jids (jid_id) on delete cascade,
 	key tig_ma_tags_owner_id (owner_id),
-	unique key tig_ma_tags_tag_owner_id (owner_id, tag)
+	unique key tig_ma_tags_tag_owner_id (owner_id, tag(191))
 )
 ENGINE=InnoDB default character set utf8 ROW_FORMAT=DYNAMIC;
 -- QUERY END:
@@ -165,7 +165,7 @@ call TigExecuteIfNot((select count(1) from information_schema.KEY_COLUMN_USAGE w
 'alter table tig_ma_msgs_tags add primary key (msg_id, tag_id)');
 -- QUERY END:
 
--- fixing collation of tables
+-- fixing collate of tables
 -- QUERY START:
 alter table tig_ma_jids collate utf8_general_ci;
 -- QUERY END:
@@ -174,6 +174,30 @@ alter table tig_ma_tags collate utf8_general_ci;
 -- QUERY END:
 -- QUERY START:
 alter table tig_ma_msgs collate utf8_general_ci;
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIfNot(
+    (select 1-count(1) from information_schema.statistics where table_schema = database() and table_name = 'tig_ma_tags' and index_name = 'tig_ma_tags_tag_owner_id' and column_name = 'tag' and sub_part is null),
+    "drop index tig_ma_tags_tag_owner_id on tig_ma_tags"
+);
+-- QUERY END:
+-- QUERY START:
+call TigExecuteIfNot(
+    (select count(1) from information_schema.statistics where table_schema = database() and table_name = 'tig_ma_tags' and index_name = 'tig_ma_tags_tag_owner_id'),
+    "create index tig_ma_tags_tag_owner_id on tig_ma_tags (owner_id, tag(191))"
+);
+-- QUERY END:
+
+-- QUERY START:
+alter table tig_ma_msgs
+    modify body text character set utf8mb4 collate utf8mb4_bin,
+    modify msg text character set utf8mb4 collate utf8mb4_bin;
+-- QUERY END:
+
+-- QUERY START:
+alter table tig_ma_tags
+    modify tag varchar(255) character set utf8mb4 collate utf8mb4_bin;
 -- QUERY END:
 
 -- ---------------------
@@ -247,7 +271,7 @@ drop function if exists Tig_MA_GetBodyContainsQuery;
 delimiter //
 
 -- QUERY START:
-create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8 NO SQL
+create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8mb4 collate utf8mb4_bin) returns text CHARSET utf8mb4 collate utf8mb4_bin NO SQL
 begin
 	if _in_str is not null then
 		return CONCAT(' and exists(select 1 from tig_ma_msgs_tags mt inner join tig_ma_tags t on mt.tag_id = t.tag_id where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (', _in_str, '))');
@@ -258,7 +282,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8) returns text CHARSET utf8 NO SQL
+create function Tig_MA_GetBodyContainsQuery(_in_str text CHARSET utf8mb4 collate utf8mb4_bin) returns text CHARSET utf8mb4 collate utf8mb4_bin NO SQL
 begin
 	if _in_str is not null then
 		return CONCAT(' and m.body like ', replace(_in_str, N''',''', N''' and m.body like = '''));
@@ -269,7 +293,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _limit int, _offset int)
+create procedure Tig_MA_GetMessages( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8mb4 collate utf8mb4_bin, _contains text CHARSET utf8mb4 collate utf8mb4_bin, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -311,7 +335,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8)
+create procedure Tig_MA_GetMessagesCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8mb4 collate utf8mb4_bin, _contains text CHARSET utf8mb4 collate utf8mb4_bin)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -348,7 +372,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetMessagePosition( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _hash varchar(50) CHARSET utf8)
+create procedure Tig_MA_GetMessagePosition( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8mb4 collate utf8mb4_bin, _contains text CHARSET utf8mb4 collate utf8mb4_bin, _hash varchar(50) CHARSET utf8)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -392,7 +416,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint, _limit int, _offset int)
+create procedure Tig_MA_GetCollections( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8mb4 collate utf8mb4_bin, _contains text CHARSET utf8mb4 collate utf8mb4_bin, _byType smallint, _limit int, _offset int)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -461,7 +485,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8, _contains text CHARSET utf8, _byType smallint)
+create procedure Tig_MA_GetCollectionsCount( _ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _from timestamp(6), _to timestamp(6), _tags text CHARSET utf8mb4 collate utf8mb4_bin, _contains text CHARSET utf8mb4 collate utf8mb4_bin, _byType smallint)
 begin
 	if _tags is not null or _contains is not null then
 		set @ownerJid = _ownerJid;
@@ -545,7 +569,7 @@ end //
 -- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8,
 	 _buddyRes varchar(1024)  CHARSET utf8, _ts timestamp(6), _direction smallint, _type varchar(20) CHARSET utf8,
-	 _body text CHARSET utf8, _msg text CHARSET utf8, _hash varchar(50) CHARSET utf8)
+	 _body text CHARSET utf8mb4 collate utf8mb4_bin, _msg text CHARSET utf8mb4 collate utf8mb4_bin, _hash varchar(50) CHARSET utf8)
 begin
 	declare _owner_id bigint;
 	declare _buddy_id bigint;
@@ -573,7 +597,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255) CHARSET utf8)
+create procedure Tig_MA_AddTagToMessage(_msgId bigint, _tag varchar(255) CHARSET utf8mb4 collate utf8mb4_bin)
 begin
 	declare _owner_id bigint;
 	declare _tag_id bigint;
@@ -616,7 +640,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8, _limit int, _offset int)
+create procedure Tig_MA_GetTagsForUser(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8mb4 collate utf8mb4_bin, _limit int, _offset int)
 begin
 	select tag 
 		from tig_ma_tags t 
@@ -629,7 +653,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8)
+create procedure Tig_MA_GetTagsForUserCount(_ownerJid varchar(2049) CHARSET utf8, _tagStartsWith varchar(255) CHARSET utf8mb4 collate utf8mb4_bin)
 begin
 	select count(tag_id) from tig_ma_tags t inner join tig_ma_jids o on o.jid_id = t.owner_id where o.jid_sha1 = SHA1(LOWER(_ownerJid)) and t.tag like _tagStartsWith;
 end //
