@@ -25,7 +25,7 @@ import org.junit.*;
 import tigase.db.DBInitException;
 import tigase.db.DataRepository;
 import tigase.db.RepositoryFactory;
-import tigase.util.SchemaLoader;
+import tigase.db.util.SchemaLoader;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
