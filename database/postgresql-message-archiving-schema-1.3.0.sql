@@ -57,7 +57,7 @@ create table if not exists tig_ma_msgs (
 
 	primary key (msg_id),
 	foreign key (buddy_id) references tig_ma_jids (jid_id),
-	foreign key (owner_id) references tig_ma_jisd (jid_id)
+	foreign key (owner_id) references tig_ma_jids (jid_id)
 );
 -- QUERY END:
 
