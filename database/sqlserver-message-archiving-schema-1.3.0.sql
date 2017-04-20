@@ -87,6 +87,7 @@ CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index ON [dbo].[tig
 -- QUERY END:
 GO
 
+-- QUERY START:
 IF NOT EXISTS (select * from sysobjects where name='tig_ma_tags' and xtype='U')
 	CREATE TABLE [dbo].[tig_ma_tags] (
 		[tag_id] [bigint] IDENTITY(1,1) NOT NULL,
@@ -97,6 +98,7 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_tags' and xtype='U')
 		CONSTRAINT [FK_tig_ma_tags_owner_id] FOREIGN KEY ([owner_id]) 
 			REFERENCES [tig_ma_jids] ([jid_id]) on delete cascade
 	);
+-- QUERY END:
 GO
 
 -- QUERY START:
@@ -110,6 +112,7 @@ CREATE UNIQUE INDEX IX_tig_ma_tags_tag_owner_id ON [dbo].[tig_ma_tags] ([owner_i
 -- QUERY END:
 GO
 
+-- QUERY START:
 IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs_tags' and xtype='U')
 	CREATE TABLE [dbo].[tig_ma_msgs_tags] (
 		[msg_id] [bigint] NOT NULL,
@@ -121,6 +124,7 @@ IF NOT EXISTS (select * from sysobjects where name='tig_ma_msgs_tags' and xtype=
 		CONSTRAINT [FK_tig_ma_msgs_tags_tag_id] FOREIGN KEY ([tag_id]) 
 			REFERENCES [tig_ma_tags] ([tag_id]) on delete cascade
 	);
+-- QUERY END:
 GO
 
 -- QUERY START:
