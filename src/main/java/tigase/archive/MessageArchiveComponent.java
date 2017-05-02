@@ -167,7 +167,7 @@ public class MessageArchiveComponent
 	 */
 	@Override
 	public String getDiscoDescription() {
-		return "Message Archiving (XEP-0136) Support";
+		return "Message Archiving Component";
 	}
 
 	@Override
