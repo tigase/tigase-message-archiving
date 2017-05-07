@@ -58,6 +58,7 @@ import java.util.logging.Logger;
  * @author         Enter your name here...
  */
 @Repository.Meta( supportedUris = { "jdbc:[^:]+:.*" }, isDefault = true )
+@Repository.SchemaId(id = Schema.MA_SCHEMA_ID, name = Schema.MA_SCHEMA_NAME)
 public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends AbstractMessageArchiveRepository<Q, DataRepository> {
 	private static final Logger log        =
 		Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
