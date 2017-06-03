@@ -289,13 +289,13 @@ public class StoredProcedures {
 	public static Long ensureJid(String jid) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+		conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
 		try {
 			BareJID bareJid = BareJID.bareJIDInstanceNS(jid);
 			String jidSha1 = sha1OfLower(jid);
 			PreparedStatement ps =
-				conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ?");
+				conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ? for update");
 
 			ps.setString(1, jidSha1);
 			ResultSet rs = ps.executeQuery();
