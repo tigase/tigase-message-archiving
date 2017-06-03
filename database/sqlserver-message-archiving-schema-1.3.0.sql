@@ -677,6 +677,8 @@ create procedure Tig_MA_AddMessage
 	@_hash nvarchar(50)
 AS
 begin
+    set nocount on;
+
 	declare @_owner_id bigint;
 	declare @_buddy_id bigint;
 	declare @_tsFrom datetime;
@@ -700,7 +702,9 @@ begin
 			        and stanza_hash = @_hash
 			        and ts between @_tsFrom and @_tsTo
 		);
-	select @@IDENTITY as msg_id
+	select @@IDENTITY as msg_id;
+
+	set nocount off;
 end
 -- QUERY END:
 GO
