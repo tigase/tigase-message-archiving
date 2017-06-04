@@ -286,39 +286,56 @@ public class StoredProcedures {
 		}		
 	}
 
-	public static Long ensureJid(String jid) throws SQLException {
+	private static Long getJidId(BareJID bareJid, String jidSha1) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
-		conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
+		ResultSet rs = null;
 		try {
-			BareJID bareJid = BareJID.bareJIDInstanceNS(jid);
-			String jidSha1 = sha1OfLower(jid);
-			PreparedStatement ps =
-				conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ? for update");
+			PreparedStatement ps = conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ?");
 
 			ps.setString(1, jidSha1);
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next()) {
 				return rs.getLong(1);
-			} else {
-				ps = conn.prepareStatement("insert into tig_ma_jids (jid, \"domain\", jid_sha1) values (?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
-				ps.setString(1, jid);
-				ps.setString(2, bareJid.getDomain());
-				ps.setString(3, jidSha1);
-				ps.executeUpdate();
-				rs = ps.getGeneratedKeys();
-				if (rs.next())
-					return rs.getLong(1);
 			}
 			return null;
-		} catch (SQLException e) {
-			throw e;
 		} finally {
-			conn.close();
-		}		
-	}	
+			if (rs != null) {
+				rs.close();
+			}
+		}
+	}
+
+	private static void addJid(BareJID bareJid, String jidSha1) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+		ResultSet rs = null;
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"insert into tig_ma_jids (jid, \"domain\", jid_sha1) select ?, ?, ? from sysibm.sysdummy1 where not exists (select 1 from tig_ma_jids where jid_sha1 = ?)", Statement.RETURN_GENERATED_KEYS);
+			ps.setString(1, bareJid.toString());
+			ps.setString(2, bareJid.getDomain());
+			ps.setString(3, jidSha1);
+			ps.setString(4, jidSha1);
+			ps.executeUpdate();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+		}
+	}
+
+	public static synchronized Long ensureJid(String jid) throws SQLException {
+		BareJID bareJid = BareJID.bareJIDInstanceNS(jid);
+		String jidSha1 = sha1OfLower(jid);
+
+		addJid(bareJid, jidSha1);
+
+		return getJidId(bareJid, jidSha1);
+	}
 
 	private static int countMessages(Connection conn) throws SQLException {
 		ResultSet rs = conn.prepareStatement("select count(msg_id) from tig_ma_msgs").executeQuery();
@@ -328,13 +345,14 @@ public class StoredProcedures {
 	}
 
 	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, short direction, String type, String body, String msg, String hash, ResultSet[] data) throws SQLException {
+		long ownerId = ensureJid(ownerJid);
+		long buddyId = ensureJid(buddyJid);
+
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			long ownerId = ensureJid(ownerJid);
-			long buddyId = ensureJid(buddyJid);
 			PreparedStatement ps = conn.prepareStatement("" +
 					"insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, \"type\", body, msg, stanza_hash)" +
 					" select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
