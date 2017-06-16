@@ -43,7 +43,8 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 
 	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
-	protected static final String[] MSG_BODY_PATH = { "message", "body" };	
+	protected static final String[] MSG_BODY_PATH = { "message", "body" };
+	protected static final String[] MSG_SUBJECT_PATH = { "message", "subject" };
 	
 	static {
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -94,11 +95,20 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 			if (peer != null) {
 				md.update(peer.getBytes());
 			}
+			String type = msg.getAttributeStaticStr("type");
+			String subject = msg.getChildCData(MSG_SUBJECT_PATH);
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
-				md.update(id.getBytes());
+				if (!"groupchat".equals(type) || subject == null) {
+					md.update(id.getBytes());
+				} else {
+					md.update(":".getBytes());
+					md.update(new Long(ts.getTime() / 60000).toString().getBytes());
+					md.update(subject.getBytes());
+					md.update(":".getBytes());
+				}
 			}
-			String type = msg.getAttributeStaticStr("type");
+
 			if (type == null || !"groupchat".equals(type)) {
 				md.update(new Long(ts.getTime() / 1000).toString().getBytes());
 			}
