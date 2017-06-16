@@ -58,11 +58,18 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			if (peer != null) {
 				md.update(peer.getBytes());
 			}
+			String type = msg.getAttributeStaticStr("type");
+			String subject = msg.getChildCData(MSG_SUBJECT_PATH);
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
-				md.update(id.getBytes());
+				if (!"groupchat".equals(type) || subject == null) {
+					md.update(id.getBytes());
+				} else {
+					md.update(":".getBytes());
+					md.update(new Long(ts.getTime() / 60000).toString().getBytes());
+				}
 			}
-			String type = msg.getAttributeStaticStr("type");
+
 			if (type == null || !"groupchat".equals(type)) {
 				md.update(new Long(ts.getTime() / 1000).toString().getBytes());
 			}
@@ -70,7 +77,6 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			if (body != null) {
 				md.update(body.getBytes());
 			}
-			String subject = msg.getCData(MSG_SUBJECT_PATH);
 			if (subject != null) {
 				md.update(subject.getBytes());
 			}
