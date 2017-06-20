@@ -286,7 +286,7 @@ public class StoredProcedures {
 		}		
 	}
 
-	private static Long getJidId(BareJID bareJid, String jidSha1) throws SQLException {
+	public static Long getJidId(BareJID bareJid, String jidSha1) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);

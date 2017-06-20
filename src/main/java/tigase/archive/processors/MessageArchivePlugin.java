@@ -86,7 +86,7 @@ public class MessageArchivePlugin
 	protected static final String SETTINGS = ARCHIVE + "/settings";
 
 
-	private static final String MSG_ARCHIVE_PATHS = "msg-archive-paths";
+	public static final String MSG_ARCHIVE_PATHS = "msg-archive-paths";
 	private static final String DEFAULT_STORE_METHOD_KEY = "default-store-method";
 	private static final String REQUIRED_STORE_METHOD_KEY = "required-store-method";
 	private static final String STORE_MUC_MESSAGES_KEY = "store-muc-messages";
