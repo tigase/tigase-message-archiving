@@ -93,7 +93,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Before
-	public void setup() throws DBInitException, InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
+	public void setup() throws RepositoryException, InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
 		if (uri == null)
 			return;
 
