@@ -110,41 +110,19 @@ public class MessageArchivePlugin
 	@Inject
 	private tigase.xmpp.impl.Message message;
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	private JID componentJid = null;
+	@ConfigField(desc = "Message archiving component JID", alias = "component-jid")
+	protected JID componentJid = null;
 
 	private RosterAbstract rosterUtil = RosterFactory.getRosterImplementation(true);
 	;
 
 	public MessageArchivePlugin() {
 		VHostItemHelper.register();
+		componentJid = JID.jidInstanceNS("message-archive", DNSResolverFactory.getInstance().getDefaultHost(), null);
 	}
 
 	//~--- methods --------------------------------------------------------------
-
-	/**
-	 * Method description
-	 *
-	 * @param settings
-	 * @throws TigaseDBException
-	 */
-	@Override
-	public void init(Map<String, Object> settings) throws TigaseDBException {
-		super.init(settings);
-
-		String componentJidStr = (String) settings.get("component-jid");
-
-		if (componentJidStr != null) {
-			componentJid = JID.jidInstanceNS(componentJidStr);
-		} else if (componentJid == null) {
-			String defHost = DNSResolverFactory.getInstance().getDefaultHost();
-
-			componentJid = JID.jidInstanceNS("message-archive", defHost, null);
-		}
-		log.log(Level.CONFIG, "Loaded message archiving component jid option: {0} = {1}",
-				new Object[]{"component-jid",
-						componentJid});
-	}
-
+	
 	/**
 	 * Method description
 	 *
