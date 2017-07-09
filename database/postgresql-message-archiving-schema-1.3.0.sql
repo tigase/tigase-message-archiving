@@ -36,7 +36,7 @@ end$$;
 -- QUERY START:
 do $$
 begin
-if exists (select 1 where (select pg_get_indexdef(oid) from pg_class i  where i.relname = 'tig_ma_jids_jid') not like '%lower(jid)%') then
+if exists (select 1 where (select pg_get_indexdef(oid) from pg_class i  where i.relname = 'tig_ma_jids_jid') not like '%lower((jid)%') then
     drop index tig_ma_jids_jid;
     create unique index tig_ma_jids_jid on tig_ma_jids ( lower(jid) );
 end if;
@@ -48,7 +48,7 @@ create table if not exists tig_ma_msgs (
 	msg_id bigserial,
 	owner_id bigint not null,
 	buddy_id bigint not null,
-	ts timestamp,
+	ts timestamp with time zone,
 	direction smallint,
 	"type" varchar(20),
 	body text,
@@ -59,6 +59,11 @@ create table if not exists tig_ma_msgs (
 	foreign key (buddy_id) references tig_ma_jids (jid_id),
 	foreign key (owner_id) references tig_ma_jids (jid_id)
 );
+-- QUERY END:
+
+-- QUERY START:
+alter table tig_ma_msgs
+    alter column ts type timestamp with time zone;
 -- QUERY END:
 
 -- QUERY START:
@@ -260,15 +265,17 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY START:
 do $$
 begin
-if exists( select 1 from pg_proc where proname = 'tig_ma_getmessages' and pg_get_function_result(oid) = 'TABLE(msg text, ts timestamp without time zone, direction smallint, "buddyJid" character varying)') then
+if exists( select 1 from pg_proc where proname = 'tig_ma_getmessages' and (
+        pg_get_function_result(oid) = 'TABLE(msg text, ts timestamp without time zone, direction smallint, "buddyJid" character varying)'
+        or pg_get_function_result(oid) = 'TABLE(msg text, ts timestamp without time zone, direction smallint, "buddyJid" character varying, "stanza_hash" character varying)')) then
     drop function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int);
 end if;
 end$$;
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _limit int, _offset int) returns table(
-	"msg" text, "ts" timestamp, "direction" smallint, "buddyJid" varchar(2049), "stanza_hash" varchar(50)
+create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _tags text, _contains text, _limit int, _offset int) returns table(
+	"msg" text, "ts" timestamp with time zone, "direction" smallint, "buddyJid" varchar(2049), "stanza_hash" varchar(50)
 ) as $$
 declare 
 	tags_query text;
@@ -310,7 +317,16 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_GetMessagesCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text) returns table(
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_GetMessagesCount') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text') then
+    drop function Tig_MA_GetMessagesCount(_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_GetMessagesCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _tags text, _contains text) returns table(
 	"count" bigint
 ) as $$
 declare 
@@ -349,7 +365,16 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_GetMessagePosition(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, _hash varchar(50)) returns table(
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_GetMessagePosition') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, _hash character varying') then
+    drop function Tig_MA_GetMessagePosition(_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, _hash character varying);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_GetMessagePosition(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _tags text, _contains text, _hash varchar(50)) returns table(
 	"position" bigint
 ) as $$
 declare
@@ -392,8 +417,17 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_GetCollections(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, byType smallint, _limit int, _offset int) returns table(
-	"ts" timestamp, "with" varchar(2049), "type" varchar(20)
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_GetCollections') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, bytype smallint, _limit integer, _offset integer') then
+    drop function Tig_MA_GetCollections(_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, bytype smallint, _limit integer, _offset integer);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_GetCollections(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _tags text, _contains text, byType smallint, _limit int, _offset int) returns table(
+	"ts" timestamp with time zone, "with" varchar(2049), "type" varchar(20)
 ) as $$
 declare 
 	tags_query text;
@@ -463,7 +497,16 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_GetCollectionsCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp, _tags text, _contains text, byType smallint) returns table(
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_GetCollectionsCount') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, bytype smallint') then
+    drop function Tig_MA_GetCollectionsCount(_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone, _tags text, _contains text, bytype smallint);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_GetCollectionsCount(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _tags text, _contains text, byType smallint) returns table(
 	"count" bigint
 ) as $$
 declare 
@@ -555,14 +598,23 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_AddMessage(_ownerJid varchar(2049), _buddyJid varchar(2049), _buddyRes varchar(1024), _ts timestamp, 
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_AddMessage') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _buddyres character varying, _ts timestamp without time zone, _direction smallint, _type character varying, _body text, _msg text, _hash character varying') then
+    drop function Tig_MA_AddMessage(_ownerjid character varying, _buddyjid character varying, _buddyres character varying, _ts timestamp without time zone, _direction smallint, _type character varying, _body text, _msg text, _hash character varying);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_AddMessage(_ownerJid varchar(2049), _buddyJid varchar(2049), _buddyRes varchar(1024), _ts timestamp with time zone,
 	_direction smallint, _type varchar(20), _body text, _msg text, _hash varchar(50)) returns bigint as $$
 declare
 	_owner_id bigint;
 	_buddy_id bigint;
 	_msg_id bigint;
-	_tsFrom timestamp;
-	_tsTo timestamp;
+	_tsFrom timestamp with time zone;
+	_tsTo timestamp with time zone;
 begin
     if _type = 'groupchat' then
         select _ts - interval '30 minutes', _ts + interval '30 minutes' into _tsFrom, _tsTo;
@@ -627,7 +679,16 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_RemoveMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp, _to timestamp) returns void as $$
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_RemoveMessages') and pg_get_function_arguments(oid) = '_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone') then
+    drop function Tig_MA_RemoveMessages(_ownerjid character varying, _buddyjid character varying, _from timestamp without time zone, _to timestamp without time zone);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_RemoveMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone) returns void as $$
 declare
 	_owner_id bigint;
 	_buddy_id bigint;
@@ -642,7 +703,16 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp) returns void as $$
+do $$
+begin
+if exists( select 1 from pg_proc where proname = lower('Tig_MA_DeleteExpiredMessages') and pg_get_function_arguments(oid) = '_domain character varying, _before timestamp without time zone') then
+    drop function Tig_MA_DeleteExpiredMessages(_domain character varying, _before timestamp without time zone);
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp with time zone) returns void as $$
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and "domain" = _domain);
 end;

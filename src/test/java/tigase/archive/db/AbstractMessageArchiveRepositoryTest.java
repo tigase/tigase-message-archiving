@@ -29,7 +29,10 @@ import org.junit.runners.model.Statement;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
-import tigase.db.*;
+import tigase.db.DataSource;
+import tigase.db.DataSourceHelper;
+import tigase.db.RepositoryFactory;
+import tigase.db.TigaseDBException;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -40,7 +43,7 @@ import tigase.xmpp.mam.MAMRepository;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -513,7 +516,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
 		Assert.assertEquals("Still some messages, while in this duration all should be deleted", 0, msgs.size());
 	}
-
+	
 	@Test
 	public void test8_removeExpiredItems() throws RepositoryException, TigaseStringprepException, ComponentException {
 		Date date = new Date();
@@ -524,7 +527,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		msg.addChild(new Element("body", body));
 		Element delay = new Element("delay");
 		LocalDateTime time = LocalDateTime.now().minusDays(1).minusHours(1);
-		Date originalTime = new Date(time.toEpochSecond(ZoneOffset.UTC) * 1000);
+		Date originalTime = new Date(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
 		delay.setAttribute("stamp", formatter2.format(originalTime));
 		msg.addChild(delay);
 		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, originalTime, msg, null);
@@ -563,7 +566,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
 		Assert.assertEquals("Incorrect number of messages", 0, msgs.size());
 	}
-
+	
 	@Test
 	public void test9_jidComparison() throws TigaseStringprepException, ComponentException, RepositoryException {
 		Date date = new Date();

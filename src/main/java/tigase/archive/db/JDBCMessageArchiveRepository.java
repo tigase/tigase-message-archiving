@@ -45,7 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -180,7 +180,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 					add_message_st.setString(i++, owner.toString());
 					add_message_st.setString(i++, buddy.getBareJID().toString());
 					add_message_st.setString(i++, buddy.getResource());
-					add_message_st.setTimestamp(i++, mtime);
+					data_repo.setTimestamp(add_message_st, i++, mtime);
 					add_message_st.setShort(i++, direction.getValue());
 					add_message_st.setString(i++, type);
 					add_message_st.setString(i++, body);
@@ -242,7 +242,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 	public void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException {
 		try {
 			PreparedStatement delete_expired_msgs_st = data_repo.getPreparedStatement(owner, DELETE_EXPIRED_MESSAGES_QUERY);
-			long timestamp_long = before.toEpochSecond(ZoneOffset.UTC) * 1000;
+			long timestamp_long = before.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 			Timestamp ts = new java.sql.Timestamp(timestamp_long);
 			synchronized (delete_expired_msgs_st) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -251,7 +251,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 				}
 				delete_expired_msgs_st.setQueryTimeout(delete_expired_timeout);
 				delete_expired_msgs_st.setString(1, owner.toString());
-				delete_expired_msgs_st.setTimestamp(2, ts);
+				data_repo.setTimestamp(delete_expired_msgs_st,2, ts);
 				delete_expired_msgs_st.executeUpdate();
 			}
 		} catch (SQLException ex) {
@@ -321,8 +321,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 				synchronized (remove_msgs_st) {
 					remove_msgs_st.setString(1, owner.toString());
 					remove_msgs_st.setString(2, withJid);
-					remove_msgs_st.setTimestamp(3, start_);
-					remove_msgs_st.setTimestamp(4, end_);
+					data_repo.setTimestamp(remove_msgs_st,3, start_);
+					data_repo.setTimestamp(remove_msgs_st,4, end_);
 					remove_msgs_st.executeUpdate();
 				}
 			}
@@ -402,7 +402,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 
 				selectRs = get_collections_st.executeQuery();
 				while (selectRs.next()) {
-					Timestamp startTs = selectRs.getTimestamp(1);
+					Timestamp startTs = data_repo.getTimestamp(selectRs, 1);
 					String with = selectRs.getString(2);
 					String type = selectRs.getString(3);
 					collectionHandler.collectionFound(crit, with, startTs, type);
@@ -458,7 +458,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
 					Item item = newItemInstance();
-					item.read(rs, crit);
+					item.read(data_repo, rs, crit);
 					results.offer(item);
 				}
 			} finally {
@@ -515,12 +515,12 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 			stmt.setObject(i++, null);
 		}
 		if (crit.getStart() != null) {
-			stmt.setTimestamp(i++, convertToTimestamp(crit.getStart()));
+			data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getStart()));
 		} else {
 			stmt.setObject(i++, null);
 		}
 		if (crit.getEnd() != null) {
-			stmt.setTimestamp(i++, convertToTimestamp(crit.getEnd()));
+			data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getEnd()));
 		} else {
 			stmt.setObject(i++, null);
 		}
@@ -632,10 +632,10 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 		Direction direction;
 		String with;
 		
-		protected int read(ResultSet rs, Q crit) throws SQLException {
+		protected int read(DataRepository repo, ResultSet rs, Q crit) throws SQLException {
 			int i = 1;
 			messageStr = rs.getString(i++);
-			timestamp = rs.getTimestamp(i++);
+			timestamp = repo.getTimestamp(rs, i++);
 			direction = Direction.getDirection(rs.getShort(i++));
 			if (crit.getWith() == null) {
 				with = rs.getString(i);
