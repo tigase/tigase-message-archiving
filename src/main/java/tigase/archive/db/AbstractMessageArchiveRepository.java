@@ -96,15 +96,18 @@ public abstract class AbstractMessageArchiveRepository<Crit extends AbstractCrit
 				md.update(peer.getBytes());
 			}
 			String type = msg.getAttributeStaticStr("type");
+			Element subjectEl = msg.getChild("subject");
 			String subject = msg.getChildCData(MSG_SUBJECT_PATH);
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
-				if (!"groupchat".equals(type) || subject == null) {
+				if (!"groupchat".equals(type) || subjectEl == null) {
 					md.update(id.getBytes());
 				} else {
 					md.update(":".getBytes());
 					md.update(new Long(ts.getTime() / 60000).toString().getBytes());
-					md.update(subject.getBytes());
+					if (subject != null) {
+						md.update(subject.getBytes());
+					}
 					md.update(":".getBytes());
 				}
 			}
