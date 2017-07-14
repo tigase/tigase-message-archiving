@@ -59,10 +59,11 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 				md.update(peer.getBytes());
 			}
 			String type = msg.getAttributeStaticStr("type");
+			Element subjectEl = msg.getChild("subject");
 			String subject = msg.getChildCData(MSG_SUBJECT_PATH);
 			String id = msg.getAttributeStaticStr("id");
 			if (id != null) {
-				if (!"groupchat".equals(type) || subject == null) {
+				if (!"groupchat".equals(type) || subjectEl == null) {
 					md.update(id.getBytes());
 				} else {
 					md.update(":".getBytes());
