@@ -1,5 +1,11 @@
-
+[[mAUsage]]
 = Usage
+:author: Andrzej Wójcik
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://www.tigase.net
 
 Now that we have the archive component running, how do we use it?  Currently, the only way to activate and modify the component is through XMPP stanzas.  Lets first begin by getting our default settings from the component:
 [source,xml]

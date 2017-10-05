@@ -1,7 +1,12 @@
 
+[[mAAdFeatures]]
 = Additional features
 :author: Andrzej Wójcik
-:date: 2016-11-11 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://www.tigase.net
 
 Tigase Message Archiving Component contains few additional features useful for working with message archives.
 

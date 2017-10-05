@@ -1,6 +1,11 @@
+[[mAOverview]]
 = Overview
 :author: Andrzej Wójcik
-:date: 2016-11-11 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://www.tigase.net
 
 Tigase Message Archiving Component originated as implementation of http://xmpp.org/extensions/xep-0136.html:[XEP-0136: Message Archiving] to add support for archiving of messages exchanged using Tigase XMPP Server.
 In current version component supports also http://xmpp.org/extensions/xep-0313.html[XEP-0313: Message Archive Management] specification to allow easier access to archived messages.
