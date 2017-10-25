@@ -668,3 +668,7 @@ update tig_ma_jids set jid_sha1 = SHA1(LOWER(jid)), `domain` = LOWER(`domain`) w
 -- QUERY START:
 alter table tig_ma_msgs modify ts timestamp(6) null default null;
 -- QUERY END:
+
+-- QUERY START:
+call TigSetComponentVersion('message-archiving', '2.0.0');
+-- QUERY END:

@@ -122,6 +122,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria> extends Abstr
 	@Override
 	public void setDataSource(DataRepository data_repo) {
 		try {
+
+			data_repo.checkSchemaVersion( this );
+
 			initPreparedStatements(data_repo);
 			this.data_repo = data_repo;
 		} catch (SQLException ex) {

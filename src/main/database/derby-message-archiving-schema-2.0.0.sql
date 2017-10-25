@@ -231,3 +231,7 @@ create procedure Tig_MA_GetTagsForUserCount(ownerJid varchar(2049), tagStartsWit
 	DYNAMIC RESULT SETS 1
 	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getTagsForUserCount';
 -- QUERY END:
+
+-- QUERY START:
+call TigSetComponentVersion('message-archiving', '2.0.0');
+-- QUERY END:

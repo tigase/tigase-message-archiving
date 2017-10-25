@@ -833,3 +833,8 @@ GO
 update tig_ma_jids set domain = LOWER(domain), domain_sha1 = HASHBYTES('SHA1', LOWER(domain)), jid_sha1 = HASHBYTES('SHA1', LOWER(jid)) WHERE jid <> LOWER(jid) or domain <> LOWER(domain);
 -- QUERY END:
 GO
+
+-- QUERY START:
+exec TigSetComponentVersion('message-archiving', '2.0.0');
+-- QUERY END:
+GO

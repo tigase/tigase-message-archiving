@@ -747,3 +747,6 @@ end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
+-- QUERY START:
+select TigSetComponentVersion('message-archiving', '2.0.0');
+-- QUERY END:
