@@ -29,9 +29,9 @@ import tigase.criteria.Criteria;
 import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.RSM;
+import tigase.xmpp.rsm.RSM;
 
 import java.util.List;
 

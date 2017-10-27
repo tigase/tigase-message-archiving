@@ -24,7 +24,7 @@ package tigase.archive.db;
 import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
 import tigase.xml.Element;
-import tigase.xmpp.RSM;
+import tigase.xmpp.rsm.RSM;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

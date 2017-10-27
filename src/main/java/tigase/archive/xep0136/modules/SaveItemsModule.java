@@ -29,12 +29,12 @@ import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
-import tigase.util.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
+import tigase.util.datetime.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.text.ParseException;
 import java.util.Date;

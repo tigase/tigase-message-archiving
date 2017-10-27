@@ -22,7 +22,7 @@
 package tigase.archive.db.derby;
 
 import tigase.util.Algorithms;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;

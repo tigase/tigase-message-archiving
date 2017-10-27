@@ -29,11 +29,10 @@ import tigase.archive.StoreMethod;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
-import tigase.xmpp.impl.Message;
 import tigase.xmpp.impl.ProcessorTestCase;
 
 import java.lang.reflect.Field;

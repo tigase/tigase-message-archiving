@@ -21,7 +21,7 @@
  */
 package tigase.archive;
 
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 /**
  * Created by andrzej on 16.07.2016.

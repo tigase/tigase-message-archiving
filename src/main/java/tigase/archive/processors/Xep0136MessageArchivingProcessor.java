@@ -36,6 +36,7 @@ import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManager;
 import tigase.xml.Element;
 import tigase.xmpp.*;
+import tigase.xmpp.jid.JID;
 
 import java.util.Map;
 import java.util.Queue;

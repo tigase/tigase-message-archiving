@@ -35,9 +35,9 @@ import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-import tigase.xmpp.RSM;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
+import tigase.xmpp.rsm.RSM;
 import tigase.xmpp.mam.MAMRepository;
 
 import java.sql.PreparedStatement;

@@ -32,10 +32,10 @@ import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
-import tigase.util.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
+import tigase.util.datetime.TimestampHelper;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
 
 import java.util.List;

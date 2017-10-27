@@ -38,8 +38,9 @@ import tigase.kernel.core.Kernel;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.stats.StatisticsList;
+import tigase.util.common.TimerTask;
 import tigase.vhosts.VHostItem;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.modules.GetFormModule;
 
 import java.time.Duration;
@@ -212,7 +213,7 @@ public class MessageArchiveComponent
 		return tagsSupport;
 	}
 
-	private class RemoveExpiredTask extends tigase.util.TimerTask {
+	private class RemoveExpiredTask extends TimerTask {
 
 		@Override
 		public void run() {

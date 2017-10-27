@@ -24,7 +24,7 @@ package tigase.archive;
 import tigase.archive.xep0136.Query;
 import tigase.archive.xep0313.QueryImpl;
 import tigase.xml.Element;
-import tigase.xmpp.RSM;
+import tigase.xmpp.rsm.RSM;
 
 import java.util.*;
 

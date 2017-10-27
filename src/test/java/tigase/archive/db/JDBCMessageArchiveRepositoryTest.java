@@ -27,7 +27,7 @@ import tigase.db.DataRepository;
 import tigase.db.RepositoryFactory;
 import tigase.db.util.SchemaLoader;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.io.File;
 import java.sql.SQLException;
