@@ -30,7 +30,8 @@ import tigase.kernel.beans.Inject;
 /**
  * Created by andrzej on 16.07.2016.
  */
-public abstract class AbstractModule implements Module {
+public abstract class AbstractModule
+		implements Module {
 
 	protected static final String MA_XMLNS = "urn:xmpp:archive";
 

@@ -19,7 +19,10 @@
  */
 package tigase.archive;
 
-import tigase.xml.*;
+import tigase.xml.DomBuilderHandler;
+import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
 
 /**
  * Created by andrzej on 22.07.2016.
@@ -27,11 +30,10 @@ import tigase.xml.*;
 public class Settings {
 
 	private static final SimpleParser parser = SingletonFactory.getParserInstance();
-
-	private boolean auto = false;
-	private StoreMethod storeMethod = StoreMethod.Message;
 	private boolean archiveMucMessages = false;
 	private boolean archiveOnlyForContactsInRoster = false;
+	private boolean auto = false;
+	private StoreMethod storeMethod = StoreMethod.Message;
 
 	public boolean isAutoArchivingEnabled() {
 		return auto;
@@ -45,33 +47,46 @@ public class Settings {
 		return storeMethod;
 	}
 
+	public void setStoreMethod(StoreMethod storeMethod) {
+		this.storeMethod = storeMethod;
+		if (storeMethod == StoreMethod.False) {
+			auto = false;
+		}
+	}
+
 	public boolean archiveMucMessages() {
 		return archiveMucMessages;
 	}
 
 	public String serialize() {
 		Element prefs = new Element("prefs");
-		if (auto)
+		if (auto) {
 			prefs.setAttribute("auto", "true");
-		if (storeMethod != null)
+		}
+		if (storeMethod != null) {
 			prefs.setAttribute("method", storeMethod.toString());
-		if (archiveMucMessages)
+		}
+		if (archiveMucMessages) {
 			prefs.setAttribute("muc", "true");
-		if (archiveOnlyForContactsInRoster)
+		}
+		if (archiveOnlyForContactsInRoster) {
 			prefs.setAttribute("rosterOnly", "true");
+		}
 		return prefs.toString();
 	}
 
 	public void parse(String data) {
-		if (data == null || data.isEmpty())
+		if (data == null || data.isEmpty()) {
 			return;
+		}
 
 		DomBuilderHandler handler = new DomBuilderHandler();
 		char[] ch = data.toCharArray();
 		parser.parse(handler, ch, 0, ch.length);
 		Element pref = handler.getParsedElements().poll();
-		if (pref == null)
+		if (pref == null) {
 			return;
+		}
 
 		String val = pref.getAttributeStaticStr("auto");
 		if (val != null) {
@@ -102,13 +117,6 @@ public class Settings {
 	public void setAuto(boolean auto) {
 		this.auto = auto;
 		this.archiveOnlyForContactsInRoster = false;
-	}
-
-	public void setStoreMethod(StoreMethod storeMethod) {
-		this.storeMethod = storeMethod;
-		if (storeMethod == StoreMethod.False) {
-			auto = false;
-		}
 	}
 
 	public void setArchiveMucMessages(boolean archiveMucMessages) {

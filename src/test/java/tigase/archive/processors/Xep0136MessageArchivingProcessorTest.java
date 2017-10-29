@@ -27,11 +27,11 @@ import tigase.archive.StoreMethod;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
-import tigase.xmpp.jid.BareJID;
-import tigase.xmpp.jid.JID;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
 import tigase.xmpp.impl.ProcessorTestCase;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
@@ -44,7 +44,8 @@ import static org.junit.Assert.*;
 /**
  * Created by andrzej on 23.07.2016.
  */
-public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
+public class Xep0136MessageArchivingProcessorTest
+		extends ProcessorTestCase {
 
 	private Kernel kernel;
 	private MessageArchivePlugin maPlugin;
@@ -76,7 +77,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testChangingPreferencesEnablingArchiving() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -91,7 +93,7 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		Element pref = new Element("pref");
 		pref.setAttribute("xmlns", "urn:xmpp:archive");
 		packetEl.addChild(pref);
-		pref.addChild(new Element("auto", new String[] {"save"}, new String[] {"true"}));
+		pref.addChild(new Element("auto", new String[]{"save"}, new String[]{"true"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
 
@@ -111,7 +113,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testChangingPreferencesDisablingArchiving() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -127,7 +130,7 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		Element pref = new Element("pref");
 		pref.setAttribute("xmlns", "urn:xmpp:archive");
 		packetEl.addChild(pref);
-		pref.addChild(new Element("auto", new String[] {"save"}, new String[] {"false"}));
+		pref.addChild(new Element("auto", new String[]{"save"}, new String[]{"false"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
 
@@ -147,7 +150,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testChangingPreferencesDisablingArchivingWithRequiredStoreMethodMessage() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Field f = MessageArchivePlugin.class.getDeclaredField("globalRequiredStoreMethod");
 		f.setAccessible(true);
@@ -164,7 +168,7 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		Element pref = new Element("pref");
 		pref.setAttribute("xmlns", "urn:xmpp:archive");
 		packetEl.addChild(pref);
-		pref.addChild(new Element("auto", new String[] {"save"}, new String[] {"false"}));
+		pref.addChild(new Element("auto", new String[]{"save"}, new String[]{"false"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
 
@@ -184,7 +188,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testChangingPreferencesChangingStoreMethod() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -199,7 +204,7 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		Element pref = new Element("pref");
 		pref.setAttribute("xmlns", "urn:xmpp:archive");
 		packetEl.addChild(pref);
-		pref.addChild(new Element("default", new String[] {"save"}, new String[] {"message"}));
+		pref.addChild(new Element("default", new String[]{"save"}, new String[]{"message"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
 
@@ -220,7 +225,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testChangingPreferencesChangingStoreMethodWithRequiredStoreMethodMessage() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Field f = MessageArchivePlugin.class.getDeclaredField("globalRequiredStoreMethod");
 		f.setAccessible(true);
@@ -239,7 +245,7 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 		Element pref = new Element("pref");
 		pref.setAttribute("xmlns", "urn:xmpp:archive");
 		packetEl.addChild(pref);
-		pref.addChild(new Element("default", new String[] {"save"}, new String[] {"body"}));
+		pref.addChild(new Element("default", new String[]{"save"}, new String[]{"body"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
 
@@ -260,7 +266,8 @@ public class Xep0136MessageArchivingProcessorTest extends ProcessorTestCase {
 	public void testForwardingQueriesToComponent() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Element packetEl = new Element("iq");
 		packetEl.setAttribute("type", "set");

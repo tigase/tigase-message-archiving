@@ -19,8 +19,8 @@
  */
 package tigase.archive.xep0136.modules;
 
-import tigase.archive.QueryCriteria;
 import tigase.archive.MessageArchiveComponent;
+import tigase.archive.QueryCriteria;
 import tigase.archive.modules.AbstractModule;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
@@ -37,7 +37,8 @@ import java.util.List;
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "queryTags", parent = MessageArchiveComponent.class, active = true)
-public class QueryTagsModule extends AbstractModule {
+public class QueryTagsModule
+		extends AbstractModule {
 
 	private static final String TAGS_ELEM = "tags";
 
@@ -59,19 +60,21 @@ public class QueryTagsModule extends AbstractModule {
 			query.getRsm().fromElement(tagsEl);
 
 			String startsWith = tagsEl.getAttributeStaticStr("like");
-			if (startsWith == null)
+			if (startsWith == null) {
 				startsWith = "";
+			}
 
 			List<String> tags = msg_repo.getTags(packet.getStanzaFrom().getBareJID(), startsWith, query);
 
-			tagsEl = new Element("tags", new String[] {"xmlns" }, new String[] { QueryCriteria.QUERTY_XMLNS});
+			tagsEl = new Element("tags", new String[]{"xmlns"}, new String[]{QueryCriteria.QUERTY_XMLNS});
 			for (String tag : tags) {
 				tagsEl.addChild(new Element("tag", tag));
 			}
 
 			RSM rsm = query.getRsm();
-			if (rsm.getCount() == null || rsm.getCount() != 0)
+			if (rsm.getCount() == null || rsm.getCount() != 0) {
 				tagsEl.addChild(rsm.toElement());
+			}
 
 			packetWriter.write(packet.okResult(tagsEl, 0));
 		} catch (TigaseDBException e) {
@@ -81,6 +84,7 @@ public class QueryTagsModule extends AbstractModule {
 
 	@Override
 	public boolean canHandle(Packet packet) {
-		return config.isTagSupportEnabled() && packet.getElement().getChild(TAGS_ELEM, QueryCriteria.QUERTY_XMLNS) != null;
+		return config.isTagSupportEnabled() &&
+				packet.getElement().getChild(TAGS_ELEM, QueryCriteria.QUERTY_XMLNS) != null;
 	}
 }

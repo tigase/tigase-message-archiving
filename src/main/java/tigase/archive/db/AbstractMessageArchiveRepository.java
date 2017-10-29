@@ -32,27 +32,30 @@ import java.util.Map;
 import java.util.TimeZone;
 
 /**
- * AbstractMessageArchiveRepository contains methods commonly used by other implementations
- * to eliminate code multiplication.
- * 
+ * AbstractMessageArchiveRepository contains methods commonly used by other implementations to eliminate code
+ * multiplication.
+ *
  * @author andrzej
  */
-public abstract class AbstractMessageArchiveRepository<Q extends Query, DS extends DataSource> implements MessageArchiveRepository<Q,DS> {
+public abstract class AbstractMessageArchiveRepository<Q extends Query, DS extends DataSource>
+		implements MessageArchiveRepository<Q, DS> {
 
+	protected static final String[] MSG_BODY_PATH = {"message", "body"};
+	protected static final String[] MSG_SUBJECT_PATH = {"message", "subject"};
 	private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
-
-	protected static final String[] MSG_BODY_PATH = { "message", "body" };
-	protected static final String[] MSG_SUBJECT_PATH = { "message", "subject" };
 
 	static {
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
-	protected byte[] generateHashOfMessage(Direction direction, Element msg, Date ts, Map<String,Object> additionalData) {
+	protected byte[] generateHashOfMessage(Direction direction, Element msg, Date ts,
+										   Map<String, Object> additionalData) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 
-			String peer = direction == Direction.incoming ? msg.getAttributeStaticStr("from") : msg.getAttributeStaticStr("to");
+			String peer = direction == Direction.incoming
+						  ? msg.getAttributeStaticStr("from")
+						  : msg.getAttributeStaticStr("to");
 			if (peer != null) {
 				md.update(peer.getBytes());
 			}
@@ -79,7 +82,7 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 			if (subject != null) {
 				md.update(subject.getBytes());
 			}
-			
+
 			return md.digest();
 		} catch (NoSuchAlgorithmException ex) {
 			return null;

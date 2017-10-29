@@ -28,8 +28,8 @@ import tigase.component.exceptions.ComponentException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
-import tigase.util.stringprep.TigaseStringprepException;
 import tigase.util.datetime.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.JID;
@@ -43,18 +43,17 @@ import java.util.List;
  * Created by andrzej on 19.07.2016.
  */
 @Bean(name = "xep0136QueryParser", parent = MessageArchiveComponent.class, active = true)
-public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<Q> {
+public class Xep0136QueryParser<Q extends QueryCriteria>
+		implements QueryParser<Q> {
 
+	public static final String ARCHIVE_XMLNS = Xep0136MessageArchivingProcessor.XEP0136NS;
+	public static final String QUERTY_XMLNS = "http://tigase.org/protocol/archive#query";
 	private static final String CONTAINS = "contains";
 	private static final String TAG = "tag";
 	private static final String NAME = "query";
-	public static final String ARCHIVE_XMLNS = Xep0136MessageArchivingProcessor.XEP0136NS;
-	public static final String QUERTY_XMLNS = "http://tigase.org/protocol/archive#query";
-
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 	@Inject
 	private MessageArchiveConfig config;
-
-	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Override
 	public Q parseQuery(Q query, Packet packet) throws ComponentException {
@@ -62,8 +61,9 @@ public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<
 		query.setComponentJID(packet.getStanzaTo());
 
 		Element el = packet.getElement().findChild(element -> element.getXMLNS() == ARCHIVE_XMLNS);
-		if (el == null)
+		if (el == null) {
 			throw new IllegalArgumentException("Not supported XMLNS of element");
+		}
 
 		String withStr = el.getAttributeStaticStr("with");
 		if (withStr != null && !withStr.isEmpty()) {
@@ -101,8 +101,9 @@ public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<
 						case CONTAINS:
 							cdata = child.getCData();
 
-							if (cdata == null)
+							if (cdata == null) {
 								break;
+							}
 
 							query.addContains(cdata);
 							if (config.isTagSupportEnabled()) {
@@ -112,8 +113,9 @@ public class Xep0136QueryParser<Q extends QueryCriteria> implements QueryParser<
 						case TAG:
 							cdata = child.getCData();
 
-							if (cdata == null)
+							if (cdata == null) {
 								break;
+							}
 
 							query.addTag(cdata.trim());
 						default:

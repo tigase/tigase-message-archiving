@@ -34,7 +34,8 @@ import tigase.xmpp.mam.Query;
  * Created by andrzej on 19.07.2016.
  */
 @Bean(name = "mamQueryParser", parent = MessageArchiveComponent.class, active = true)
-public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
+public class MAMQueryParser
+		extends tigase.xmpp.mam.MAMQueryParser {
 
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";
 	private static final String TAGS_FIELD_NAME = "tigase:tags";
@@ -49,8 +50,9 @@ public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
 		Element queryEl = packet.getElement().getChildStaticStr("query", MAM_XMLNS);
 		String[] contains = DataForm.getFieldValues(queryEl, CONTAINS_FIELD_NAME);
 		if (contains != null && contains.length > 0) {
-			if (!(query instanceof tigase.archive.xep0136.Query))
+			if (!(query instanceof tigase.archive.xep0136.Query)) {
 				throw new ComponentException(Authorization.BAD_REQUEST, "Unsupported feature " + CONTAINS_FIELD_NAME);
+			}
 
 			for (String it : contains) {
 				((tigase.archive.xep0136.Query) query).addContains(it);
@@ -59,8 +61,9 @@ public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
 
 		String[] tags = DataForm.getFieldValues(queryEl, TAGS_FIELD_NAME);
 		if (tags != null && tags.length > 0) {
-			if (!(query instanceof tigase.archive.xep0136.Query) || !config.isTagSupportEnabled())
+			if (!(query instanceof tigase.archive.xep0136.Query) || !config.isTagSupportEnabled()) {
 				throw new ComponentException(Authorization.BAD_REQUEST, "Unsupported feature " + TAGS_FIELD_NAME);
+			}
 
 			for (String it : tags) {
 				((tigase.archive.xep0136.Query) query).addTag(it);

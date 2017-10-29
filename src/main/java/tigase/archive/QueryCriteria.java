@@ -27,11 +27,12 @@ import tigase.xmpp.rsm.RSM;
 import java.util.*;
 
 /**
- *
  * @author andrzej
  */
-public class QueryCriteria extends QueryImpl implements Query {
-	
+public class QueryCriteria
+		extends QueryImpl
+		implements Query {
+
 	public static final String QUERTY_XMLNS = "http://tigase.org/protocol/archive#query";
 
 	private final Set<String> contains = new HashSet<String>();
@@ -45,15 +46,15 @@ public class QueryCriteria extends QueryImpl implements Query {
 	public Set<String> getContains() {
 		return Collections.unmodifiableSet(contains);
 	}
-	
+
 	public void addContains(String contain) {
 		this.contains.add(contain);
 	}
-	
+
 	public Set<String> getTags() {
 		return Collections.unmodifiableSet(tags);
 	}
-	
+
 	public void addTag(String tag) {
 		tags.add(tag);
 	}

@@ -27,11 +27,11 @@ import tigase.archive.StoreMethod;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
-import tigase.xmpp.jid.BareJID;
-import tigase.xmpp.jid.JID;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
 import tigase.xmpp.impl.ProcessorTestCase;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
@@ -44,7 +44,8 @@ import static org.junit.Assert.*;
 /**
  * Created by andrzej on 23.07.2016.
  */
-public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestCase {
+public class Xep0313MessageArchiveManagementProcessorTest
+		extends ProcessorTestCase {
 
 	private Kernel kernel;
 	private MessageArchivePlugin maPlugin;
@@ -76,7 +77,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testChangingPreferencesToAlways() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -98,7 +100,7 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 		assertEquals(1, results.size());
 
 		Packet result = results.poll();
-		assertEquals("always", result.getAttributeStaticStr(new String[] { "iq", "prefs" }, "default"));
+		assertEquals("always", result.getAttributeStaticStr(new String[]{"iq", "prefs"}, "default"));
 
 		assertTrue("Message archiving should be enabled", settings.isAutoArchivingEnabled());
 	}
@@ -107,7 +109,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testChangingPreferencesToRoster() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -129,7 +132,7 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 		assertEquals(1, results.size());
 
 		Packet result = results.poll();
-		assertEquals("roster", result.getAttributeStaticStr(new String[] { "iq", "prefs" }, "default"));
+		assertEquals("roster", result.getAttributeStaticStr(new String[]{"iq", "prefs"}, "default"));
 
 		assertTrue("Message archiving should be enabled", settings.isAutoArchivingEnabled());
 		assertTrue("Filtering messages by roster contact should be enabled", settings.archiveOnlyForContactsInRoster());
@@ -139,7 +142,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testChangingPreferencesToNever() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Settings settings = maPlugin.getSettings(session1);
 
@@ -163,7 +167,7 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 		assertEquals(1, results.size());
 
 		Packet result = results.poll();
-		assertEquals("never", result.getAttributeStaticStr(new String[] { "iq", "prefs" }, "default"));
+		assertEquals("never", result.getAttributeStaticStr(new String[]{"iq", "prefs"}, "default"));
 
 		assertFalse("Message archiving should be disabled", settings.isAutoArchivingEnabled());
 	}
@@ -172,7 +176,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testChangingPreferencesToRosterWithRequiredStoreMethodMessage() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Field f = MessageArchivePlugin.class.getDeclaredField("globalRequiredStoreMethod");
 		f.setAccessible(true);
@@ -208,7 +213,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testChangingPreferencesToNeverWithRequiredStoreMethodMessage() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Field f = MessageArchivePlugin.class.getDeclaredField("globalRequiredStoreMethod");
 		f.setAccessible(true);
@@ -244,7 +250,8 @@ public class Xep0313MessageArchiveManagementProcessorTest extends ProcessorTestC
 	public void testForwardingQueriesToComponent() throws Exception {
 		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
 		JID res1 = JID.jidInstance(userJid, "res1");
-		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()), res1);
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
 
 		Element packetEl = new Element("iq");
 		packetEl.setAttribute("type", "set");

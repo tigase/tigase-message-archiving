@@ -34,7 +34,8 @@ import tigase.xmpp.Authorization;
 /**
  * Created by andrzej on 16.07.2016.
  */
-public class RemoveItemsModule extends AbstractModule {
+public class RemoveItemsModule
+		extends AbstractModule {
 
 	private static final String REMOVE_ELEM = "remove";
 
@@ -55,18 +56,17 @@ public class RemoveItemsModule extends AbstractModule {
 	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
 		Element remove = packet.getElement().getChild(REMOVE_ELEM, MA_XMLNS);
 
-		if ((remove.getAttributeStaticStr("with") == null) || (remove.getAttributeStaticStr(
-				"start") == null) || (remove.getAttributeStaticStr("end") == null)) {
-			throw new ComponentException(Authorization.NOT_ACCEPTABLE,
-					"Parameters with, start, end cannot be null");
+		if ((remove.getAttributeStaticStr("with") == null) || (remove.getAttributeStaticStr("start") == null) ||
+				(remove.getAttributeStaticStr("end") == null)) {
+			throw new ComponentException(Authorization.NOT_ACCEPTABLE, "Parameters with, start, end cannot be null");
 		}
 
 		try {
 			QueryCriteria query = msg_repo.newQuery();
 			queryParser.parseQuery(query, packet);
 
-			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), query.getWith().toString(),
-					query.getStart(), query.getEnd());
+			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), query.getWith().toString(), query.getStart(),
+								 query.getEnd());
 			packetWriter.write(packet.okResult((Element) null, 0));
 		} catch (TigaseDBException e) {
 			throw new RuntimeException("Error removing items", e);

@@ -19,18 +19,20 @@
  */
 package tigase.archive;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import tigase.xml.Element;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /**
- *
  * @author andrzej
  */
 public class TagsHelperTest {
-	
+
 	public TagsHelperTest() {
 	}
 
@@ -50,7 +52,7 @@ public class TagsHelperTest {
 		String body = "Example message about #Tigase with @User1";
 		Set<String> expResult = new HashSet<String>();
 		expResult.add("#Tigase");
-		expResult.add("@User1");		
+		expResult.add("@User1");
 		msg.addChild(new Element("body", body));
 		result = TagsHelper.extractTags(msg);
 		assertEquals(expResult, result);
@@ -91,11 +93,11 @@ public class TagsHelperTest {
 		expResult = true;
 		result = TagsHelper.matches(part);
 		assertEquals(expResult, result);
-		
+
 		part = "#test";
 		expResult = true;
 		result = TagsHelper.matches(part);
-		assertEquals(expResult, result);		
+		assertEquals(expResult, result);
 	}
 
 	/**
@@ -112,7 +114,7 @@ public class TagsHelperTest {
 		expResult = "@test";
 		result = TagsHelper.process(tag);
 		assertEquals(expResult, result);
-	
+
 	}
-	
+
 }

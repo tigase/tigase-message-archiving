@@ -23,39 +23,40 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
  * @author andrzej
  */
 public enum StoreMuc {
 	False,
 	User,
 	True;
-	
-private final String value;
-	
-	private StoreMuc() {
-		this.value = name().toLowerCase();
-	}
-	
-	private static final Map<String,StoreMuc> values = new HashMap<>();
+
+	private static final Map<String, StoreMuc> values = new HashMap<>();
+
 	static {
 		values.put(False.toString(), False);
 		values.put(User.toString(), User);
 		values.put(True.toString(), True);
 	}
-	
+
+	private final String value;
+
 	public static StoreMuc valueof(String v) {
 		if (v == null || v.isEmpty()) {
 			return User;
 		}
 		StoreMuc result = values.get(v);
-		if (result == null)
+		if (result == null) {
 			throw new IllegalArgumentException();
+		}
 		return result;
 	}
-	
+
+	private StoreMuc() {
+		this.value = name().toLowerCase();
+	}
+
 	@Override
 	public String toString() {
 		return value;
-	}	
+	}
 }

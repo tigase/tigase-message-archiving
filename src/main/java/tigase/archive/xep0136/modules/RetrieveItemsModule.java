@@ -30,8 +30,8 @@ import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
-import tigase.util.stringprep.TigaseStringprepException;
 import tigase.util.datetime.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
@@ -44,17 +44,15 @@ import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "retrieveItems", parent = MessageArchiveComponent.class, active = true)
-public class RetrieveItemsModule extends AbstractModule {
+public class RetrieveItemsModule
+		extends AbstractModule {
 
 	private static final String RETRIEVE_ELEM = "retrieve";
-
-	private TimestampHelper timestampHelper = new TimestampHelper();
-
-	@Inject
-	private Xep0136QueryParser queryParser;
-
 	@Inject
 	private Xep0136ItemHandler itemHandler;
+	@Inject
+	private Xep0136QueryParser queryParser;
+	private TimestampHelper timestampHelper = new TimestampHelper();
 
 	@Override
 	public String[] getFeatures() {
@@ -89,10 +87,12 @@ public class RetrieveItemsModule extends AbstractModule {
 
 			Element retList = new Element("chat");
 
-			if (query.getWith() != null)
+			if (query.getWith() != null) {
 				retList.setAttribute("with", query.getWith().toString());
-			if (query.getStart() != null)
+			}
+			if (query.getStart() != null) {
 				retList.setAttribute("start", timestampHelper.format(query.getStart()));
+			}
 
 			retList.setXMLNS(XEP0136NS);
 			if (!items.isEmpty()) {
@@ -108,12 +108,14 @@ public class RetrieveItemsModule extends AbstractModule {
 	}
 
 	@Bean(name = "xep0136ItemHandler", parent = MessageArchiveComponent.class, active = true)
-	public static class Xep0136ItemHandler<Q extends QueryCriteria,I extends MessageArchiveRepository.Item> implements MAMRepository.ItemHandler<Q, MAMRepository.Item> {
+	public static class Xep0136ItemHandler<Q extends QueryCriteria, I extends MessageArchiveRepository.Item>
+			implements MAMRepository.ItemHandler<Q, MAMRepository.Item> {
 
 		@Override
 		public void itemFound(Q query, MAMRepository.Item item) {
-			if (!(item instanceof MessageArchiveRepository.Item)){
-				throw new RuntimeException("Invalid class of repository item, got = " + item.getClass().getCanonicalName());
+			if (!(item instanceof MessageArchiveRepository.Item)) {
+				throw new RuntimeException(
+						"Invalid class of repository item, got = " + item.getClass().getCanonicalName());
 			}
 
 			itemFound(query, (I) item);
@@ -131,7 +133,7 @@ public class RetrieveItemsModule extends AbstractModule {
 
 			if (query.getStart() == null) {
 				query.setStart(item.getTimestamp());
-			    itemEl.setAttribute("secs", "0");
+				itemEl.setAttribute("secs", "0");
 			} else {
 				itemEl.setAttribute("secs", String.valueOf(
 						(item.getTimestamp().getTime() - query.getStart().getTime()) / 1000));

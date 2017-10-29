@@ -32,29 +32,13 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- *
  * @author andrzej
  */
-public class JDBCMessageArchiveRepositoryTest extends AbstractMessageArchiveRepositoryTest {
+public class JDBCMessageArchiveRepositoryTest
+		extends AbstractMessageArchiveRepositoryTest {
 
 	private static final String PROJECT_ID = "message-archiving";
 	private static final String VERSION = "2.0.0";
-
-	@BeforeClass
-	public static void initialize() {
-		if (uri.startsWith("jdbc:")) {
-			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
-			SchemaLoader.Parameters params = loader.createParameters();
-			params.parseUri(uri);
-			params.setDbRootCredentials(null, null);
-			loader.init(params);
-			loader.validateDBConnection();
-			loader.validateDBExists();
-			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
-			loader.shutdown();		}
-
-		AbstractMessageArchiveRepositoryTest.initialize();
-	}
 
 	@AfterClass
 	public static void cleanDerby() {
@@ -74,30 +58,54 @@ public class JDBCMessageArchiveRepositoryTest extends AbstractMessageArchiveRepo
 		}
 	}
 
+	@BeforeClass
+	public static void initialize() {
+		if (uri.startsWith("jdbc:")) {
+			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
+			SchemaLoader.Parameters params = loader.createParameters();
+			params.parseUri(uri);
+			params.setDbRootCredentials(null, null);
+			loader.init(params);
+			loader.validateDBConnection();
+			loader.validateDBExists();
+			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
+			loader.shutdown();
+		}
+
+		AbstractMessageArchiveRepositoryTest.initialize();
+	}
+
 	// This test to work requires change in archiveMessage method to throw Exception - by default exception is catched in this method
 	@Ignore
 	@Test
-	public void testDeadlocksOnInsert() throws InterruptedException, ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
+	public void testDeadlocksOnInsert()
+			throws InterruptedException, ClassNotFoundException, SQLException, InstantiationException,
+				   IllegalAccessException {
 		try {
-			Map<String,String> params = new HashMap<String,String>();
+			Map<String, String> params = new HashMap<String, String>();
 			params.put(RepositoryFactory.DATA_REPO_POOL_SIZE_PROP_KEY, "40");
 			DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, params);
 			JDBCMessageArchiveRepository repo = new JDBCMessageArchiveRepository();
 			repo.setDataSource(dataRepo);
-			
+
 			Queue<Thread> threads = new ArrayDeque<Thread>();
-			for (int i=0; i<128; i++) {
+			for (int i = 0; i < 128; i++) {
 				final int ti = i;
-				final JID jid = JID.jidInstanceNS("user-"+i+"@test-domain.com/res-1");
+				final JID jid = JID.jidInstanceNS("user-" + i + "@test-domain.com/res-1");
 				Thread t = new Thread() {
 					@Override
 					public void run() {
 						try {
-						for (int j=0; j<1000; j++) {
-							Element message = new Element("message", new String[] { "from", "to", "type", "id"}, new String[] { jid.toString(), jid.getBareJID().toString(), "set", UUID.randomUUID().toString() });
-							message.addChild(new Element("bind", UUID.randomUUID().toString(), new String[] { "action" }, new String[] { "login" }));
-							repo.archiveMessage(jid.getBareJID(), jid, MessageArchiveRepository.Direction.incoming, new Date(), message, new HashSet<String>());
-						}
+							for (int j = 0; j < 1000; j++) {
+								Element message = new Element("message", new String[]{"from", "to", "type", "id"},
+															  new String[]{jid.toString(), jid.getBareJID().toString(),
+																		   "set", UUID.randomUUID().toString()});
+								message.addChild(
+										new Element("bind", UUID.randomUUID().toString(), new String[]{"action"},
+													new String[]{"login"}));
+								repo.archiveMessage(jid.getBareJID(), jid, MessageArchiveRepository.Direction.incoming,
+													new Date(), message, new HashSet<String>());
+							}
 							System.out.println("executed last insert for thread " + ti);
 						} catch (Exception ex) {
 							ex.printStackTrace();

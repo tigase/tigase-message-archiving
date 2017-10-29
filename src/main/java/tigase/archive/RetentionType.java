@@ -21,7 +21,6 @@
 package tigase.archive;
 
 /**
- *
  * @author andrzej
  */
 public enum RetentionType {

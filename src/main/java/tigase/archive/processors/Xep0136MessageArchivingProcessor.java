@@ -18,8 +18,6 @@
  * If not, see http://www.gnu.org/licenses/.
  */
 
-
-
 package tigase.archive.processors;
 
 //~--- non-JDK imports --------------------------------------------------------
@@ -44,14 +42,13 @@ import java.util.logging.Logger;
 import static tigase.archive.processors.MessageArchivePlugin.ARCHIVE;
 
 /**
- * MessageArchingPlugin is implementation of plugin which forwards messages
- * with type set to "chat" to MessageArchivingComponent to store this messages
- * in message archive.
+ * MessageArchingPlugin is implementation of plugin which forwards messages with type set to "chat" to
+ * MessageArchivingComponent to store this messages in message archive.
  */
 @Bean(name = Xep0136MessageArchivingProcessor.ID, parent = SessionManager.class, active = true)
 public class Xep0136MessageArchivingProcessor
-				extends XMPPProcessor
-				implements XMPPProcessorIfc {
+		extends XMPPProcessor
+		implements XMPPProcessorIfc {
 
 	public static final String MUC_SAVE = "muc-save";
 
@@ -65,23 +62,21 @@ public class Xep0136MessageArchivingProcessor
 	public static final String RETRIEVE = "retrieve";
 
 	/** Field description */
-	public static final String  XEP0136NS = "urn:xmpp:archive";
-	protected static final String AUTO      = "auto";
-	private static final String EXPIRE    = "expire";
-	protected static final String ID        = "message-archive-xep-0136";
-	private static final Logger log = Logger.getLogger(Xep0136MessageArchivingProcessor.class
-			.getCanonicalName());
-	private static final String	   SAVE		= "save";
-	protected static final String    SETTINGS = ARCHIVE + "/settings";
-	private static final String[][]  ELEMENT_PATHS = { {Iq.ELEM_NAME, AUTO},
-		{Iq.ELEM_NAME, RETRIEVE}, {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, REMOVE},
-		{Iq.ELEM_NAME, SAVE}, {Iq.ELEM_NAME, "pref"}, {Iq.ELEM_NAME, "tags"} };
-	private static final String[] XMLNSS = { XEP0136NS,
-		XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, QueryCriteria.QUERTY_XMLNS };
-	private static final Element[] DISCO_FEATURES = { new Element("feature", new String[] {
-			"var" }, new String[] { XEP0136NS + ":" + AUTO }),
-			new Element("feature", new String[] { "var" }, new String[] { XEP0136NS +
-					":manage" }) };
+	public static final String XEP0136NS = "urn:xmpp:archive";
+	protected static final String AUTO = "auto";
+	protected static final String ID = "message-archive-xep-0136";
+	protected static final String SETTINGS = ARCHIVE + "/settings";
+	private static final String EXPIRE = "expire";
+	private static final Logger log = Logger.getLogger(Xep0136MessageArchivingProcessor.class.getCanonicalName());
+	private static final String SAVE = "save";
+	private static final String[][] ELEMENT_PATHS = {{Iq.ELEM_NAME, AUTO}, {Iq.ELEM_NAME, RETRIEVE},
+													 {Iq.ELEM_NAME, LIST}, {Iq.ELEM_NAME, REMOVE}, {Iq.ELEM_NAME, SAVE},
+													 {Iq.ELEM_NAME, "pref"}, {Iq.ELEM_NAME, "tags"}};
+	private static final String[] XMLNSS = {XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS, XEP0136NS,
+											QueryCriteria.QUERTY_XMLNS};
+	private static final Element[] DISCO_FEATURES = {
+			new Element("feature", new String[]{"var"}, new String[]{XEP0136NS + ":" + AUTO}),
+			new Element("feature", new String[]{"var"}, new String[]{XEP0136NS + ":manage"})};
 
 	@Inject
 	private MessageArchivePlugin messageArchivePlugin;
@@ -90,7 +85,6 @@ public class Xep0136MessageArchivingProcessor
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -101,7 +95,6 @@ public class Xep0136MessageArchivingProcessor
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -114,7 +107,6 @@ public class Xep0136MessageArchivingProcessor
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -124,7 +116,6 @@ public class Xep0136MessageArchivingProcessor
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @param session
 	 *
@@ -138,7 +129,6 @@ public class Xep0136MessageArchivingProcessor
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param packet
 	 * @param session
 	 * @param repo
@@ -148,9 +138,8 @@ public class Xep0136MessageArchivingProcessor
 	 * @throws XMPPException
 	 */
 	@Override
-	public void process(Packet packet, XMPPResourceConnection session,
-			NonAuthUserRepository repo, Queue<Packet> results, Map<String, Object> settings)
-					throws XMPPException {
+	public void process(Packet packet, XMPPResourceConnection session, NonAuthUserRepository repo,
+						Queue<Packet> results, Map<String, Object> settings) throws XMPPException {
 		if (session == null) {
 			return;
 		}
@@ -164,8 +153,7 @@ public class Xep0136MessageArchivingProcessor
 
 				return;
 			}
-			if ((packet.getType() != StanzaType.get) && (packet.getType() != StanzaType
-					.set)) {
+			if ((packet.getType() != StanzaType.get) && (packet.getType() != StanzaType.set)) {
 				return;
 			}
 
@@ -185,23 +173,25 @@ public class Xep0136MessageArchivingProcessor
 				} else if (packet.getType() == StanzaType.set) {
 					updatingPreferences(session, packet, pref, results);
 				} else {
-					results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, null,
-							true));
+					results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, null, true));
 				}
 			} else {
 				updateAutoSave(session, packet, auto, results);
 			}
 		} catch (TigaseDBException ex) {
 			log.log(Level.WARNING, "Failed to access database during processing of packet: " + packet.toString(), ex);
-			results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, "Internal server error occurred", false));
+			results.offer(
+					Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, "Internal server error occurred",
+																		   false));
 		} catch (NotAuthorizedException ex) {
 			log.log(Level.WARNING, "NotAuthorizedException for packet: {0}", packet);
-			results.offer(Authorization.NOT_AUTHORIZED.getResponseMessage(packet,
-					"You must authorize session first.", true));
+			results.offer(
+					Authorization.NOT_AUTHORIZED.getResponseMessage(packet, "You must authorize session first.", true));
 		}
 	}
 
-	protected void requestingPreferrences(XMPPResourceConnection session, Packet packet, Queue<Packet> results) throws NotAuthorizedException, TigaseDBException {
+	protected void requestingPreferrences(XMPPResourceConnection session, Packet packet, Queue<Packet> results)
+			throws NotAuthorizedException, TigaseDBException {
 		Settings settings = messageArchivePlugin.getSettings(session);
 
 		Element prefEl = new Element("pref");
@@ -265,10 +255,10 @@ public class Xep0136MessageArchivingProcessor
 		results.offer(packet.okResult(prefEl, 0));
 	}
 
-	protected void updatingPreferences(XMPPResourceConnection session, Packet packet, Element pref, Queue<Packet> results) throws PacketErrorTypeException, NotAuthorizedException {
+	protected void updatingPreferences(XMPPResourceConnection session, Packet packet, Element pref,
+									   Queue<Packet> results) throws PacketErrorTypeException, NotAuthorizedException {
 		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(session);
 		Settings settings = messageArchivePlugin.getSettings(session);
-
 
 		Authorization error = null;
 		StoreMethod storeMethod = null;
@@ -290,7 +280,8 @@ public class Xep0136MessageArchivingProcessor
 							}
 							if (storeMethod.ordinal() < requiredStoreMethod.ordinal()) {
 								error = Authorization.NOT_ACCEPTABLE;
-								errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString();
+								errorMsg =
+										"Required minimal message archiving level is " + requiredStoreMethod.toString();
 								break;
 							}
 						} catch (IllegalArgumentException ex) {
@@ -309,8 +300,7 @@ public class Xep0136MessageArchivingProcessor
 						if (RetentionType.userDefined != VHostItemHelper.getRetentionType(session.getDomain())) {
 							error = Authorization.NOT_ALLOWED;
 							errorMsg = "Expire value is not allowed to be changed by user";
-						}
-						else {
+						} else {
 							try {
 								long val = Long.parseLong(expire);
 								if (val <= 0) {
@@ -346,8 +336,8 @@ public class Xep0136MessageArchivingProcessor
 					autoSave = Boolean.valueOf(elem.getAttributeStaticStr("save"));
 					if (requiredStoreMethod != StoreMethod.False && (autoSave == null || autoSave == false)) {
 						error = Authorization.NOT_ACCEPTABLE;
-						errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString()
-								+ " and that requires automatic archiving to be enabled";
+						errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString() +
+								" and that requires automatic archiving to be enabled";
 					}
 					if (autoSave && !VHostItemHelper.isEnabled(session.getDomain())) {
 						error = Authorization.NOT_ALLOWED;
@@ -360,10 +350,8 @@ public class Xep0136MessageArchivingProcessor
 			}
 		}
 		if (error != null) {
-			results.offer(error.getResponseMessage(
-					packet, errorMsg, true));
-		}
-		else {
+			results.offer(error.getResponseMessage(packet, errorMsg, true));
+		} else {
 			try {
 				if (autoSave != null) {
 					settings.setAuto(autoSave);
@@ -384,17 +372,19 @@ public class Xep0136MessageArchivingProcessor
 				results.offer(packet.okResult((String) null, 0));
 
 				// shouldn't we notify other connected resources? see section 2.4.of XEP-0136
-			}
-			catch (TigaseDBException ex) {
+			} catch (TigaseDBException ex) {
 				results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, null, false));
 			}
 		}
 	}
 
-	protected void updateAutoSave(XMPPResourceConnection session, Packet packet, Element auto, Queue<Packet> results) throws PacketErrorTypeException, NotAuthorizedException {
+	protected void updateAutoSave(XMPPResourceConnection session, Packet packet, Element auto, Queue<Packet> results)
+			throws PacketErrorTypeException, NotAuthorizedException {
 		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(session);
-		String  val  = auto.getAttributeStaticStr("save");
-		if (val == null) val = "";
+		String val = auto.getAttributeStaticStr("save");
+		if (val == null) {
+			val = "";
+		}
 		boolean save = false;
 
 		switch (val) {
@@ -407,20 +397,24 @@ public class Xep0136MessageArchivingProcessor
 				save = false;
 				break;
 			default:
-				results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
-						"Save value is incorrect or missing", false));
+				results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, "Save value is incorrect or missing",
+																		   false));
 				return;
 		}
 
 		if (!save && requiredStoreMethod != StoreMethod.False) {
 			results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
-					"Required minimal message archiving level is " + requiredStoreMethod.toString()
-							+ " and that requires automatic archiving to be enabled", false));
+																		  "Required minimal message archiving level is " +
+																				  requiredStoreMethod.toString() +
+																				  " and that requires automatic archiving to be enabled",
+																		  false));
 			return;
 		}
 		if (save && !VHostItemHelper.isEnabled(session.getDomain())) {
 			results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
-					"Message archiving is not allowed for domain " + session.getDomainAsJID().toString(), false));
+																		  "Message archiving is not allowed for domain " +
+																				  session.getDomainAsJID().toString(),
+																		  false));
 			return;
 		}
 
@@ -432,21 +426,17 @@ public class Xep0136MessageArchivingProcessor
 			Element res = new Element("auto");
 
 			res.setXMLNS(XEP0136NS);
-			res.setAttribute("save", save
-					? "true"
-					: "false");
+			res.setAttribute("save", save ? "true" : "false");
 			results.offer(packet.okResult(res, 0));
 
 			return;
 		} catch (TigaseDBException ex) {
-			log.log(Level.WARNING, "Error setting Message Archive state: {0}", ex
-					.getMessage());
-			results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
-					"Database error occured", true));
+			log.log(Level.WARNING, "Error setting Message Archive state: {0}", ex.getMessage());
+			results.offer(
+					Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, "Database error occured", true));
 		}
 	}
 
 }
-
 
 //~ Formatted in Tigase Code Convention on 13/03/13

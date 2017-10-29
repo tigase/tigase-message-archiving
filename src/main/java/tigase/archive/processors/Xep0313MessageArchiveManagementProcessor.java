@@ -48,30 +48,29 @@ import static tigase.archive.processors.Xep0313MessageArchiveManagementProcessor
  * Created by andrzej on 22.07.2016.
  */
 @Id(ID)
-@Handles({
-	@Handle(path = {"iq", "query"}, xmlns = ID),
-	@Handle(path = {"iq", "prefs"}, xmlns = ID)
-})
+@Handles({@Handle(path = {"iq", "query"}, xmlns = ID), @Handle(path = {"iq", "prefs"}, xmlns = ID)})
 @Bean(name = ID, parent = SessionManager.class, active = true)
-public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProcessor implements XMPPProcessorIfc {
-
-	private static final Logger log = Logger.getLogger(Xep0313MessageArchiveManagementProcessor.class.getCanonicalName());
+public class Xep0313MessageArchiveManagementProcessor
+		extends AnnotatedXMPPProcessor
+		implements XMPPProcessorIfc {
 
 	public static final String ID = "urn:xmpp:mam:1";
-
+	private static final Logger log = Logger.getLogger(
+			Xep0313MessageArchiveManagementProcessor.class.getCanonicalName());
 	@Inject
 	private MessageArchivePlugin messageArchivePlugin;
 
 	@Override
 	public Authorization canHandle(Packet packet, XMPPResourceConnection conn) {
-		if (packet.getStanzaTo() == null)
+		if (packet.getStanzaTo() == null) {
 			return super.canHandle(packet, conn);
+		}
 		return null;
 	}
 
-
 	@Override
-	public void process(Packet packet, XMPPResourceConnection session, NonAuthUserRepository repo, Queue<Packet> results, Map<String, Object> settings) throws XMPPException {
+	public void process(Packet packet, XMPPResourceConnection session, NonAuthUserRepository repo,
+						Queue<Packet> results, Map<String, Object> settings) throws XMPPException {
 		Element prefs = packet.getElement().getChild("prefs", ID);
 		if (prefs == null) {
 			// for quering archive
@@ -104,25 +103,29 @@ public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProce
 					updatePrefrerences(session, packet, prefs, results);
 					break;
 				default:
-					results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, "Invalid request for XEP-0313", true));
+					results.offer(
+							Authorization.BAD_REQUEST.getResponseMessage(packet, "Invalid request for XEP-0313", true));
 					break;
 			}
 		}
 	}
 
-
-	private void retrievePreferences(XMPPResourceConnection session, Packet packet, Queue<Packet> results) throws NotAuthorizedException {
+	private void retrievePreferences(XMPPResourceConnection session, Packet packet, Queue<Packet> results)
+			throws NotAuthorizedException {
 		Settings settings = messageArchivePlugin.getSettings(session);
 		Element prefs = preferencesAsElement(settings);
 
 		results.offer(packet.okResult(prefs, 0));
 	}
 
-	private void updatePrefrerences(XMPPResourceConnection session, Packet packet, Element prefs, Queue<Packet> results) throws PacketErrorTypeException, NotAuthorizedException {
+	private void updatePrefrerences(XMPPResourceConnection session, Packet packet, Element prefs, Queue<Packet> results)
+			throws PacketErrorTypeException, NotAuthorizedException {
 		Element always = prefs.getChild("always");
 		Element never = prefs.getChild("never");
 		if ((never != null && !never.getChildren().isEmpty()) || (always != null && !always.getChildren().isEmpty())) {
-			results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, "Could not set list of always or never - feature not implemented!", true));
+			results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
+																	   "Could not set list of always or never - feature not implemented!",
+																	   true));
 			return;
 		}
 
@@ -138,8 +141,10 @@ public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProce
 		StoreMuc storeMuc = messageArchivePlugin.getRequiredStoreMucMessages(session);
 
 		if (storeMuc == StoreMuc.True) {
-			results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet, "Due to system configuration it is not allowed to" +
-					" disable automatic archivization of MUC messages which should be done for MAM", true));
+			results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet,
+																	   "Due to system configuration it is not allowed to" +
+																			   " disable automatic archivization of MUC messages which should be done for MAM",
+																	   true));
 			return;
 		}
 
@@ -149,23 +154,29 @@ public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProce
 				break;
 			case "never":
 				if (requiredStoreMethod != StoreMethod.False) {
-					results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet, "Due to system configuration it is not possible" +
-							" to disable message archivization", true));
+					results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet,
+																			   "Due to system configuration it is not possible" +
+																					   " to disable message archivization",
+																			   true));
 					return;
 				}
 				settings.setAuto(false);
 				break;
 			case "roster":
 				if (requiredStoreMethod != StoreMethod.False) {
-					results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet, "Due to system configuration it is not possible" +
-							" to disable message archivization", true));
+					results.offer(Authorization.NOT_ALLOWED.getResponseMessage(packet,
+																			   "Due to system configuration it is not possible" +
+																					   " to disable message archivization",
+																			   true));
 					return;
 				}
 				settings.setAuto(true);
 				settings.setArchiveOnlyForContactsInRoster(true);
 				break;
 			default:
-				results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet, "Invalid value for 'default' attribute", true));
+				results.offer(
+						Authorization.BAD_REQUEST.getResponseMessage(packet, "Invalid value for 'default' attribute",
+																	 true));
 				return;
 		}
 		settings.setStoreMethod(StoreMethod.Message);
@@ -173,8 +184,7 @@ public class Xep0313MessageArchiveManagementProcessor extends AnnotatedXMPPProce
 
 		try {
 			session.setData(ARCHIVE, "settings", settings.serialize());
-		}
-		catch (TigaseDBException ex) {
+		} catch (TigaseDBException ex) {
 			results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, null, false));
 		}
 

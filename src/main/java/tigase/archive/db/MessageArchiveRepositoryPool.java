@@ -59,11 +59,6 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
-	protected Class findClassForDataSource(DataSource dataSource) throws DBInitException {
-		return DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, dataSource.getResourceUri());
-	}
-
-	@Override
 	public boolean belongsTo(Class<? extends BasicComponent> component) {
 		return MessageArchiveComponent.class.isAssignableFrom(component);
 	}
@@ -114,7 +109,13 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 		return MessageArchiveRepositoryConfigBean.class;
 	}
 
-	public static class MessageArchiveRepositoryConfigBean extends MDRepositoryConfigBean<MessageArchiveRepository<QueryCriteria, DataSource>> {
+	@Override
+	protected Class findClassForDataSource(DataSource dataSource) throws DBInitException {
+		return DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, dataSource.getResourceUri());
+	}
+
+	public static class MessageArchiveRepositoryConfigBean
+			extends MDRepositoryConfigBean<MessageArchiveRepository<QueryCriteria, DataSource>> {
 
 	}
 }

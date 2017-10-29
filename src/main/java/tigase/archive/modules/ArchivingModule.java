@@ -27,8 +27,8 @@ import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.server.Message;
 import tigase.server.Packet;
-import tigase.util.stringprep.TigaseStringprepException;
 import tigase.util.datetime.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
@@ -45,7 +45,8 @@ import static tigase.archive.processors.MessageArchivePlugin.OWNER_JID;
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "archiving", parent = MessageArchiveComponent.class, active = true)
-public class ArchivingModule extends AbstractModule {
+public class ArchivingModule
+		extends AbstractModule {
 
 	private static final Logger log = Logger.getLogger(ArchivingModule.class.getCanonicalName());
 
@@ -68,19 +69,20 @@ public class ArchivingModule extends AbstractModule {
 		if (ownerStr != null) {
 			packet.getElement().removeAttribute(OWNER_JID);
 			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "for user {0} storing message: {1}",
-						new Object[]{ownerStr, packet.toString()});
+				log.log(Level.FINEST, "for user {0} storing message: {1}", new Object[]{ownerStr, packet.toString()});
 			}
 
-			BareJID owner    = BareJID.bareJIDInstanceNS(ownerStr);
-			MessageArchiveRepository.Direction direction = MessageArchiveRepository.Direction.getDirection(owner, packet.getStanzaFrom().getBareJID());
-			JID buddy    = direction == MessageArchiveRepository.Direction.outgoing
-					? packet.getStanzaTo()
-					: packet.getStanzaFrom();
+			BareJID owner = BareJID.bareJIDInstanceNS(ownerStr);
+			MessageArchiveRepository.Direction direction = MessageArchiveRepository.Direction.getDirection(owner, packet
+					.getStanzaFrom()
+					.getBareJID());
+			JID buddy = direction == MessageArchiveRepository.Direction.outgoing
+						? packet.getStanzaTo()
+						: packet.getStanzaFrom();
 
 			Element msg = packet.getElement();
-			Date timestamp  = null;
-			Element delay= msg.findChildStaticStr(Message.MESSAGE_DELAY_PATH);
+			Date timestamp = null;
+			Element delay = msg.findChildStaticStr(Message.MESSAGE_DELAY_PATH);
 			if (delay != null) {
 				try {
 					String stamp = delay.getAttributeStaticStr("stamp");
@@ -94,8 +96,9 @@ public class ArchivingModule extends AbstractModule {
 			}
 
 			Set<String> tags = null;
-			if (config.isTagSupportEnabled())
+			if (config.isTagSupportEnabled()) {
 				tags = TagsHelper.extractTags(msg);
+			}
 
 			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, tags);
 		} else {
@@ -105,6 +108,8 @@ public class ArchivingModule extends AbstractModule {
 
 	@Override
 	public boolean canHandle(Packet packet) {
-		return  Message.ELEM_NAME == packet.getElemName() || (packet.getStanzaTo() != null && !config.getComponentId().equals(packet.getStanzaTo()) && packet.getAttributeStaticStr(OWNER_JID) != null);
+		return Message.ELEM_NAME == packet.getElemName() ||
+				(packet.getStanzaTo() != null && !config.getComponentId().equals(packet.getStanzaTo()) &&
+						packet.getAttributeStaticStr(OWNER_JID) != null);
 	}
 }

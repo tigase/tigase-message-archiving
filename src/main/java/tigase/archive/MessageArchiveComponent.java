@@ -18,8 +18,6 @@
  * If not, see http://www.gnu.org/licenses/.
  */
 
-
-
 package tigase.archive;
 
 //~--- non-JDK imports --------------------------------------------------------
@@ -49,43 +47,40 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author andrzej
  */
 @Bean(name = "message-archive", parent = Kernel.class, active = true)
 @ConfigType(ConfigTypeEnum.DefaultMode)
 public class MessageArchiveComponent
-				extends AbstractKernelBasedComponent implements MessageArchiveConfig {
-	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class
-			.getCanonicalName());
+		extends AbstractKernelBasedComponent
+		implements MessageArchiveConfig {
 
-	private static final String			  TAGS_SUPPORT_PROP_KEY = "tags-support";
-	private static final String			  REMOVE_EXPIRED_MESSAGES_KEY = "remove-expired-messages";
-	private static final String			  REMOVE_EXPIRED_MESSAGES_DELAY_KEY = "remove-expired-messages-delay";
-	private static final String			  REMOVE_EXPIRED_MESSAGES_PERIOD_KEY = "remove-expired-messages-period";
-	
+	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class.getCanonicalName());
+
+	private static final String TAGS_SUPPORT_PROP_KEY = "tags-support";
+	private static final String REMOVE_EXPIRED_MESSAGES_KEY = "remove-expired-messages";
+	private static final String REMOVE_EXPIRED_MESSAGES_DELAY_KEY = "remove-expired-messages-delay";
+	private static final String REMOVE_EXPIRED_MESSAGES_PERIOD_KEY = "remove-expired-messages-period";
+
 	//~--- fields ---------------------------------------------------------------
 
 	@Inject
 	protected MessageArchiveRepository msg_repo = null;
-
-	@ConfigField(desc = "Tag support enabled", alias = TAGS_SUPPORT_PROP_KEY)
-	private boolean tagsSupport = false;
-	private float expiredMessagesRemovalTimeAvg = -1;
 	private RemoveExpiredTask expiredMessagesRemovalTask = null;
-
+	private float expiredMessagesRemovalTimeAvg = -1;
 	@ConfigField(desc = "Remove expired messages from repository", alias = REMOVE_EXPIRED_MESSAGES_KEY)
 	private boolean removeExpiredMessages = false;
 	@ConfigField(desc = "Initial delay since server statup until removal of expired messages", alias = REMOVE_EXPIRED_MESSAGES_DELAY_KEY)
 	private Duration removeExpiredMessagesDelay = Duration.ofHours(1);
 	@ConfigField(desc = "Period between expired message removals", alias = REMOVE_EXPIRED_MESSAGES_PERIOD_KEY)
 	private Duration removeExpiredMessagesPeriod = Duration.ofDays(1);
+	@ConfigField(desc = "Tag support enabled", alias = TAGS_SUPPORT_PROP_KEY)
+	private boolean tagsSupport = false;
 
 	//~--- constructors ---------------------------------------------------------
 
 	/**
 	 * Constructs ...
-	 *
 	 */
 	public MessageArchiveComponent() {
 		super();
@@ -97,8 +92,8 @@ public class MessageArchiveComponent
 
 	@Override
 	public int hashCodeForPacket(Packet packet) {
-		if (packet.getElemName() == Message.ELEM_NAME && packet.getPacketFrom() != null 
-				&& !getComponentId().equals(packet.getPacketFrom())) {
+		if (packet.getElemName() == Message.ELEM_NAME && packet.getPacketFrom() != null &&
+				!getComponentId().equals(packet.getPacketFrom())) {
 			return packet.getPacketFrom().hashCode();
 		}
 		if (packet.getStanzaFrom() != null && !getComponentId().equals(packet.getStanzaFrom())) {
@@ -109,12 +104,9 @@ public class MessageArchiveComponent
 		}
 		return 1;
 	}
-	
+
 	/**
 	 * Method description
-	 *
-	 *
-	 *
 	 *
 	 * @return a value of <code>int</code>
 	 */
@@ -128,9 +120,6 @@ public class MessageArchiveComponent
 
 	/**
 	 * Method description
-	 *
-	 *
-	 *
 	 *
 	 * @return a value of <code>int</code>
 	 */
@@ -150,17 +139,8 @@ public class MessageArchiveComponent
 		return false;
 	}
 
-	@Override
-	protected void registerModules(Kernel kernel) {
-		kernel.registerBean(DiscoveryModule.class).exec();
-		kernel.registerBean(GetFormModule.class).exec();
-	}
-
-	//~--- get methods ----------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -169,24 +149,26 @@ public class MessageArchiveComponent
 		return "Message Archiving Component";
 	}
 
+	//~--- get methods ----------------------------------------------------------
+
 	@Override
 	public void getStatistics(StatisticsList list) {
 		super.getStatistics(list);
 		list.add(getName(), "Removal time of expired messages (avg)", expiredMessagesRemovalTimeAvg, Level.FINE);
 	}
-	
-	//~--- set methods ----------------------------------------------------------
-
 
 	@Override
 	public void initialize() {
 		super.initialize();
 	}
 
+	//~--- set methods ----------------------------------------------------------
+
 	@Override
 	public void beanConfigurationChanged(Collection<String> changedFields) {
 		super.beanConfigurationChanged(changedFields);
-		if (changedFields.contains(REMOVE_EXPIRED_MESSAGES_KEY) || changedFields.contains(REMOVE_EXPIRED_MESSAGES_PERIOD_KEY) ||
+		if (changedFields.contains(REMOVE_EXPIRED_MESSAGES_KEY) ||
+				changedFields.contains(REMOVE_EXPIRED_MESSAGES_PERIOD_KEY) ||
 				changedFields.contains(REMOVE_EXPIRED_MESSAGES_DELAY_KEY)) {
 			if (expiredMessagesRemovalTask != null) {
 				expiredMessagesRemovalTask.cancel();
@@ -196,7 +178,8 @@ public class MessageArchiveComponent
 			if (removeExpiredMessages) {
 				long initialDelay = removeExpiredMessagesDelay.toMillis();
 				long period = removeExpiredMessagesPeriod.toMillis();
-				log.log(Level.FINE, "scheduling removal of expired messages to once every {0}ms after initial delay of {1}ms",
+				log.log(Level.FINE,
+						"scheduling removal of expired messages to once every {0}ms after initial delay of {1}ms",
 						new Object[]{period, initialDelay});
 				expiredMessagesRemovalTask = new RemoveExpiredTask();
 				addTimerTask(expiredMessagesRemovalTask, initialDelay, period);
@@ -204,14 +187,21 @@ public class MessageArchiveComponent
 		}
 	}
 
-	//~--- methods --------------------------------------------------------------
-
 	@Override
 	public boolean isTagSupportEnabled() {
 		return tagsSupport;
 	}
 
-	private class RemoveExpiredTask extends TimerTask {
+	//~--- methods --------------------------------------------------------------
+
+	@Override
+	protected void registerModules(Kernel kernel) {
+		kernel.registerBean(DiscoveryModule.class).exec();
+		kernel.registerBean(GetFormModule.class).exec();
+	}
+
+	private class RemoveExpiredTask
+			extends TimerTask {
 
 		@Override
 		public void run() {
@@ -231,16 +221,16 @@ public class MessageArchiveComponent
 								long stop = System.currentTimeMillis();
 								long executedIn = stop - start;
 								time += executedIn;
-								log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms", 
+								log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms",
 										new Object[]{timestamp.toString(), vhost.getDomain(), executedIn});
 								count++;
-							}						
+							}
 							break;
 						case userDefined:
-						// right now there is no implementation for this so let's handle it in same way as unlimited
+							// right now there is no implementation for this so let's handle it in same way as unlimited
 						case unlimited:
-							log.log(Level.FINEST, "skipping removal of expired messages for domain {0}"
-									+ " as removal for retention type {1} is not supported", 
+							log.log(Level.FINEST, "skipping removal of expired messages for domain {0}" +
+											" as removal for retention type {1} is not supported",
 									new Object[]{vhost.getDomain(), retentionType});
 							break;
 					}
@@ -250,9 +240,8 @@ public class MessageArchiveComponent
 			}
 			expiredMessagesRemovalTimeAvg = (count > 0) ? (time / count) : -1;
 		}
-		
+
 	}
 }
-
 
 //~ Formatted in Tigase Code Convention on 13/10/15

@@ -34,35 +34,22 @@ import java.util.List;
 import java.util.Set;
 
 /**
- *
  * @author andrzej
  */
-public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query, DS extends DataSource> extends DataSourceAware<DS>, MAMRepository<Q, MAMRepository.Item> {
-	
+public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query, DS extends DataSource>
+		extends DataSourceAware<DS>, MAMRepository<Q, MAMRepository.Item> {
+
 	enum Direction {
 		incoming((short) 1, "from"),
 		outgoing((short) 0, "to");
-		
-		private final short value;
+
 		private final String elemName;
-		
-		Direction(short val, String elemName) {
-			value = val;
-			this.elemName = elemName;
-		}
-		
-		public short getValue() {
-			return value;
-		}
-		
-		public String toElementName() {
-			return elemName;
-		}
-		
+		private final short value;
+
 		public static Direction getDirection(BareJID owner, BareJID from) {
 			return owner.equals(from) ? outgoing : incoming;
 		}
-		
+
 		public static Direction getDirection(short val) {
 			switch (val) {
 				case 1:
@@ -73,28 +60,46 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 					return null;
 			}
 		}
-		
+
 		public static Direction getDirection(String val) {
-			if (incoming.toElementName().equals(val))
+			if (incoming.toElementName().equals(val)) {
 				return incoming;
-			if (outgoing.toElementName().equals(val))
+			}
+			if (outgoing.toElementName().equals(val)) {
 				return outgoing;
+			}
 			return null;
 		}
-				
+
+		Direction(short val, String elemName) {
+			value = val;
+			this.elemName = elemName;
+		}
+
+		public short getValue() {
+			return value;
+		}
+
+		public String toElementName() {
+			return elemName;
+		}
+
 	}
-	
+
 	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
-	
+
 	void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException;
-	
+
 	/**
 	 * Destroys instance of this repository and releases resources allocated if possible
 	 */
-	default void destroy() {};
-	
+	default void destroy() {
+	}
+
+	;
+
 	void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
-	
+
 	List<String> getTags(BareJID owner, String startsWith, Q criteria) throws TigaseDBException;
 
 	void queryCollections(Q query, CollectionHandler<Q> collectionHandler) throws TigaseDBException;
@@ -105,7 +110,8 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 
 	}
 
-	interface Item extends MAMRepository.Item {
+	interface Item
+			extends MAMRepository.Item {
 
 		Direction getDirection();
 

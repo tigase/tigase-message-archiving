@@ -27,7 +27,8 @@ import java.util.Set;
 /**
  * Created by andrzej on 21.07.2016.
  */
-public interface Query extends tigase.xmpp.mam.Query {
+public interface Query
+		extends tigase.xmpp.mam.Query {
 
 	Set<String> getContains();
 

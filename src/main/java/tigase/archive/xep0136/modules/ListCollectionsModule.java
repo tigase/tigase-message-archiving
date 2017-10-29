@@ -45,7 +45,8 @@ import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "listCollections", parent = MessageArchiveComponent.class, active = true)
-public class ListCollectionsModule extends AbstractModule {
+public class ListCollectionsModule
+		extends AbstractModule {
 
 	private static final String LIST_ELEM = "list";
 
@@ -102,7 +103,8 @@ public class ListCollectionsModule extends AbstractModule {
 	}
 
 	@Bean(name = "xep0136CollectionHandler", parent = MessageArchiveComponent.class, active = true)
-	public static class Xep0136CollectionHandler<Q extends QueryCriteria> implements MessageArchiveRepository.CollectionHandler<Q> {
+	public static class Xep0136CollectionHandler<Q extends QueryCriteria>
+			implements MessageArchiveRepository.CollectionHandler<Q> {
 
 		private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
@@ -116,8 +118,7 @@ public class ListCollectionsModule extends AbstractModule {
 			synchronized (TIMESTAMP_FORMATTER1) {
 				formattedStart = TIMESTAMP_FORMATTER1.format(start);
 			}
-			Element elem = new Element("chat", new String[] { "with", "start" },
-					new String[] { with, formattedStart });
+			Element elem = new Element("chat", new String[]{"with", "start"}, new String[]{with, formattedStart});
 			if (type != null && !type.isEmpty()) {
 				elem.addAttribute("type", type);
 			}

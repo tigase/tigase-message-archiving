@@ -27,8 +27,8 @@ import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
-import tigase.util.stringprep.TigaseStringprepException;
 import tigase.util.datetime.TimestampHelper;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.BareJID;
@@ -43,7 +43,8 @@ import java.util.Set;
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "saveItems", parent = MessageArchiveComponent.class, active = true)
-public class SaveItemsModule extends AbstractModule {
+public class SaveItemsModule
+		extends AbstractModule {
 
 	private static final String SAVE_ELEM = "save";
 
@@ -84,7 +85,8 @@ public class SaveItemsModule extends AbstractModule {
 					List<Element> children = chat.getChildren();
 					if (children != null) {
 						for (Element child : children) {
-							MessageArchiveRepository.Direction direction = MessageArchiveRepository.Direction.getDirection(child.getName());
+							MessageArchiveRepository.Direction direction = MessageArchiveRepository.Direction.getDirection(
+									child.getName());
 							// should we do something about this?
 							if (direction == null) {
 								continue;
@@ -138,8 +140,7 @@ public class SaveItemsModule extends AbstractModule {
 				packetWriter.write(result);
 			}
 		} catch (ParseException e) {
-			throw new ComponentException(Authorization.BAD_REQUEST,
-					"Invalid format of timestamp");
+			throw new ComponentException(Authorization.BAD_REQUEST, "Invalid format of timestamp");
 		}
 
 	}
