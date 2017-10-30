@@ -105,24 +105,11 @@ public class MessageArchiveComponent
 		return 1;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return a value of <code>int</code>
-	 */
 	@Override
 	public int processingInThreads() {
 		return Runtime.getRuntime().availableProcessors() * 4;
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
-
-	/**
-	 * Method description
-	 *
-	 * @return a value of <code>int</code>
-	 */
+	
 	@Override
 	public int processingOutThreads() {
 		return Runtime.getRuntime().availableProcessors() * 4;
@@ -139,11 +126,6 @@ public class MessageArchiveComponent
 		return false;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String getDiscoDescription() {
 		return "Message Archiving Component";

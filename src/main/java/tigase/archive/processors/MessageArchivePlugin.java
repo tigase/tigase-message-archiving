@@ -112,17 +112,6 @@ public class MessageArchivePlugin
 
 	//~--- methods --------------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 * @param packet
-	 * @param session
-	 * @param repo
-	 * @param results
-	 * @param settings
-	 *
-	 * @throws XMPPException
-	 */
 	@Override
 	public void process(Packet packet, XMPPResourceConnection session, NonAuthUserRepository repo,
 						Queue<Packet> results, Map<String, Object> settings) throws XMPPException {

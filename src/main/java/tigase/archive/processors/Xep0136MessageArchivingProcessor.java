@@ -83,60 +83,27 @@ public class Xep0136MessageArchivingProcessor
 
 	//~--- methods --------------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String id() {
 		return ID;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[][] supElementNamePaths() {
 		return ELEMENT_PATHS;
 
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] supNamespaces() {
 		return XMLNSS;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param session
-	 *
-	 * @return
-	 */
 	@Override
 	public Element[] supDiscoFeatures(final XMPPResourceConnection session) {
 		return DISCO_FEATURES;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param packet
-	 * @param session
-	 * @param repo
-	 * @param results
-	 * @param settings
-	 *
-	 * @throws XMPPException
-	 */
 	@Override
 	public void process(Packet packet, XMPPResourceConnection session, NonAuthUserRepository repo,
 						Queue<Packet> results, Map<String, Object> settings) throws XMPPException {

@@ -48,12 +48,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Class description
- *
- * @author Enter your name here...
- * @version Enter version here..., 13/02/16
- */
 @Repository.Meta(supportedUris = {"jdbc:[^:]+:.*"}, isDefault = true)
 @Repository.SchemaId(id = Schema.MA_SCHEMA_ID, name = Schema.MA_SCHEMA_NAME)
 public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
@@ -128,16 +122,6 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param owner
-	 * @param buddy
-	 * @param direction
-	 * @param timestamp
-	 * @param msg
-	 * @param tags
-	 */
 	@Override
 	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
 							   Set<String> tags) {
