@@ -26,6 +26,7 @@ import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.db.TigaseDBException;
+import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
@@ -51,7 +52,8 @@ import java.util.logging.Logger;
 @Repository.Meta(supportedUris = {"jdbc:[^:]+:.*"}, isDefault = true)
 @Repository.SchemaId(id = Schema.MA_SCHEMA_ID, name = Schema.MA_SCHEMA_NAME)
 public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
-		extends AbstractMessageArchiveRepository<Q, DataRepository> {
+		extends AbstractMessageArchiveRepository<Q, DataRepository>
+		implements RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
 	private static final long LONG_NULL = 0;
@@ -112,9 +114,6 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	@Override
 	public void setDataSource(DataRepository data_repo) {
 		try {
-
-			data_repo.checkSchemaVersion(this);
-
 			initPreparedStatements(data_repo);
 			this.data_repo = data_repo;
 		} catch (SQLException ex) {
