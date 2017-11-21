@@ -79,9 +79,6 @@ public class MessageArchiveComponent
 
 	//~--- constructors ---------------------------------------------------------
 
-	/**
-	 * Constructs ...
-	 */
 	public MessageArchiveComponent() {
 		super();
 		VHostItemHelper.register();

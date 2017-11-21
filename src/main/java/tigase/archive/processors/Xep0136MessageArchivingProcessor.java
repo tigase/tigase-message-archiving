@@ -52,16 +52,12 @@ public class Xep0136MessageArchivingProcessor
 
 	public static final String MUC_SAVE = "muc-save";
 
-	/** Field description */
 	public static final String LIST = "list";
 
-	/** Field description */
 	public static final String REMOVE = "remove";
 
-	/** Field description */
 	public static final String RETRIEVE = "retrieve";
 
-	/** Field description */
 	public static final String XEP0136NS = "urn:xmpp:archive";
 	protected static final String AUTO = "auto";
 	protected static final String ID = "message-archive-xep-0136";
