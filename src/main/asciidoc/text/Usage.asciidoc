@@ -33,56 +33,56 @@ See below for what these settings mean.
 
 <auto/>::
   - *Required Attributes*
-  * +save=+ Boolean turning archiving on or off
+  * `save=` Boolean turning archiving on or off
   - *Optional Settings*
-  * +scope=+ Determines scope of archiving, default is +'stream'+ which turns off after stream end, or may be +'global'+ which keeps auto save permanent,
+  * `scope=` Determines scope of archiving, default is `'stream'` which turns off after stream end, or may be `'global'` which keeps auto save permanent,
 
 <default/>::
   Default element sets default settings for OTR and save modes, includes an option for archive expiration.
   - *Required Attribures*
-  * +otr=+ Specifies setting for Off The Record mode. Available settings are:
-    ** +approve+ The user MUST explicitly approve OTR communication.
-    ** +concede+ Communications MAY be OTR if requested by another user.
-    ** +forbid+ Communications MUST NOT be OTR.
-    ** +oppose+ Communications SHOULD NOT be OTR.
-    ** +prefer+ Communications SHOULD be OTR.
-    ** +require+ Communications MUST be OTR.
-  * +save=+ Specifies the portion of messages to archive, by default it is set to +body+.
-    ** +body+ Archives only the items within the <body/> elements.
-    ** +message+ Archive the entire XML content of each message.
-    ** +stream+ Archive saves every byte of communication between server and client. (Not recommended, high resource use)
+  * `otr=` Specifies setting for Off The Record mode. Available settings are:
+    ** `approve` The user MUST explicitly approve OTR communication.
+    ** `concede` Communications MAY be OTR if requested by another user.
+    ** `forbid` Communications MUST NOT be OTR.
+    ** `oppose` Communications SHOULD NOT be OTR.
+    ** `prefer` Communications SHOULD be OTR.
+    ** `require` Communications MUST be OTR.
+  * `save=` Specifies the portion of messages to archive, by default it is set to `body`.
+    ** `body` Archives only the items within the <body/> elements.
+    ** `message` Archive the entire XML content of each message.
+    ** `stream` Archive saves every byte of communication between server and client. (Not recommended, high resource use)
   - *Optional Settings*
-  * +expire=+ Specifies after how many seconds should the server delete saved messages.
+  * `expire=` Specifies after how many seconds should the server delete saved messages.
 
 <item/>::
   The Item element specifies settings for a particular entity. These settings will override default settings for the specified JIDS.
   - *Required Attributes*
-  * +JID=+ The Jabber ID of the entity that you wish to put these settings on, it may be a full JID, bare JID, or just a domain.
-  * +otr=+ Specifies setting for Off The Record mode. Available settings are:
-    ** +approve+ The user MUST explicitly approve OTR communication.
-    ** +concede+ Communications MAY be OTR if requested by another user.
-    ** +forbid+ Communications MUST NOT be OTR.
-    ** +oppose+ Communications SHOULD NOT be OTR.
-    ** +prefer+ Communications SHOULD be OTR.
-    ** +require+ Communications MUST be OTR.
-  * +save=+ Specifies the portion of messages to archive, by default it is set to +body+.
-    ** +body+ Archives only the items within the <body/> elements.
-    ** +message+ Archive the entire XML content of each message.
-    ** +stream+ Archive saves every byte of communication between server and client. (Not recommended, high resource use)
+  * `JID=` The Jabber ID of the entity that you wish to put these settings on, it may be a full JID, bare JID, or just a domain.
+  * `otr=` Specifies setting for Off The Record mode. Available settings are:
+    ** `approve` The user MUST explicitly approve OTR communication.
+    ** `concede` Communications MAY be OTR if requested by another user.
+    ** `forbid` Communications MUST NOT be OTR.
+    ** `oppose` Communications SHOULD NOT be OTR.
+    ** `prefer` Communications SHOULD be OTR.
+    ** `require` Communications MUST be OTR.
+  * `save=` Specifies the portion of messages to archive, by default it is set to `body`.
+    ** `body` Archives only the items within the <body/> elements.
+    ** `message` Archive the entire XML content of each message.
+    ** `stream` Archive saves every byte of communication between server and client. (Not recommended, high resource use)
   - *Optional Settings*
-  * +expire=+ Specifies after how many seconds should the server delete saved messages.
+  * `expire=` Specifies after how many seconds should the server delete saved messages.
 
 <method/>::
   This element specifies the user preference for available archiving methods.
   - *Required Attributes*
-  * +type=+ The type of archiving to set
-    ** +auto+ Preferences for use of automatic archiving on the user's server.
-    ** +local+ Set to use local archiving on user's machine or device.
-    ** +manual+ Preferences for use of manual archiving to the server.
-  * +use=+ Sets level of use for the type
-    ** +prefer+ The selected method should be used if it is available.
-    ** +concede+ This will be used if no other methods are available.
-    ** +forbid+ The associated method MUST not be used.
+  * `type=` The type of archiving to set
+    ** `auto` Preferences for use of automatic archiving on the user's server.
+    ** `local` Set to use local archiving on user's machine or device.
+    ** `manual` Preferences for use of manual archiving to the server.
+  * `use=` Sets level of use for the type
+    ** `prefer` The selected method should be used if it is available.
+    ** `concede` This will be used if no other methods are available.
+    ** `forbid` The associated method MUST not be used.
 
 Now that we have established settings, lets send a stanza changing a few of them:
 [source,xml]
@@ -115,4 +115,4 @@ A sucessful result will yield this response from the server:
 ----
 <iq type='result' to='user@domain.com' id='turnon'/>
 ----
-Once this is turned on, incoming and outgoing messages from the user will be stored in +tig_ma_msgs+ table in the database.
+Once this is turned on, incoming and outgoing messages from the user will be stored in `tig_ma_msgs` table in the database.

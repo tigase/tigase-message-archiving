@@ -66,8 +66,8 @@ Tagging can be done only by user sending message as to tag message tag needs to 
 
 Currently there are 2 types of tags supported:
 
-* `hashtag` - words prefixed by "hash" (#) are stored with prefix and used as tag, ie. `#Tigase`
-* `mention` - words prefixed by "at" (@) are stored with prefix and used as tag, ie. `@Tigase`
+* `hashtag` - words prefixed by "hash" (#) are stored with prefix and used as tag, i.e. `#Tigase`
+* `mention` - words prefixed by "at" (@) are stored with prefix and used as tag, i.e. `@Tigase`
 
 Custom feature allows user to query/retrieve messages or collections from archive only containing particular tag or tags. To execute request in which user wants to retrieve only messages tagged with `@User1` and `#People` XMPP client executing request needs to add following element as child element of `<retrieve/>` element or `<list/>` element:
 [source,xml]
@@ -138,12 +138,12 @@ which will return suggested similar hashtags which where found in database for p
 </iq>
 ----
 
-== Automatic archivization of MUC messages
+== Automatic archiving of MUC messages
 If this feature is enabled MUC messages are stored in Message Archiving repository and are added in same way as for any other messages and `jid` of MUC room is used as `jid` of message sender, so if MUC message sent from `test@muc.example.com` was stored then to retrieve this messages `test@muc.example.com` needs to be passed as `with` attribute to message retrieve request.
 Retrieved MUC messages will be retrieved in same format as normal message with one exception - each message will contain `name` attribute with name of occupant in room which sent this message.
 
 This feature is by default disabled but it is possible to enable it for particular user. Additionally it is possible to change default setting on installation level and on hosted domain level to enable this feature, disable feature or allow user to decide if user want this feature to be enabled.
-For more information about configuration of this feature look at <<Configuration of automatic archivization of MUC messages>>
+For more information about configuration of this feature look at <<Configuration of automatic archiving of MUC messages>>
 
 [NOTE]
 ====
