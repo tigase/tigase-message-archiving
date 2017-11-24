@@ -1,5 +1,5 @@
 [[mAOverview]]
-= Overview
+= Tigase Message Archiving Component
 :author: Andrzej Wójcik
 :version: v2.0 October 2017. Reformatted for v8.0.0.
 
