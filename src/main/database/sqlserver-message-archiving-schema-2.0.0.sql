@@ -835,6 +835,6 @@ update tig_ma_jids set domain = LOWER(domain), domain_sha1 = HASHBYTES('SHA1', L
 GO
 
 -- QUERY START:
-exec TigSetComponentVersion('message-archiving', '2.0.0');
+exec TigSetComponentVersion 'message-archiving', '2.0.0';
 -- QUERY END:
 GO
