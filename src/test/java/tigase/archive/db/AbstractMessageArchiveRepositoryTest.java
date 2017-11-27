@@ -27,9 +27,9 @@ import org.junit.runners.model.Statement;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
+import tigase.db.AbstractDataSourceAwareTestCase;
 import tigase.db.DataSource;
-import tigase.db.DataSourceHelper;
-import tigase.db.RepositoryFactory;
+import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
@@ -38,7 +38,6 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
 
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -48,11 +47,11 @@ import java.util.*;
  * @author andrzej
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class AbstractMessageArchiveRepositoryTest {
+public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource> extends AbstractDataSourceAwareTestCase<DS,MessageArchiveRepository > {
 
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
-	protected static String uri = System.getProperty("testDbUri");
+
 	@ClassRule
 	public static TestRule rule = new TestRule() {
 		@Override
@@ -68,6 +67,7 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 			return stmnt;
 		}
 	};
+	
 	private static JID buddy = null;
 	private static JID owner = null;
 	// this is static to pass date from first test to next one
@@ -88,27 +88,8 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 	}
 
 	@Before
-	public void setup() throws RepositoryException, InstantiationException, IllegalAccessException, SQLException,
-							   ClassNotFoundException {
-		if (uri == null) {
-			return;
-		}
-
-		//DataRepository dataRepo = RepositoryFactory.getDataRepository(null, uri, new HashMap<>());
-		dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
-		dataSource.initRepository(uri, new HashMap<>());
-		repo = DataSourceHelper.getDefaultClass(MessageArchiveRepository.class, uri).newInstance();
-		repo.setDataSource(dataSource);
-	}
-
-	@After
-	public void tearDown() {
-		if (uri == null) {
-			return;
-		}
-
-		repo.destroy();
-		repo = null;
+	public void setup() {
+		repo = getDataSourceAware();
 	}
 
 	@Test
@@ -619,6 +600,11 @@ public abstract class AbstractMessageArchiveRepositoryTest {
 
 		repo.removeItems(owner.getBareJID(), buddy.getBareJID().toString(), new Date(date.getTime() - 1000),
 						 new Date());
+	}
+
+	@Override
+	protected Class<? extends DataSourceAware> getDataSourceAwareIfc() {
+		return MessageArchiveRepository.class;
 	}
 
 	private class ColItem {
