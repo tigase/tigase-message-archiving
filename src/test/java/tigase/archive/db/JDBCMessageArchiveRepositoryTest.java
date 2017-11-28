@@ -36,7 +36,7 @@ import java.util.*;
  * @author andrzej
  */
 public class JDBCMessageArchiveRepositoryTest
-		extends AbstractMessageArchiveRepositoryTest<DataRepository> {
+		extends AbstractMessageArchiveRepositoryTest<DataRepository, MessageArchiveRepository> {
 
 	private static final String PROJECT_ID = "message-archiving";
 	private static final String VERSION = "2.0.0";

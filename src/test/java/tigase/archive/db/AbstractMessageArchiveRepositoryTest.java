@@ -47,7 +47,7 @@ import java.util.*;
  * @author andrzej
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource> extends AbstractDataSourceAwareTestCase<DS,MessageArchiveRepository > {
+public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource, R extends MessageArchiveRepository> extends AbstractDataSourceAwareTestCase<DS, R> {
 
 	private final static SimpleDateFormat formatter2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
