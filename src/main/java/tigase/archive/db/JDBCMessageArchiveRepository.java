@@ -1111,6 +1111,15 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 		} finally {
 			data_repo.release(stmt, null);
 		}
+		try {
+			if (data_repo.getDatabaseType() == dbTypes.mysql) {
+				stmt = data_repo.createStatement(null);
+				stmt.execute("create index " + JIDS_TABLE + "_" + JIDS_JID + "_index on " + JIDS_TABLE + " (" + JIDS_JID + "(255))");
+			}
+		} catch (SQLException ex) {
+		} finally {
+			data_repo.release(stmt, null);
+		}
 	}
 	
 	/**
