@@ -20,8 +20,8 @@
 	<description>Implementation of Message Archiving component for Tigase XMPP Server.</description>
 	<url>http://maven.apache.org</url>
 	<scm>
-		<connection>scm:git:https://repository.tigase.org/git/message-archiving.git</connection>
-		<developerConnection>scm:git:https://repository.tigase.org/git/message-archiving.git</developerConnection>
+		<connection>scm:git:https://git.tigase.tech/message-archiving.git</connection>
+		<developerConnection>scm:git:https://git.tigase.tech/message-archiving.git</developerConnection>
 		<url>https://projects.tigase.org/projects/message-archiving/repository</url>
 	  <tag>HEAD</tag>
   </scm>
