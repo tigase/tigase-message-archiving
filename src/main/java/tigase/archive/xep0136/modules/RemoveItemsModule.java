@@ -19,12 +19,14 @@
  */
 package tigase.archive.xep0136.modules;
 
+import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
 import tigase.archive.modules.AbstractModule;
 import tigase.archive.xep0136.Xep0136QueryParser;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.db.TigaseDBException;
+import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
@@ -34,6 +36,7 @@ import tigase.xmpp.Authorization;
 /**
  * Created by andrzej on 16.07.2016.
  */
+@Bean(name = "removeItems", parent = MessageArchiveComponent.class, active = true)
 public class RemoveItemsModule
 		extends AbstractModule {
 
