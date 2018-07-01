@@ -763,8 +763,32 @@ begin
 	set @_owner_id = 0;
 	set @_buddy_id = 0;
 	select @_owner_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid));
-	select @_buddy_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid));
-	delete from tig_ma_msgs where owner_id = @_owner_id and buddy_id = @_buddy_id and ts >= @_from and ts <= @_to;
+	if @_buddyJid is not null
+	    begin
+       	select @_buddy_id = jid_id from tig_ma_jids where jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid));
+       	end
+       	
+	delete from tig_ma_msgs where owner_id = @_owner_id and (@_buddyJid is null or buddy_id = @_buddy_id) and (@_from is null or ts >= @_from) and (@_to is null or ts <= @_to);
+
+	if @_buddyJid is null
+    	delete from tig_ma_jids
+	        where
+	            not exists (
+	                select 1 from tig_ma_msgs m where m.owner_id = jid_id
+    	        )
+	            and not exists (
+	                select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	            );
+    else
+    	delete from tig_ma_jids
+	        where
+	            jid_id = @_buddy_id
+	            and not exists (
+	                select 1 from tig_ma_msgs m where m.owner_id = jid_id
+	            )
+	            and not exists (
+	                select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	            );
 end
 -- QUERY END:
 GO
@@ -782,6 +806,14 @@ create procedure Tig_MA_DeleteExpiredMessages
 AS
 begin
 	delete from tig_ma_msgs where ts < @_before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and [domain_sha1] = HASHBYTES('SHA1', @_domain) and [domain] = @_domain);
+	delete from tig_ma_jids
+	    where
+	        not exists (
+	            select 1 from tig_ma_msgs m where m.owner_id = jid_id
+	        )
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	        );
 end
 -- QUERY END:
 GO

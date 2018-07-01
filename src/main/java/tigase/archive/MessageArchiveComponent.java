@@ -25,8 +25,12 @@ package tigase.archive;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.modules.impl.DiscoveryModule;
+import tigase.db.TigaseDBException;
+import tigase.db.UserRepository;
+import tigase.eventbus.HandleEvent;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.UnregisterAware;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.kernel.beans.selector.ConfigType;
 import tigase.kernel.beans.selector.ConfigTypeEnum;
@@ -53,7 +57,7 @@ import java.util.logging.Logger;
 @ConfigType(ConfigTypeEnum.DefaultMode)
 public class MessageArchiveComponent
 		extends AbstractKernelBasedComponent
-		implements MessageArchiveConfig {
+		implements MessageArchiveConfig, UnregisterAware {
 
 	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class.getCanonicalName());
 
@@ -139,6 +143,21 @@ public class MessageArchiveComponent
 	@Override
 	public void initialize() {
 		super.initialize();
+		eventBus.registerAll(this);
+	}
+
+	@Override
+	public void beforeUnregister() {
+		eventBus.unregisterAll(this);
+	}
+
+	@HandleEvent
+	public void onUserRemoved(UserRepository.UserRemovedEvent event) {
+		try {
+			msg_repo.removeItems(event.jid, null, null, null);
+		} catch (TigaseDBException ex) {
+			log.log(Level.FINE, "Could not remove entries for removed user " + event.jid, ex);
+		}
 	}
 
 	//~--- set methods ----------------------------------------------------------

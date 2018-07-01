@@ -192,23 +192,16 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	@Override
 	public void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException {
 		try {
-			if (start == null) {
-				start = new Date(0);
-			}
-			if (end == null) {
-				end = new Date(0);
-			}
-
-			java.sql.Timestamp start_ = new java.sql.Timestamp(start.getTime());
-			java.sql.Timestamp end_ = new java.sql.Timestamp(end.getTime());
 			PreparedStatement remove_msgs_st = data_repo.getPreparedStatement(owner, REMOVE_MESSAGES_QUERY);
 
 			synchronized (remove_msgs_st) {
 				synchronized (remove_msgs_st) {
 					remove_msgs_st.setString(1, owner.toString());
 					remove_msgs_st.setString(2, withJid);
-					data_repo.setTimestamp(remove_msgs_st, 3, start_);
-					data_repo.setTimestamp(remove_msgs_st, 4, end_);
+					data_repo.setTimestamp(remove_msgs_st, 3,
+										   start == null ? null : new java.sql.Timestamp(start.getTime()));
+					data_repo.setTimestamp(remove_msgs_st, 4,
+										   end == null ? null : new java.sql.Timestamp(end.getTime()));
 					remove_msgs_st.executeUpdate();
 				}
 			}

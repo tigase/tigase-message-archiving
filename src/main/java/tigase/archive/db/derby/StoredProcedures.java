@@ -209,6 +209,16 @@ public class StoredProcedures {
 			ps.setString(2, domain);
 
 			ps.execute();
+
+			ps = conn.prepareStatement("delete from tig_ma_jids" +
+											   " where" +
+											   "  not exists (" +
+											   "    select 1 from tig_ma_msgs m where m.owner_id = jid_id" +
+											   "  )" +
+											   "  and not exists (" +
+											   "    select 1 from tig_ma_msgs m where m.buddy_id = jid_id" +
+											   "  )");
+			ps.execute();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
@@ -576,28 +586,74 @@ public class StoredProcedures {
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			PreparedStatement ps = conn.prepareStatement("select jid_id from tig_ma_jids where jid_sha1 = ?");
+			Long ownerId = getJidId(BareJID.bareJIDInstanceNS(ownerJid), sha1OfLower(ownerJid));
+			if (ownerId == null) {
+				return;
+			}
+			
+			if (buddyJid != null) {
+				Long buddyId = getJidId(BareJID.bareJIDInstanceNS(buddyJid), sha1OfLower(buddyJid));
+				if (buddyId == null) {
+					return;
+				}
+				StringBuilder sb = new StringBuilder("delete from tig_ma_msgs where owner_id = ? and buddy_id = ?");
+				if (from != null) {
+					sb.append(" and ts >= ?");
+				}
+				if (to != null) {
+					sb.append(" and ts <= ?");
+				}
+				PreparedStatement ps = conn.prepareStatement(sb.toString());
+				int i=1;
+				ps.setLong(i++, ownerId);
+				ps.setLong(i++, buddyId);
+				if (from != null) {
+					ps.setTimestamp(i++, from);
+				}
+				if (to != null) {
+					ps.setTimestamp(i++, to);
+				}
+				ps.execute();
 
-			ps.setString(1, sha1OfLower(ownerJid));
-			ResultSet rs = ps.executeQuery();
-			rs.next();
-			long ownerId = rs.getLong(1);
-			rs.close();
+				ps = conn.prepareStatement("delete from tig_ma_jids" +
+												   " where jid_id = ?" +
+												   " and not exists (" +
+												   "  select 1 from tig_ma_msgs m where m.buddy_id = jid_id" +
+												   " )" +
+												   " and not exists (" +
+												   "  select 1 from tig_ma_msgs m where m.owner_id = jid_id" +
+												   " )");
+				ps.setLong(1, buddyId);
+				ps.execute();
+			} else {
+				StringBuilder sb = new StringBuilder("delete from tig_ma_msgs where owner_id = ?");
+				if (from != null) {
+					sb.append(" and ts >= ?");
+				}
+				if (to != null) {
+					sb.append(" and ts <= ?");
+				}
+				PreparedStatement ps = conn.prepareStatement(sb.toString());
+				int i=1;
+				ps.setLong(i++, ownerId);
+				if (from != null) {
+					ps.setTimestamp(i++, from);
+				}
+				if (to != null) {
+					ps.setTimestamp(i++, to);
+				}
+				ps.execute();
+			}
 
-			ps.setString(1, sha1OfLower(buddyJid));
-			rs = ps.executeQuery();
-			rs.next();
-			long buddyId = rs.getLong(1);
-			rs.close();
-
-			ps = conn.prepareStatement(
-					"delete from tig_ma_msgs where owner_id = ? and buddy_id = ? and ts >= ? and ts <= ?");
-
+			PreparedStatement ps = conn.prepareStatement("delete from tig_ma_jids" +
+											   " where jid_id = ?" +
+											   " and not exists (" +
+											   "  select 1 from tig_ma_msgs m where m.buddy_id = jid_id" +
+											   " )" +
+											   " and not exists (" +
+											   "  select 1 from tig_ma_msgs m where m.owner_id = jid_id" +
+											   " )");
 			ps.setLong(1, ownerId);
-			ps.setLong(2, buddyId);
-			ps.setTimestamp(3, from);
-			ps.setTimestamp(4, to);
-
 			ps.execute();
 		} catch (SQLException e) {
 			throw e;

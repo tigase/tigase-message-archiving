@@ -69,6 +69,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 	};
 	
 	private static JID buddy = null;
+	private static JID buddy2 = null;
 	private static JID owner = null;
 	// this is static to pass date from first test to next one
 	private static Date testStart = null;
@@ -85,6 +86,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 	public static void initialize() {
 		owner = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-1");
 		buddy = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-2");
+		buddy2 = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-3");
 	}
 
 	@Before
@@ -94,6 +96,40 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 
 	@Test
 	public void test1_archiveMessage1() throws RepositoryException, ComponentException {
+		if (uri == null) {
+			return;
+		}
+		Date date = new Date();
+		String body = "Test 1";
+		if (checkEmoji) {
+			body += emoji;
+		}
+		Element msg = new Element("message", new String[]{"from", "to", "type"},
+								  new String[]{owner.toString(), buddy2.toString(), StanzaType.chat.name()});
+		msg.addChild(new Element("body", body));
+		repo.archiveMessage(owner.getBareJID(), buddy2, MessageArchiveRepository.Direction.outgoing, date, msg, null);
+
+		QueryCriteria crit = repo.newQuery();
+		crit.setQuestionerJID(owner.copyWithoutResource());
+		crit.setWith(buddy2.copyWithoutResource());
+		crit.setStart(date);
+		crit.getRsm().setIndex(0);
+		crit.getRsm().setMax(1);
+		List<Element> msgs = new ArrayList<>();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
+			item.getMessage().setName(((MessageArchiveRepository.Item) item).getDirection().toElementName());
+			msgs.add(item.getMessage());
+		});
+		Assert.assertEquals("Incorrect number of message", 1, msgs.size());
+
+		Element res = msgs.get(0);
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
+							res.getName());
+		Assert.assertEquals("Incorrect message body", body, res.getChildCData(res.getName() + "/body"));
+	}
+	
+	@Test
+	public void test1_archiveMessage2() throws RepositoryException, ComponentException {
 		if (uri == null) {
 			return;
 		}
@@ -516,6 +552,18 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Assert.assertNotEquals("No messages in repository to execute test - we should have some already", 0,
 							   msgs.size());
 		repo.removeItems(owner.getBareJID(), buddy.getBareJID().toString(), testStart, new Date());
+		msgs.clear();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
+		Assert.assertEquals("Still some messages, while in this duration all should be deleted", 0, msgs.size());
+
+		crit = repo.newQuery();
+		crit.setQuestionerJID(owner.copyWithoutResource());
+
+		msgs.clear();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
+		Assert.assertNotEquals("No messages in repository to execute test - we should have some already", 0,
+							   msgs.size());
+		repo.removeItems(owner.getBareJID(), null, null, null);
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
 		Assert.assertEquals("Still some messages, while in this duration all should be deleted", 0, msgs.size());

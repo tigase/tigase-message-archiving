@@ -696,8 +696,36 @@ begin
 	_owner_id = 0;
 	_buddy_id = 0;
 	select jid_id into _owner_id from tig_ma_jids where lower(jid) = lower(_ownerJid);
-	select jid_id into _buddy_id from tig_ma_jids where lower(jid) = lower(_buddyJid);
-	delete from tig_ma_msgs where owner_id = _owner_id and buddy_id = _buddy_id and ts >= _from and ts <= _to;
+	if _buddyJid is not null then
+	    select jid_id into _buddy_id from tig_ma_jids where lower(jid) = lower(_buddyJid);
+	end if;
+
+	with deleted as (
+	    delete from tig_ma_msgs
+	        where owner_id = _owner_id
+	        and (_buddyJid is null or buddy_id = _buddy_id)
+	        and (_from is null or ts >= _from) and (_to is null or ts <= _to)
+	    returning buddy_id
+	)
+	delete from tig_ma_jids
+	    where
+	        jid_id in (select buddy_id from deleted group by buddy_id)
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.owner_id = jid_id
+	        )
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	        );
+
+	delete from tig_ma_jids
+	    where
+	        jid_id = _owner_id
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.owner_id = jid_id
+	        )
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	        );
 end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
@@ -715,6 +743,14 @@ end$$;
 create or replace function Tig_MA_DeleteExpiredMessages(_domain varchar(1024), _before timestamp with time zone) returns void as $$
 begin
 	delete from tig_ma_msgs where ts < _before and exists (select 1 from tig_ma_jids j where j.jid_id = owner_id and "domain" = _domain);
+	delete from tig_ma_jids
+	    where
+	        not exists (
+	            select 1 from tig_ma_msgs m where m.owner_id = jid_id
+	        )
+	        and not exists (
+	            select 1 from tig_ma_msgs m where m.buddy_id = jid_id
+	        );
 end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:

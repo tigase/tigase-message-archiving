@@ -31,7 +31,6 @@ import tigase.kernel.beans.Inject;
 import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.Authorization;
 
 /**
  * Created by andrzej on 16.07.2016.
@@ -57,18 +56,11 @@ public class RemoveItemsModule
 
 	@Override
 	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
-		Element remove = packet.getElement().getChild(REMOVE_ELEM, MA_XMLNS);
-
-		if ((remove.getAttributeStaticStr("with") == null) || (remove.getAttributeStaticStr("start") == null) ||
-				(remove.getAttributeStaticStr("end") == null)) {
-			throw new ComponentException(Authorization.NOT_ACCEPTABLE, "Parameters with, start, end cannot be null");
-		}
-
 		try {
 			QueryCriteria query = msg_repo.newQuery();
 			queryParser.parseQuery(query, packet);
 
-			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), query.getWith().toString(), query.getStart(),
+			msg_repo.removeItems(packet.getStanzaFrom().getBareJID(), query.getWith() == null ? null : query.getWith().toString(), query.getStart(),
 								 query.getEnd());
 			packetWriter.write(packet.okResult((Element) null, 0));
 		} catch (TigaseDBException e) {
