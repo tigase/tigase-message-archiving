@@ -551,13 +551,11 @@ end //
 create function Tig_MA_EnsureJid(_jid varchar(2049) CHARSET utf8) returns bigint DETERMINISTIC
 begin
 	declare _jid_id bigint;
-	declare _jid_sha1 char(40);
 
-	select SHA1(LOWER(_jid)) into _jid_sha1;
-	select jid_id into _jid_id from tig_ma_jids where jid_sha1 = _jid_sha1;
+	select jid_id into _jid_id from tig_ma_jids where jid_sha1 = SHA1(LOWER(_jid));
 	if _jid_id is null then
 		insert into tig_ma_jids (jid, jid_sha1, `domain`)
-			values (_jid, _jid_sha1, SUBSTR(jid, LOCATE('@', _jid) + 1))
+			values (_jid, SHA1(LOWER(_jid)), SUBSTR(jid, LOCATE('@', _jid) + 1))
 			on duplicate key update jid_id = LAST_INSERT_ID(jid_id);
 		select LAST_INSERT_ID() into _jid_id;
 	end if;
