@@ -30,10 +30,7 @@ import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManager;
 import tigase.xml.Element;
 import tigase.xmpp.*;
-import tigase.xmpp.impl.annotation.AnnotatedXMPPProcessor;
-import tigase.xmpp.impl.annotation.Handle;
-import tigase.xmpp.impl.annotation.Handles;
-import tigase.xmpp.impl.annotation.Id;
+import tigase.xmpp.impl.annotation.*;
 import tigase.xmpp.jid.JID;
 
 import java.util.Map;
@@ -49,6 +46,7 @@ import static tigase.archive.processors.Xep0313MessageArchiveManagementProcessor
  */
 @Id(ID)
 @Handles({@Handle(path = {"iq", "query"}, xmlns = ID), @Handle(path = {"iq", "prefs"}, xmlns = ID)})
+@DiscoFeatures({ID})
 @Bean(name = ID, parent = SessionManager.class, active = true)
 public class Xep0313MessageArchiveManagementProcessor
 		extends AnnotatedXMPPProcessor
