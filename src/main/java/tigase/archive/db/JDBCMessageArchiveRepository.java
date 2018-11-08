@@ -300,7 +300,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT_QUERY, GET_TAGS_FOR_USER_COUNT_QUERY);
 	}
 
-	protected void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
+	protected Long archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
 								  Set<String> tags, Map<String, Object> additionalData) {
 		try {
 			ResultSet rs = null;
@@ -357,7 +357,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			// record as insert was not executed
 			// in this case we need to exit from this function
 			if (msgId == null || msgId == 0) {
-				return;
+				return msgId;
 			}
 
 			if (tags != null && !tags.isEmpty()) {
@@ -371,8 +371,11 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 					add_message_tag_st.executeBatch();
 				}
 			}
+
+			return msgId;
 		} catch (SQLException ex) {
 			log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
+			return null;
 		}
 	}
 
