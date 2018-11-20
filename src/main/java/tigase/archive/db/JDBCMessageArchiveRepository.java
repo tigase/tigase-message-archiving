@@ -332,10 +332,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 					// works for MSSQL, MySQL and PostgreSQL
 					rs = add_message_st.executeQuery();
-					if (tags != null) {
-						if (rs.next()) {
-							msgId = rs.getLong(1);
-						}
+					if (rs.next()) {
+						msgId = rs.getLong(1);
 					}
 
 					// below works for MySQL and PostgreSQL
