@@ -1,8 +1,6 @@
-/*
- * Xep0136QueryParser.java
- *
- * Tigase Message Archiving Component
- * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
+/**
+ * Tigase Message Archiving Component - Implementation of Message Archiving component for Tigase XMPP Server.
+ * Copyright (C) 2012 Tigase, Inc. (office@tigase.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
