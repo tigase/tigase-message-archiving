@@ -24,8 +24,8 @@
     <inceptionYear>2012</inceptionYear>
 
     <scm>
-        <connection>scm:git:https://repository.tigase.org/git/message-archiving.git</connection>
-        <developerConnection>scm:git:https://repository.tigase.org/git/message-archiving.git</developerConnection>
+        <connection>scm:git:${scm_repo_base}/message-archiving.git</connection>
+        <developerConnection>scm:git:${scm_repo_base}/message-archiving.git</developerConnection>
         <url>https://projects.tigase.org/projects/message-archiving/repository</url>
     </scm>
 
