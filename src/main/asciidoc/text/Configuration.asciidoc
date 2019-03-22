@@ -74,7 +74,7 @@ To set required level to `body` you need to set `required-store-method` of `mess
 ----
 sess-man {
     message-archive {
-        required-store-method = `body`
+        required-store-method = 'body'
     }
 }
 ----
