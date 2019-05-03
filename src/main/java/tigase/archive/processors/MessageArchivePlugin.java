@@ -87,7 +87,8 @@ public class MessageArchivePlugin
 	@ConfigField(desc = "Matchers selecting messages that will be archived", alias = MSG_ARCHIVE_PATHS)
 	private ElementMatcher[] archivingMatchers = new ElementMatcher[]{
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "result"}, "urn:xmpp:mam:1", false),
-			new ElementMatcher(new String[]{Message.ELEM_NAME, "body"}, null, true)};
+			new ElementMatcher(new String[]{Message.ELEM_NAME, "body"}, null, true),
+			new ElementMatcher(new String[]{Message.ELEM_NAME, "store"}, MESSAGE_HINTS_XMLNS, true)};
 	@ConfigField(desc = "Global default store method", alias = DEFAULT_STORE_METHOD_KEY)
 	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
 	@ConfigField(desc = "Global required store method", alias = REQUIRED_STORE_METHOD_KEY)
