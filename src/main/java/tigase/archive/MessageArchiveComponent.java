@@ -82,7 +82,6 @@ public class MessageArchiveComponent
 
 	public MessageArchiveComponent() {
 		super();
-		VHostItemHelper.register();
 		setName("message-archive");
 	}
 
@@ -205,29 +204,35 @@ public class MessageArchiveComponent
 			for (JID vhost : vHostManager.getAllVHosts()) {
 				try {
 					VHostItem item = vHostManager.getVHostItem(vhost.getDomain());
-					RetentionType retentionType = VHostItemHelper.getRetentionType(item);
-					switch (retentionType) {
-						case numberOfDays:
-							Integer days = VHostItemHelper.getRetentionDays(item);
-							if (days != null) {
-								long start = System.currentTimeMillis();
-								LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusDays(days);
-								msg_repo.deleteExpiredMessages(vhost.getBareJID(), timestamp);
-								long stop = System.currentTimeMillis();
-								long executedIn = stop - start;
-								time += executedIn;
-								log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms",
-										new Object[]{timestamp.toString(), vhost.getDomain(), executedIn});
-								count++;
-							}
-							break;
-						case userDefined:
-							// right now there is no implementation for this so let's handle it in same way as unlimited
-						case unlimited:
-							log.log(Level.FINEST, "skipping removal of expired messages for domain {0}" +
-											" as removal for retention type {1} is not supported",
-									new Object[]{vhost.getDomain(), retentionType});
-							break;
+					MessageArchiveVHostItemExtension extension = item.getExtension(MessageArchiveVHostItemExtension.class);
+					if (extension != null) {
+						RetentionType retentionType = extension.getRetentionType();
+						switch (retentionType) {
+							case numberOfDays:
+								Integer days = extension.getRetentionDays();
+								if (days != null) {
+									long start = System.currentTimeMillis();
+									LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusDays(days);
+									msg_repo.deleteExpiredMessages(vhost.getBareJID(), timestamp);
+									long stop = System.currentTimeMillis();
+									long executedIn = stop - start;
+									time += executedIn;
+									log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms",
+											new Object[]{timestamp.toString(), vhost.getDomain(), executedIn});
+									count++;
+								}
+								break;
+							case userDefined:
+								// right now there is no implementation for this so let's handle it in same way as unlimited
+							case unlimited:
+								log.log(Level.FINEST, "skipping removal of expired messages for domain {0}" +
+												" as removal for retention type {1} is not supported",
+										new Object[]{vhost.getDomain(), retentionType});
+								break;
+						}
+					} else {
+						log.log(Level.FINEST, "skipping removal of expired messages for domain {0}" +
+								" as retention type is not defined", new Object[]{vhost.getDomain()});
 					}
 				} catch (Exception ex) {
 					log.log(Level.FINE, "exception removing expired messages", ex);

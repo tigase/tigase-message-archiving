@@ -22,7 +22,7 @@ package tigase.archive.processors;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.archive.StoreMuc;
-import tigase.archive.VHostItemHelper;
+import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
@@ -45,10 +45,7 @@ import tigase.xmpp.impl.roster.RosterFactory;
 import tigase.xmpp.jid.JID;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -101,7 +98,6 @@ public class MessageArchivePlugin
 	;
 
 	public MessageArchivePlugin() {
-		VHostItemHelper.register();
 		componentJid = JID.jidInstanceNS("message-archive", DNSResolverFactory.getInstance().getDefaultHost(), null);
 	}
 
@@ -168,11 +164,15 @@ public class MessageArchivePlugin
 	//~--- get methods ----------------------------------------------------------	
 
 	public StoreMethod getDefaultStoreMethod(XMPPResourceConnection session) {
-		return VHostItemHelper.getDefaultStoreMethod(session.getDomain(), globalDefaultStoreMethod);
+		return Optional.ofNullable(session.getDomain().getExtension(MessageArchiveVHostItemExtension.class))
+				.flatMap(MessageArchiveVHostItemExtension::getDefaultStoreMethod)
+				.orElse(globalDefaultStoreMethod);
 	}
 
 	public StoreMethod getRequiredStoreMethod(XMPPResourceConnection session) {
-		return VHostItemHelper.getRequiredStoreMethod(session.getDomain(), globalRequiredStoreMethod);
+		return Optional.ofNullable(session.getDomain().getExtension(MessageArchiveVHostItemExtension.class))
+				.flatMap(MessageArchiveVHostItemExtension::getRequiredStoreMethod)
+				.orElse(globalRequiredStoreMethod);
 	}
 
 	public Settings getSettings(XMPPResourceConnection session) throws NotAuthorizedException {
@@ -186,7 +186,9 @@ public class MessageArchivePlugin
 	}
 
 	public StoreMuc getRequiredStoreMucMessages(XMPPResourceConnection session) {
-		return VHostItemHelper.getStoreMucMessages(session.getDomain(), globalStoreMucMessages);
+		return Optional.ofNullable(session.getDomain().getExtension(MessageArchiveVHostItemExtension.class))
+				.flatMap(MessageArchiveVHostItemExtension::getSaveMuc)
+				.orElse(globalStoreMucMessages);
 	}
 
 	public Settings loadSettings(XMPPResourceConnection session) throws NotAuthorizedException {
@@ -206,7 +208,10 @@ public class MessageArchivePlugin
 				if (globalStoreMucMessages == StoreMuc.User) {
 					String val = session.getData(SETTINGS, MUC_SAVE, null);
 					if (val == null) {
-						storeMuc = VHostItemHelper.getStoreMucMessages(session.getDomain(), StoreMuc.False);
+						storeMuc = Optional.ofNullable(session.getDomain().getExtension(
+								MessageArchiveVHostItemExtension.class))
+								.flatMap(MessageArchiveVHostItemExtension::getSaveMuc)
+								.orElse(StoreMuc.False);
 					} else {
 						storeMuc = StoreMuc.valueof(val);
 					}
@@ -283,8 +288,7 @@ public class MessageArchivePlugin
 		// support for XEP-0334 Message Processing Hints
 		if (packet.getAttributeStaticStr(MESSAGE_HINTS_NO_STORE, "xmlns") == MESSAGE_HINTS_XMLNS ||
 				packet.getAttributeStaticStr(MESSAGE_HINTS_NO_PERMANENT_STORE, "xmlns") == MESSAGE_HINTS_XMLNS) {
-			StoreMethod requiredStoreMethod = VHostItemHelper.getRequiredStoreMethod(session.getDomain(),
-																					 globalRequiredStoreMethod);
+			StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
 			if (requiredStoreMethod == StoreMethod.False) {
 				return;
 			}

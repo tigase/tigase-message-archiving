@@ -169,14 +169,16 @@ public class Xep0136MessageArchivingProcessor
 
 		defaultEl.setAttribute("otr", "forbid");
 		try {
-			RetentionType retentionType = VHostItemHelper.getRetentionType(session.getDomain());
+			MessageArchiveVHostItemExtension extension = session.getDomain().getExtension(
+					MessageArchiveVHostItemExtension.class);
+			RetentionType retentionType = extension == null ? RetentionType.unlimited : extension.getRetentionType();
 			String expire = null;
 			switch (retentionType) {
 				case userDefined:
 					expire = session.getData(SETTINGS, EXPIRE, null);
 					break;
 				case numberOfDays:
-					Integer retention = VHostItemHelper.getRetentionDays(session.getDomain());
+					Integer retention = extension.getRetentionDays();
 					if (retention != null) {
 						expire = String.valueOf(retention.longValue() * 60 * 60 * 24);
 					}
@@ -257,7 +259,9 @@ public class Xep0136MessageArchivingProcessor
 					}
 					expire = elem.getAttributeStaticStr(EXPIRE);
 					if (expire != null) {
-						if (RetentionType.userDefined != VHostItemHelper.getRetentionType(session.getDomain())) {
+						MessageArchiveVHostItemExtension extension = session.getDomain().getExtension(
+								MessageArchiveVHostItemExtension.class);
+						if (extension == null || RetentionType.userDefined != extension.getRetentionType()) {
 							error = Authorization.NOT_ALLOWED;
 							errorMsg = "Expire value is not allowed to be changed by user";
 						} else {
@@ -299,7 +303,9 @@ public class Xep0136MessageArchivingProcessor
 						errorMsg = "Required minimal message archiving level is " + requiredStoreMethod.toString() +
 								" and that requires automatic archiving to be enabled";
 					}
-					if (autoSave && !VHostItemHelper.isEnabled(session.getDomain())) {
+					MessageArchiveVHostItemExtension extension = session.getDomain().getExtension(
+							MessageArchiveVHostItemExtension.class);
+					if (autoSave && (extension == null || !extension.isEnabled())) {
 						error = Authorization.NOT_ALLOWED;
 						errorMsg = "Message archiving is not allowed for domain " + session.getDomainAsJID().toString();
 					}
@@ -370,7 +376,9 @@ public class Xep0136MessageArchivingProcessor
 																		  false));
 			return;
 		}
-		if (save && !VHostItemHelper.isEnabled(session.getDomain())) {
+		
+		MessageArchiveVHostItemExtension extension = session.getDomain().getExtension(MessageArchiveVHostItemExtension.class);
+		if (save && (extension == null || !extension.isEnabled())) {
 			results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet,
 																		  "Message archiving is not allowed for domain " +
 																				  session.getDomainAsJID().toString(),
