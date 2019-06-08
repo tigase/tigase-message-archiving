@@ -59,6 +59,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 
 		xep0313Processor = kernel.getInstance(Xep0313MessageArchiveManagementProcessor.class);
 		maPlugin = kernel.getInstance(MessageArchivePlugin.class);
+		assertNotNull(maPlugin);
 		maPlugin.init(new HashMap<>());
 	}
 

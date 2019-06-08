@@ -20,10 +20,13 @@ package tigase.archive.processors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
+import tigase.vhosts.VHostItem;
+import tigase.vhosts.VHostItemExtension;
 import tigase.xml.Element;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
@@ -32,10 +35,7 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -77,6 +77,13 @@ public class Xep0136MessageArchivingProcessorTest
 		JID res1 = JID.jidInstance(userJid, "res1");
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
+
+		Field f = VHostItem.class.getDeclaredField("extensions");
+		f.setAccessible(true);
+		Map<Class<? extends VHostItemExtension>, VHostItemExtension> extensions = (Map<Class<? extends VHostItemExtension>, VHostItemExtension>) f.get(session1.getDomain());
+
+		extensions.put(MessageArchiveVHostItemExtension.class,
+					  MessageArchiveVHostItemExtension.class.newInstance());
 
 		Settings settings = maPlugin.getSettings(session1);
 
