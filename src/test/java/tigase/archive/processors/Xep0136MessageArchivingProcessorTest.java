@@ -25,8 +25,8 @@ import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
-import tigase.vhosts.VHostItem;
 import tigase.vhosts.VHostItemExtension;
+import tigase.vhosts.VHostItemImpl;
 import tigase.xml.Element;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
@@ -78,7 +78,7 @@ public class Xep0136MessageArchivingProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Field f = VHostItem.class.getDeclaredField("extensions");
+		Field f = VHostItemImpl.class.getDeclaredField("extensions");
 		f.setAccessible(true);
 		Map<Class<? extends VHostItemExtension>, VHostItemExtension> extensions = (Map<Class<? extends VHostItemExtension>, VHostItemExtension>) f.get(session1.getDomain());
 

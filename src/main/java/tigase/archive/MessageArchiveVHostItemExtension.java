@@ -34,7 +34,7 @@ import java.util.Optional;
  * @author andrzej
  */
 public class MessageArchiveVHostItemExtension
-		extends AbstractVHostItemExtension implements VHostItemExtensionBackwardCompatible {
+		extends AbstractVHostItemExtension<MessageArchiveVHostItemExtension> implements VHostItemExtensionBackwardCompatible<MessageArchiveVHostItemExtension> {
 
 	public static final String ENABLED_KEY = "xep0136Enabled";
 
@@ -161,9 +161,33 @@ public class MessageArchiveVHostItemExtension
 		saveMuc.ifPresent(v -> el.setAttribute("save-muc", v.toString()));
 		return el;
 	}
+	
+	@Override
+	public MessageArchiveVHostItemExtension mergeWithDefaults(MessageArchiveVHostItemExtension defaults) {
+		MessageArchiveVHostItemExtension merged = new MessageArchiveVHostItemExtension();
+		merged.enabled = this.enabled && defaults.isEnabled();
+		merged.defaultStoreMethod = this.defaultStoreMethod.isPresent() ? this.defaultStoreMethod : defaults.getDefaultStoreMethod();
+		merged.requiredStoreMethod = this.requiredStoreMethod.isPresent() ? this.requiredStoreMethod : defaults.getRequiredStoreMethod();
+		switch (this.retentionType) {
+			case unlimited:
+				if (defaults.getRetentionType() == RetentionType.unlimited || defaults.getRetentionType() == RetentionType.userDefined) {
+					merged.retentionType = RetentionType.unlimited;
+				} else {
+					merged.retentionType = RetentionType.numberOfDays;
+					merged.retentionDays = defaults.getRetentionDays();
+				}
+			case numberOfDays:
+				merged.retentionType = RetentionType.numberOfDays;
+				merged.retentionDays = Math.min(this.retentionDays == null ? Integer.MAX_VALUE : this.retentionDays, defaults.getRetentionDays() == null ? Integer.MAX_VALUE : defaults.getRetentionDays());
+			case userDefined:
+				merged.retentionType = RetentionType.userDefined;
+		}
+		merged.saveMuc = this.saveMuc.isPresent() ? this.saveMuc : defaults.getSaveMuc();
+		return merged;
+	}
 
 	@Override
-	public void addCommandFields(String prefix, Packet packet) {
+	public void addCommandFields(String prefix, Packet packet, boolean forDefault) {
 		Element commandEl = packet.getElemChild(Command.COMMAND_EL, Command.XMLNS);
 		DataForm.addFieldValue(commandEl, prefix + "-enabled", enabled ? "true" : "false", "boolean", "Message Archiving enabled");
 		DataForm.addFieldValue(commandEl, prefix + "-default-store-method",
