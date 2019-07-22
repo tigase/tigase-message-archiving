@@ -127,9 +127,8 @@ public class Xep0136MessageArchivingProcessor
 
 				if (result.getStanzaFrom() == null) {
 					result.initVars(session.getJID(), messageArchivePlugin.getComponentJid());
-				} else {
-					result.setPacketTo(messageArchivePlugin.getComponentJid());
 				}
+				result.setPacketTo(messageArchivePlugin.getComponentJid());
 				results.offer(result);
 			} else if (pref != null) {
 				if (packet.getType() == StanzaType.get) {

@@ -86,9 +86,8 @@ public class Xep0313MessageArchiveManagementProcessor
 				Packet result = packet.copyElementOnly();
 				if (result.getStanzaFrom() == null) {
 					result.initVars(session.getJID(), messageArchivePlugin.getComponentJid());
-				} else {
-					result.setPacketTo(messageArchivePlugin.getComponentJid());
 				}
+				result.setPacketTo(messageArchivePlugin.getComponentJid());
 				results.offer(result);
 			}
 		} else {
