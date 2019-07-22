@@ -125,7 +125,11 @@ public class Xep0136MessageArchivingProcessor
 				// redirecting to message archiving component
 				Packet result = packet.copyElementOnly();
 
-				result.setPacketTo(messageArchivePlugin.getComponentJid());
+				if (result.getStanzaFrom() == null) {
+					result.initVars(session.getJID(), messageArchivePlugin.getComponentJid());
+				} else {
+					result.setPacketTo(messageArchivePlugin.getComponentJid());
+				}
 				results.offer(result);
 			} else if (pref != null) {
 				if (packet.getType() == StanzaType.get) {

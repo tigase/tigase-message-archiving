@@ -74,7 +74,6 @@ public class Xep0313MessageArchiveManagementProcessor
 				// is this needed for responses? modified version of can handle should take care of this
 				JID connId = session.getConnectionId(packet.getStanzaTo());
 				Packet result = packet.copyElementOnly();
-
 				result.setPacketTo(connId);
 				results.offer(result);
 
@@ -85,8 +84,11 @@ public class Xep0313MessageArchiveManagementProcessor
 				return;
 			} else {
 				Packet result = packet.copyElementOnly();
-
-				result.setPacketTo(messageArchivePlugin.getComponentJid());
+				if (result.getStanzaFrom() == null) {
+					result.initVars(session.getJID(), messageArchivePlugin.getComponentJid());
+				} else {
+					result.setPacketTo(messageArchivePlugin.getComponentJid());
+				}
 				results.offer(result);
 			}
 		} else {
