@@ -147,6 +147,14 @@ public class MessageArchiveVHostItemExtension
 	}
 
 	@Override
+	public String toDebugString() {
+		return "enabled: " + enabled + ", defaultStore: " +
+				defaultStoreMethod.map(StoreMethod::toString).orElse("unset") + ", requiredStore: " +
+				requiredStoreMethod.map(StoreMethod::toString).orElse("unset") + ", retentionType: " + retentionType +
+				", saveMuc: " + saveMuc;
+	}
+
+	@Override
 	public Element toElement() {
 		Element el = new Element(getId());
 		el.setAttribute("enabled", String.valueOf(enabled));
