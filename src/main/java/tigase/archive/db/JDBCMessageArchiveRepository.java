@@ -370,7 +370,11 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 			return msgId;
 		} catch (SQLException ex) {
-			log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
+			if (ex.getErrorCode() == 1366 || ex.getMessage() != null && ex.getMessage().startsWith("Incorrect string value")) {
+				log.log(Level.WARNING, "Your MySQL configuration can't handle extended Unicode (for example emoji) correctly. Please refer to <Support for emoji and other icons> section of the server documentation");
+			} else {
+				log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
+			}
 			return null;
 		}
 	}
