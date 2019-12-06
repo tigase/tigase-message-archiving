@@ -1,4 +1,4 @@
-/**
+/*
  * Tigase Message Archiving Component - Implementation of Message Archiving component for Tigase XMPP Server.
  * Copyright (C) 2012 Tigase, Inc. (office@tigase.com)
  *
