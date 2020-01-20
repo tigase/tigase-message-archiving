@@ -119,7 +119,7 @@ public class MessageArchivePlugin
 
 			processMessage(packet, session, results);
 		} catch (NotAuthorizedException ex) {
-			log.log(Level.WARNING, "NotAuthorizedException for packet: {0}", packet);
+			log.log(Level.FINE, "NotAuthorizedException for packet: {0}", packet);
 			results.offer(
 					Authorization.NOT_AUTHORIZED.getResponseMessage(packet, "You must authorize session first.", true));
 		}
