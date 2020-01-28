@@ -38,7 +38,7 @@ public class MAMQueryParser
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";
 	private static final String TAGS_FIELD_NAME = "tigase:tags";
 
-	@Inject
+	@Inject(bean = "service")
 	private MessageArchiveConfig config;
 
 	@Override

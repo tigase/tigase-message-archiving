@@ -33,7 +33,7 @@ public abstract class AbstractModule
 
 	protected static final String MA_XMLNS = "urn:xmpp:archive";
 
-	@Inject
+	@Inject(bean = "service")
 	protected MessageArchiveConfig config;
 
 	@Inject

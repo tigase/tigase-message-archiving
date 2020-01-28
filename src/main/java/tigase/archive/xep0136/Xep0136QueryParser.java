@@ -50,7 +50,7 @@ public class Xep0136QueryParser<Q extends QueryCriteria>
 	private static final String TAG = "tag";
 	private static final String NAME = "query";
 	private final TimestampHelper timestampHelper = new TimestampHelper();
-	@Inject
+	@Inject(bean = "service")
 	private MessageArchiveConfig config;
 
 	@Override
