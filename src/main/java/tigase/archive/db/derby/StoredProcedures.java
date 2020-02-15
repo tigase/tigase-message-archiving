@@ -56,7 +56,7 @@ public class StoredProcedures {
 	}
 
 	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, short direction,
-								  String type, String body, String msg, String hash, ResultSet[] data)
+								  String type, String body, String msg, String stableId, ResultSet[] data)
 			throws SQLException {
 		long ownerId = ensureJid(ownerJid);
 		long buddyId = ensureJid(buddyJid);
@@ -67,10 +67,10 @@ public class StoredProcedures {
 
 		try {
 			PreparedStatement ps = conn.prepareStatement("" +
-																 "insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, \"type\", body, msg, stanza_hash)" +
+																 "insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, \"type\", body, msg, stable_id)" +
 																 " select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 																 " from SYSIBM.SYSDUMMY1" + " where not exists (" +
-																 " select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and stanza_hash = ? and ts between ? and ?" +
+																 " select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and stable_id = ? and ts between ? and ?" +
 																 ")", Statement.RETURN_GENERATED_KEYS);
 
 			Timestamp from = ts;
@@ -90,22 +90,22 @@ public class StoredProcedures {
 			ps.setString(++i, type);
 			ps.setString(++i, body);
 			ps.setString(++i, msg);
-			ps.setString(++i, hash);
+			ps.setString(++i, stableId);
 
 			ps.setLong(++i, ownerId);
 			ps.setLong(++i, buddyId);
-			ps.setString(++i, hash);
+			ps.setString(++i, stableId);
 			ps.setTimestamp(++i, from);
 			ps.setTimestamp(++i, to);
 
 			ps.execute();
 
 			ps = conn.prepareStatement(
-					"select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and stanza_hash = ? and ts between ? and ?");
+					"select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and stable_id = ? and ts between ? and ?");
 			i = 0;
 			ps.setLong(++i, ownerId);
 			ps.setLong(++i, buddyId);
-			ps.setString(++i, hash);
+			ps.setString(++i, stableId);
 			ps.setTimestamp(++i, from);
 			ps.setTimestamp(++i, to);
 
@@ -380,7 +380,7 @@ public class StoredProcedures {
 	}
 
 	public static void getMessagePosition(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
-										  String contains, String hash, ResultSet[] data) throws SQLException {
+										  String contains, String stableId, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -388,7 +388,7 @@ public class StoredProcedures {
 		try {
 			StringBuilder sb = new StringBuilder();
 
-			sb.append("select m.stanza_hash, row_number() over () as position" + " from tig_ma_msgs m" +
+			sb.append("select m.stable_id, row_number() over () as position" + " from tig_ma_msgs m" +
 							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
@@ -421,7 +421,7 @@ public class StoredProcedures {
 			i = 0;
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				if (hash.equals(rs.getString(1))) {
+				if (stableId.equals(rs.getString(1))) {
 					i = rs.getInt(2);
 					break;
 				}
@@ -447,7 +447,7 @@ public class StoredProcedures {
 		try {
 			StringBuilder sb = new StringBuilder();
 
-			sb.append("select m.msg, m.ts, m.direction, b.jid, m.stanza_hash" + " from tig_ma_msgs m" +
+			sb.append("select m.msg, m.ts, m.direction, b.jid, m.stable_id" + " from tig_ma_msgs m" +
 							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {

@@ -19,23 +19,23 @@ package tigase.archive.processors;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.archive.StoreMuc;
-import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.kernel.beans.RegistrarBean;
 import tigase.kernel.beans.config.ConfigField;
-import tigase.kernel.core.Kernel;
 import tigase.server.Message;
 import tigase.server.Packet;
+import tigase.server.xmppsession.SessionManager;
 import tigase.util.dns.DNSResolverFactory;
 import tigase.xml.Element;
 import tigase.xmpp.*;
 import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
+import tigase.xmpp.impl.MessageDeliveryLogic;
 import tigase.xmpp.impl.annotation.AnnotatedXMPPProcessor;
 import tigase.xmpp.impl.annotation.Handle;
 import tigase.xmpp.impl.annotation.Handles;
@@ -56,10 +56,10 @@ import java.util.logging.Logger;
 @Id(MessageArchivePlugin.ID)
 @Handles({@Handle(path = {"message"}, xmlns = "jabber:client")})
 @Bean(name = MessageArchivePlugin.ID, parents = {Xep0136MessageArchivingProcessor.class,
-												 Xep0313MessageArchiveManagementProcessor.class}, active = true)
+												 Xep0313MessageArchiveManagementProcessor.class}, active = true, exportable = true)
 public class MessageArchivePlugin
 		extends AnnotatedXMPPProcessor
-		implements XMPPProcessorIfc, RegistrarBean {
+		implements XMPPProcessorIfc, SessionManager.MessageArchive {
 
 	public static final String DEFAULT_SAVE = "default-save";
 	public static final String MUC_SAVE = "muc-save";
@@ -84,6 +84,7 @@ public class MessageArchivePlugin
 	@ConfigField(desc = "Matchers selecting messages that will be archived", alias = MSG_ARCHIVE_PATHS)
 	private ElementMatcher[] archivingMatchers = new ElementMatcher[]{
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "result"}, "urn:xmpp:mam:1", false),
+			new ElementMatcher(new String[]{Message.ELEM_NAME, "result"}, "urn:xmpp:mam:2", false),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "body"}, null, true),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "store"}, MESSAGE_HINTS_XMLNS, true)};
 	@ConfigField(desc = "Global default store method", alias = DEFAULT_STORE_METHOD_KEY)
@@ -93,9 +94,23 @@ public class MessageArchivePlugin
 	@ConfigField(desc = "Store MUC messages in archive using automatic archiving", alias = STORE_MUC_MESSAGES_KEY)
 	private StoreMuc globalStoreMucMessages = StoreMuc.User;
 	@Inject
-	private tigase.xmpp.impl.Message message;
+	private MessageDeliveryLogic message;
 	private RosterAbstract rosterUtil = RosterFactory.getRosterImplementation(true);
-	;
+
+	@Inject(nullAllowed = true)
+	private List<AbstractMAMProcessor> mamProcessors = new ArrayList<>();
+
+	private boolean stanzaIdSupport = false;
+
+	public void setMamProcessors(List<AbstractMAMProcessor> mamProcessors) {
+		if (mamProcessors != null) {
+			this.mamProcessors = mamProcessors;
+			stanzaIdSupport = mamProcessors.stream().anyMatch(AbstractMAMProcessor::hasStanzaIdSupport);
+		} else {
+			this.mamProcessors = Collections.emptyList();
+			stanzaIdSupport = false;
+		}
+	}
 
 	public MessageArchivePlugin() {
 		componentJid = JID.jidInstanceNS("message-archive", DNSResolverFactory.getInstance().getDefaultHost(), null);
@@ -124,16 +139,7 @@ public class MessageArchivePlugin
 					Authorization.NOT_AUTHORIZED.getResponseMessage(packet, "You must authorize session first.", true));
 		}
 	}
-
-	@Override
-	public void register(Kernel kernel) {
-		kernel.registerBean(tigase.xmpp.impl.Message.class).setActive(true).exec();
-	}
-
-	public void unregister(Kernel kernel) {
-
-	}
-
+	
 	public String[] getArchivingMatchers() {
 		String[] result = new String[archivingMatchers.length];
 		for (int i = 0; i < archivingMatchers.length; i++) {
@@ -263,13 +269,54 @@ public class MessageArchivePlugin
 		return settings;
 	}
 
-	private void processMessage(Packet packet, XMPPResourceConnection session, Queue<Packet> results)
-			throws NotAuthorizedException {
+	@Override
+	public void generateStableId(Packet packet) {
+		if (packet.getStableId() == null) {
+			packet.setStableId(UUID.randomUUID().toString());
+		}
+	}
+
+	@Override
+	public void addStableId(Packet packet, XMPPResourceConnection session) {
+		if (stanzaIdSupport) {
+			try {
+				if (willArchive(packet, session)) {
+					try {
+						synchronized (packet) {
+							String by = session.getBareJID().toString();
+							String stableId = packet.getStableId();
+							if (stableId != null && packet.getElement().findChild(stanzaIdMatcher(by)) == null) {
+								Element stanzaIdEl = new Element("stanza-id");
+								stanzaIdEl.setXMLNS("urn:xmpp:sid:0");
+								stanzaIdEl.setAttribute("id", stableId);
+								stanzaIdEl.setAttribute("by", by);
+								packet.getElement().addChild(stanzaIdEl);
+							}
+						}
+					} catch (NotAuthorizedException ex) {
+						return;
+					}
+				}
+			} catch (NotAuthorizedException ex) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "Session is not authorized yet:" + session, ex);
+				}
+			}
+		}
+	}
+
+	protected Element.Matcher<Element> stanzaIdMatcher(String by) {
+		return el -> el.getName() == "stanza-id" && el.getXMLNS() == "urn:xmpp:sid:0" &&
+				by.equals(el.getAttributeStaticStr("by"));
+	}
+
+	@Override
+	public boolean willArchive(Packet packet, XMPPResourceConnection session) throws NotAuthorizedException {
 		// ignoring packets resent from c2s for redelivery as processing
 		// them would create unnecessary duplication of messages in archive
 		if (C2SDeliveryErrorProcessor.isDeliveryError(packet)) {
 			log.log(Level.FINEST, "not processong packet as it is delivery error = {0}", packet);
-			return;
+			return false;
 		}
 
 		StanzaType type = packet.getType();
@@ -282,7 +329,7 @@ public class MessageArchivePlugin
 		Settings settings = getSettings(session);
 
 		if (!settings.isAutoArchivingEnabled()) {
-			return;
+			return false;
 		}
 
 		// support for XEP-0334 Message Processing Hints
@@ -290,18 +337,32 @@ public class MessageArchivePlugin
 				packet.getAttributeStaticStr(MESSAGE_HINTS_NO_PERMANENT_STORE, "xmlns") == MESSAGE_HINTS_XMLNS) {
 			StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
 			if (requiredStoreMethod == StoreMethod.False) {
-				return;
+				return false;
 			}
 		}
 
 		switch (type) {
 			case groupchat:
-				if (!settings.archiveMucMessages()) {
+				Element mix = packet.getElemChild("mix", "urn:xmpp:mix:core:1");
+				if (mix != null) {
+					try {
+						if (!rosterUtil.containsBuddy(session, session.isUserId(packet.getStanzaFrom().getBareJID())
+															   ? packet.getStanzaTo()
+															   : packet.getStanzaFrom())) {
+							return false;
+						}
+					} catch (TigaseDBException ex) {
+						log.log(Level.WARNING, session.toString() +
+								", could not load roster to verify if sender/recipient is in roster, skipping archiving of packet: " +
+								packet, ex);
+						return false;
+					}
+				} else if (!settings.archiveMucMessages()) {
 					if (log.isLoggable(Level.FINEST)) {
 						log.log(Level.FINEST, "not storing message as archiving of MUC messages is disabled: {0}",
 								packet);
 					}
-					return;
+					return false;
 				}
 				// we need to log groupchat messages only sent from MUC to user as MUC needs to confirm
 				// message delivery by sending message back
@@ -310,7 +371,7 @@ public class MessageArchivePlugin
 						log.log(Level.FINEST, "not storing message sent to MUC room from user = {0}",
 								packet.toString());
 					}
-					return;
+					return false;
 				}
 				break;
 
@@ -323,7 +384,7 @@ public class MessageArchivePlugin
 				if (log.isLoggable(Level.FINEST)) {
 					log.log(Level.FINEST, "not logging packet due to storage method: {0}, {1}",
 							new Object[]{settings.getStoreMethod(), packet});
-					return;
+					return false;
 				}
 				break;
 			case Body:
@@ -332,7 +393,7 @@ public class MessageArchivePlugin
 					if (log.isLoggable(Level.FINEST)) {
 						log.log(Level.FINEST, "not logging packet as there is not body element: ",
 								new Object[]{settings.getStoreMethod(), packet});
-						return;
+						return false;
 					}
 				}
 				break;
@@ -352,29 +413,40 @@ public class MessageArchivePlugin
 			}
 		}
 		if (!archive) {
-			return;
+			return false;
 		}
 
 		if (settings.archiveOnlyForContactsInRoster()) {
 			// to and from should already be set at this point
 			if (packet.getStanzaTo() == null || packet.getStanzaFrom() == null) {
-				return;
+				return false;
 			}
 
 			try {
 				if (!rosterUtil.containsBuddy(session, session.isUserId(packet.getStanzaFrom().getBareJID())
 													   ? packet.getStanzaTo()
 													   : packet.getStanzaFrom())) {
-					return;
+					return false;
 				}
 			} catch (TigaseDBException ex) {
 				log.log(Level.WARNING, session.toString() +
 						", could not load roster to verify if sender/recipient is in roster, skipping archiving of packet: " +
 						packet, ex);
-				return;
+				return false;
 			}
 		}
+		return true;
+	}
 
+
+
+	private void processMessage(Packet packet, XMPPResourceConnection session, Queue<Packet> results)
+			throws NotAuthorizedException {
+		if (!willArchive(packet, session)) {
+			return;
+		}
+
+		Settings settings = getSettings(session);
 		// redirecting to message archiving component
 		storeMessage(packet, session, settings, results);
 	}
@@ -385,6 +457,7 @@ public class MessageArchivePlugin
 
 		result.setPacketFrom(session.getJID().copyWithoutResource());
 		result.setPacketTo(componentJid);
+		result.setStableId(packet.getStableId());
 		result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
 		switch (settings.getStoreMethod()) {
 			case Body:
@@ -407,6 +480,10 @@ public class MessageArchivePlugin
 			default:
 				// in other case we store whole message
 				break;
+		}
+		Element stanzaIdEl = result.getElement().findChild(stanzaIdMatcher(session.getBareJID().toString()));
+		if (stanzaIdEl != null) {
+			result.getElement().removeChild(stanzaIdEl);
 		}
 		results.offer(result);
 	}

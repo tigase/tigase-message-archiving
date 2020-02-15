@@ -36,6 +36,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Created by andrzej on 16.07.2016.
@@ -124,7 +125,7 @@ public class SaveItemsModule
 								tags = TagsHelper.extractTags(msg);
 							}
 
-							msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, tags);
+							msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, UUID.randomUUID().toString(), tags);
 						}
 					}
 					Element chatResult = new Element("chat");

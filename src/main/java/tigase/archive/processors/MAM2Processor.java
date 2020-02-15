@@ -24,19 +24,23 @@ import tigase.xmpp.impl.annotation.Handle;
 import tigase.xmpp.impl.annotation.Handles;
 import tigase.xmpp.impl.annotation.Id;
 
-import static tigase.archive.processors.Xep0313MessageArchiveManagementProcessor.ID;
+import java.util.logging.Logger;
+
+import static tigase.archive.processors.MAM2Processor.ID;
 
 /**
  * Created by andrzej on 22.07.2016.
  */
 @Id(ID)
 @Handles({@Handle(path = {"iq", "query"}, xmlns = ID), @Handle(path = {"iq", "prefs"}, xmlns = ID)})
-@DiscoFeatures({ID})
+@DiscoFeatures({ID, "urn:xmpp:mix:pam:2#archive"})
 @Bean(name = ID, parent = SessionManager.class, active = true)
-public class Xep0313MessageArchiveManagementProcessor
+public class MAM2Processor
 		extends AbstractMAMProcessor {
 
-	public static final String ID = "urn:xmpp:mam:1";
+	public static final String ID = "urn:xmpp:mam:2";
+	private static final Logger log = Logger.getLogger(
+			MAM2Processor.class.getCanonicalName());
 
 	@Override
 	protected String getXMLNS() {
@@ -45,6 +49,6 @@ public class Xep0313MessageArchiveManagementProcessor
 
 	@Override
 	protected boolean hasStanzaIdSupport() {
-		return false;
+		return true;
 	}
 }

@@ -26,6 +26,7 @@ import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.XMPPResourceConnection;
+import tigase.xmpp.impl.MessageDeliveryLogic;
 import tigase.xmpp.impl.ProcessorTestCase;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
@@ -51,6 +52,7 @@ public class MessageArchivePluginTest
 		super.setUp();
 
 		kernel = new Kernel();
+		kernel.registerBean(MessageDeliveryLogic.class).exec();
 		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 
 		messageArchivePlugin = kernel.getInstance(MessageArchivePlugin.class);

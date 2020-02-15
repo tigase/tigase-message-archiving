@@ -41,6 +41,7 @@ create table tig_ma_msgs (
 	body varchar(32672),
 	msg varchar(32672),
 	stanza_hash varchar(50),
+	stable_id varchar(36) not null,
 
 	primary key (msg_id)
 );
@@ -56,7 +57,7 @@ create index tig_ma_msgs_owner_id_buddy_id_index on tig_ma_msgs (owner_id, buddy
 create index tig_ma_msgs_owner_id_buddy_id_ts_index on tig_ma_msgs (owner_id, buddy_id, ts);
 -- QUERY END:
 -- QUERY START:
-create unique index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index on tig_ma_msgs (owner_id, ts, buddy_id, stanza_hash);
+create unique index tig_ma_msgs_owner_id_ts_buddy_id_stable_id_index on tig_ma_msgs (owner_id, ts, buddy_id, stable_id);
 -- QUERY END:
 
 -- QUERY START:

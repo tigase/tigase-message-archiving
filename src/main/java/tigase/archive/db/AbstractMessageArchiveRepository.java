@@ -19,14 +19,9 @@ package tigase.archive.db;
 
 import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
-import tigase.xml.Element;
 import tigase.xmpp.rsm.RSM;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -44,47 +39,6 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 
 	static {
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
-
-	protected byte[] generateHashOfMessage(Direction direction, Element msg, Date ts,
-										   Map<String, Object> additionalData) {
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-
-			String peer = direction == Direction.incoming
-						  ? msg.getAttributeStaticStr("from")
-						  : msg.getAttributeStaticStr("to");
-			if (peer != null) {
-				md.update(peer.getBytes());
-			}
-			String type = msg.getAttributeStaticStr("type");
-			Element subjectEl = msg.getChild("subject");
-			String subject = msg.getChildCData(MSG_SUBJECT_PATH);
-			String id = msg.getAttributeStaticStr("id");
-			if (id != null) {
-				if (!"groupchat".equals(type) || subjectEl == null) {
-					md.update(id.getBytes());
-				} else {
-					md.update(":".getBytes());
-					md.update(new Long(ts.getTime() / 60000).toString().getBytes());
-				}
-			}
-
-			if (type == null || !"groupchat".equals(type)) {
-				md.update(new Long(ts.getTime() / 1000).toString().getBytes());
-			}
-			String body = msg.getChildCData(MSG_BODY_PATH);
-			if (body != null) {
-				md.update(body.getBytes());
-			}
-			if (subject != null) {
-				md.update(subject.getBytes());
-			}
-
-			return md.digest();
-		} catch (NoSuchAlgorithmException ex) {
-			return null;
-		}
 	}
 
 	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {

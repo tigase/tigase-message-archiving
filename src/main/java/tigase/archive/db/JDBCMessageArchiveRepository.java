@@ -27,7 +27,6 @@ import tigase.db.Repository;
 import tigase.db.TigaseDBException;
 import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.config.ConfigField;
-import tigase.util.Base64;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
@@ -123,9 +122,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "New version of this method will be introduced in 3.0.0")
 	@Deprecated
 	@Override
-	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
+	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId,
 							   Set<String> tags) {
-		archiveMessage(owner, buddy, direction, timestamp, msg, tags, null);
+		archiveMessage(owner, buddy, direction, timestamp, msg, stableId, tags, null);
 	}
 
 	@Override
@@ -301,7 +300,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT_QUERY, GET_TAGS_FOR_USER_COUNT_QUERY);
 	}
 
-	protected Long archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
+	protected Long archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId,
 								  Set<String> tags, Map<String, Object> additionalData) {
 		try {
 			ResultSet rs = null;
@@ -311,7 +310,6 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			String type = msg.getAttributeStaticStr("type");
 			String msgStr = msg.toString();
 			String body = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
-			String hash = generateHashOfMessageAsString(direction, msg, mtime, additionalData);
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner, ADD_MESSAGE_QUERY);
 
 			Long msgId = null;
@@ -327,7 +325,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 					add_message_st.setString(i++, type);
 					add_message_st.setString(i++, body);
 					add_message_st.setString(i++, msgStr);
-					add_message_st.setString(i++, hash);
+					add_message_st.setString(i++, stableId);
 
 					i = addMessageAdditionalInfo(add_message_st, i, additionalData);
 
@@ -612,15 +610,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 		return position - 1;
 	}
-
-	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "This method will not be used any more in version 3.0.0")
-	@Deprecated
-	private String generateHashOfMessageAsString(Direction direction, Element msg, Date ts,
-												 Map<String, Object> additionalData) {
-		byte[] result = generateHashOfMessage(direction, msg, ts, additionalData);
-		return result != null ? Base64.encode(result) : null;
-	}
-
+	
 	public static class Item<Q extends QueryCriteria>
 			implements MessageArchiveRepository.Item {
 
@@ -665,7 +655,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 				with = rs.getString(i);
 			}
 			i++;
-			id = rs.getString(i++);
+			id = rs.getString(i++).toLowerCase();
 			return i;
 		}
 	}

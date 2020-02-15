@@ -85,9 +85,7 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 
 	}
 
-	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "New version of this method will be introduced in 3.0.0")
-	@Deprecated
-	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, Set<String> tags);
+	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId, Set<String> tags);
 
 	void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException;
 

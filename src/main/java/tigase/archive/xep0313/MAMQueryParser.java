@@ -28,6 +28,11 @@ import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.mam.Query;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Created by andrzej on 19.07.2016.
  */
@@ -37,9 +42,18 @@ public class MAMQueryParser
 
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";
 	private static final String TAGS_FIELD_NAME = "tigase:tags";
+	private static final String MAM2_XMLNS = "urn:xmpp:mam:2";
+
+	protected static final Set<String> XMLNSs = Collections.unmodifiableSet(
+			new HashSet<>(Arrays.asList(MAM_XMLNS, MAM2_XMLNS)));
 
 	@Inject(bean = "service")
 	private MessageArchiveConfig config;
+
+	@Override
+	public Set<String> getXMLNSs() {
+		return XMLNSs;
+	}
 
 	@Override
 	public Query parseQuery(Query query, Packet packet) throws ComponentException {

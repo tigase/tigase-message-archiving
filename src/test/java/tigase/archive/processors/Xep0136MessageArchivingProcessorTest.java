@@ -30,6 +30,7 @@ import tigase.vhosts.VHostItemImpl;
 import tigase.xml.Element;
 import tigase.xmpp.StanzaType;
 import tigase.xmpp.XMPPResourceConnection;
+import tigase.xmpp.impl.MessageDeliveryLogic;
 import tigase.xmpp.impl.ProcessorTestCase;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
@@ -55,6 +56,7 @@ public class Xep0136MessageArchivingProcessorTest
 		super.setUp();
 
 		kernel = new Kernel();
+		kernel.registerBean(MessageDeliveryLogic.class).exec();
 		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
 
 		xep0136Processor = kernel.getInstance(Xep0136MessageArchivingProcessor.class);
