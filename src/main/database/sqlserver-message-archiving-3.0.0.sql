@@ -133,7 +133,7 @@ begin
 	else
 		begin
 		select x.position from (
-		    select m.stanza_hash, row_number() over (order by m.ts) as position
+		    select m.stable_id, row_number() over (order by m.ts) as position
 		    from tig_ma_msgs m
 			    inner join tig_ma_jids o on m.owner_id = o.jid_id
 			    inner join tig_ma_jids b on b.jid_id = m.buddy_id
