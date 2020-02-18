@@ -19,6 +19,7 @@ package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
@@ -119,6 +120,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 	}
 
+	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "New version of this method will be introduced in 3.0.0")
+	@Deprecated
 	@Override
 	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg,
 							   Set<String> tags) {
@@ -610,6 +613,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return position - 1;
 	}
 
+	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "This method will not be used any more in version 3.0.0")
+	@Deprecated
 	private String generateHashOfMessageAsString(Direction direction, Element msg, Date ts,
 												 Map<String, Object> additionalData) {
 		byte[] result = generateHashOfMessage(direction, msg, ts, additionalData);
