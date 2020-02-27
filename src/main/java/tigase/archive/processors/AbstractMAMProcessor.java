@@ -17,6 +17,7 @@
  */
 package tigase.archive.processors;
 
+import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.archive.StoreMuc;
@@ -30,6 +31,7 @@ import tigase.xmpp.impl.annotation.AnnotatedXMPPProcessor;
 import tigase.xmpp.jid.JID;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -105,7 +107,7 @@ public abstract class AbstractMAMProcessor
 
 	private void retrievePreferences(XMPPResourceConnection session, Packet packet, Queue<Packet> results)
 			throws NotAuthorizedException {
-		Settings settings = messageArchivePlugin.getSettings(session);
+		Settings settings = messageArchivePlugin.getSettings(session.getBareJID(), session);
 		Element prefs = preferencesAsElement(settings);
 
 		results.offer(packet.okResult(prefs, 0));
@@ -128,9 +130,10 @@ public abstract class AbstractMAMProcessor
 			return;
 		}
 
-		Settings settings = messageArchivePlugin.getSettings(session);
+		Settings settings = messageArchivePlugin.getSettings(session.getBareJID(), session);
 
-		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(session);
+		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(Optional.ofNullable(session.getDomain().getExtension(
+				MessageArchiveVHostItemExtension.class)));
 		StoreMuc storeMuc = messageArchivePlugin.getRequiredStoreMucMessages(session);
 
 		if (storeMuc == StoreMuc.True) {

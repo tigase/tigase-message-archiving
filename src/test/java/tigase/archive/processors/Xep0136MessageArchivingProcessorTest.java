@@ -23,6 +23,7 @@ import org.junit.Test;
 import tigase.archive.MessageArchiveVHostItemExtension;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
+import tigase.eventbus.EventBusFactory;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.vhosts.VHostItemExtension;
@@ -46,7 +47,6 @@ import static org.junit.Assert.*;
 public class Xep0136MessageArchivingProcessorTest
 		extends ProcessorTestCase {
 
-	private Kernel kernel;
 	private MessageArchivePlugin maPlugin;
 	private Xep0136MessageArchivingProcessor xep0136Processor;
 
@@ -55,12 +55,8 @@ public class Xep0136MessageArchivingProcessorTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		kernel = new Kernel();
-		kernel.registerBean(MessageDeliveryLogic.class).exec();
-		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
-
-		xep0136Processor = kernel.getInstance(Xep0136MessageArchivingProcessor.class);
-		maPlugin = kernel.getInstance(MessageArchivePlugin.class);
+		xep0136Processor = getInstance(Xep0136MessageArchivingProcessor.class);
+		maPlugin = getInstance(MessageArchivePlugin.class);
 		maPlugin.init(new HashMap<>());
 	}
 
@@ -69,8 +65,17 @@ public class Xep0136MessageArchivingProcessorTest
 	public void tearDown() throws Exception {
 		xep0136Processor = null;
 		maPlugin = null;
-		kernel = null;
 		super.tearDown();
+	}
+
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).setActive(true).exportable().exec();
+		kernel.registerBean(MessageDeliveryLogic.class).exec();
+		kernel.registerBean("vhost-man").asInstance(new MessageArchivePluginTest.DummyVHostManager()).setActive(true).exportable().exec();
+		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
 	}
 
 	@Test
@@ -87,10 +92,10 @@ public class Xep0136MessageArchivingProcessorTest
 		extensions.put(MessageArchiveVHostItemExtension.class,
 					  MessageArchiveVHostItemExtension.class.newInstance());
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse(settings.isAutoArchivingEnabled());
-		assertEquals(StoreMethod.Body, settings.getStoreMethod());
+		assertEquals(StoreMethod.Message, settings.getStoreMethod());
 
 		settings.setArchiveOnlyForContactsInRoster(true);
 
@@ -123,10 +128,10 @@ public class Xep0136MessageArchivingProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse(settings.isAutoArchivingEnabled());
-		assertEquals(StoreMethod.Body, settings.getStoreMethod());
+		assertEquals(StoreMethod.Message, settings.getStoreMethod());
 
 		settings.setAuto(true);
 		settings.setArchiveOnlyForContactsInRoster(true);
@@ -164,7 +169,7 @@ public class Xep0136MessageArchivingProcessorTest
 		f.setAccessible(true);
 		f.set(maPlugin, StoreMethod.Message);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertTrue(settings.isAutoArchivingEnabled());
 		assertEquals(StoreMethod.Message, settings.getStoreMethod());
@@ -198,10 +203,10 @@ public class Xep0136MessageArchivingProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse(settings.isAutoArchivingEnabled());
-		assertEquals(StoreMethod.Body, settings.getStoreMethod());
+		assertEquals(StoreMethod.Message, settings.getStoreMethod());
 
 		settings.setAuto(true);
 
@@ -239,7 +244,7 @@ public class Xep0136MessageArchivingProcessorTest
 		f.setAccessible(true);
 		f.set(maPlugin, StoreMethod.Message);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertTrue(settings.isAutoArchivingEnabled());
 		assertEquals(StoreMethod.Message, settings.getStoreMethod());

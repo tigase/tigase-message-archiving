@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
+import tigase.eventbus.EventBusFactory;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.xml.Element;
@@ -46,7 +47,6 @@ import static org.junit.Assert.*;
 public class Xep0313MessageArchiveManagementProcessorTest
 		extends ProcessorTestCase {
 
-	private Kernel kernel;
 	private MessageArchivePlugin maPlugin;
 	private Xep0313MessageArchiveManagementProcessor xep0313Processor;
 
@@ -55,12 +55,8 @@ public class Xep0313MessageArchiveManagementProcessorTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		kernel = new Kernel();
-		kernel.registerBean(MessageDeliveryLogic.class).exec();
-		kernel.registerBean(Xep0313MessageArchiveManagementProcessor.class).setActive(true).exec();
-
-		xep0313Processor = kernel.getInstance(Xep0313MessageArchiveManagementProcessor.class);
-		maPlugin = kernel.getInstance(MessageArchivePlugin.class);
+		xep0313Processor = getInstance(Xep0313MessageArchiveManagementProcessor.class);
+		maPlugin = getInstance(MessageArchivePlugin.class);
 		assertNotNull(maPlugin);
 		maPlugin.init(new HashMap<>());
 	}
@@ -70,8 +66,21 @@ public class Xep0313MessageArchiveManagementProcessorTest
 	public void tearDown() throws Exception {
 		xep0313Processor = null;
 		maPlugin = null;
-		kernel = null;
 		super.tearDown();
+	}
+
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).setActive(true).exportable().exec();
+		kernel.registerBean(MessageDeliveryLogic.class).exec();
+		kernel.registerBean("vhost-man")
+				.asInstance(new MessageArchivePluginTest.DummyVHostManager())
+				.setActive(true)
+				.exportable()
+				.exec();
+		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
+		kernel.registerBean(Xep0313MessageArchiveManagementProcessor.class).setActive(true).exec();
 	}
 
 	@Test
@@ -81,7 +90,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse("Archiving should be disabled by default", settings.isAutoArchivingEnabled());
 
@@ -113,7 +122,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse("Archiving should be disabled by default", settings.isAutoArchivingEnabled());
 
@@ -146,7 +155,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
 													 res1);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertFalse("Archiving should be disabled by default", settings.isAutoArchivingEnabled());
 
@@ -184,7 +193,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		f.setAccessible(true);
 		f.set(maPlugin, StoreMethod.Message);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertTrue("Archiving should be enabled due to store method", settings.isAutoArchivingEnabled());
 
@@ -221,7 +230,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		f.setAccessible(true);
 		f.set(maPlugin, StoreMethod.Message);
 
-		Settings settings = maPlugin.getSettings(session1);
+		Settings settings = maPlugin.getSettings(session1.getBareJID(), session1);
 
 		assertTrue("Archiving should be enabled due to store method", settings.isAutoArchivingEnabled());
 

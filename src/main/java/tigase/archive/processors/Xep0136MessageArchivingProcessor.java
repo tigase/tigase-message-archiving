@@ -32,6 +32,7 @@ import tigase.xmpp.*;
 import tigase.xmpp.jid.JID;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -155,7 +156,7 @@ public class Xep0136MessageArchivingProcessor
 
 	protected void requestingPreferrences(XMPPResourceConnection session, Packet packet, Queue<Packet> results)
 			throws NotAuthorizedException, TigaseDBException {
-		Settings settings = messageArchivePlugin.getSettings(session);
+		Settings settings = messageArchivePlugin.getSettings(session.getBareJID(), session);
 
 		Element prefEl = new Element("pref");
 
@@ -222,8 +223,10 @@ public class Xep0136MessageArchivingProcessor
 
 	protected void updatingPreferences(XMPPResourceConnection session, Packet packet, Element pref,
 									   Queue<Packet> results) throws PacketErrorTypeException, NotAuthorizedException {
-		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(session);
-		Settings settings = messageArchivePlugin.getSettings(session);
+		Optional<MessageArchiveVHostItemExtension> maExt = Optional.ofNullable(
+				session.getDomain().getExtension(MessageArchiveVHostItemExtension.class));
+		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(maExt);
+		Settings settings = messageArchivePlugin.getSettings(session.getBareJID(), session);
 
 		Authorization error = null;
 		StoreMethod storeMethod = null;
@@ -349,7 +352,9 @@ public class Xep0136MessageArchivingProcessor
 
 	protected void updateAutoSave(XMPPResourceConnection session, Packet packet, Element auto, Queue<Packet> results)
 			throws PacketErrorTypeException, NotAuthorizedException {
-		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(session);
+		Optional<MessageArchiveVHostItemExtension> maExt = Optional.ofNullable(
+				session.getDomain().getExtension(MessageArchiveVHostItemExtension.class));
+		StoreMethod requiredStoreMethod = messageArchivePlugin.getRequiredStoreMethod(maExt);
 		String val = auto.getAttributeStaticStr("save");
 		if (val == null) {
 			val = "";
@@ -390,7 +395,7 @@ public class Xep0136MessageArchivingProcessor
 		}
 
 		try {
-			Settings settings = messageArchivePlugin.getSettings(session);
+			Settings settings = messageArchivePlugin.getSettings(session.getBareJID(), session);
 			settings.setAuto(save);
 			session.setData(ARCHIVE, "settings", settings.serialize());
 

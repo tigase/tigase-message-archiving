@@ -22,8 +22,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tigase.archive.Settings;
+import tigase.eventbus.EventBusFactory;
 import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
+import tigase.server.ServerComponent;
+import tigase.util.stringprep.TigaseStringprepException;
+import tigase.vhosts.VHostItem;
+import tigase.vhosts.VHostItemImpl;
+import tigase.vhosts.VHostManagerIfc;
 import tigase.xml.Element;
 import tigase.xmpp.XMPPResourceConnection;
 import tigase.xmpp.impl.MessageDeliveryLogic;
@@ -31,11 +37,11 @@ import tigase.xmpp.impl.ProcessorTestCase;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * @author andrzej
@@ -44,18 +50,13 @@ public class MessageArchivePluginTest
 		extends ProcessorTestCase {
 
 	private static final Logger log = Logger.getLogger(MessageArchivePluginTest.class.getCanonicalName());
-	private Kernel kernel;
 	private MessageArchivePlugin messageArchivePlugin;
 
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
 
-		kernel = new Kernel();
-		kernel.registerBean(MessageDeliveryLogic.class).exec();
-		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
-
-		messageArchivePlugin = kernel.getInstance(MessageArchivePlugin.class);
+		messageArchivePlugin = getInstance(MessageArchivePlugin.class);
 		messageArchivePlugin.init(new HashMap<String, Object>());
 	}
 
@@ -63,6 +64,15 @@ public class MessageArchivePluginTest
 	public void tearDown() throws Exception {
 		messageArchivePlugin = null;
 		super.tearDown();
+	}
+
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).setActive(true).exportable().exec();
+		kernel.registerBean(MessageDeliveryLogic.class).exec();
+		kernel.registerBean("vhost-man").asInstance(new DummyVHostManager()).setActive(true).exportable().exec();
+		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 	}
 
 	@Test
@@ -136,4 +146,83 @@ public class MessageArchivePluginTest
 		Assert.assertTrue("should not sent packet " + packet + " for storage", results.isEmpty());
 	}
 
+	public static class DummyVHostManager
+			implements VHostManagerIfc {
+
+		Map<String, VHostItem> items = new ConcurrentHashMap<>();
+
+		public DummyVHostManager() {
+		}
+
+		public void addVhost(String vhost) {
+
+			try {
+				VHostItem item = new VHostItemImpl(vhost);
+				items.put(vhost, item);
+			} catch (TigaseStringprepException e) {
+				log.log(Level.WARNING, "Adding VHost failed", e);
+			}
+		}
+
+		@Override
+		public boolean isLocalDomain(String domain) {
+			return false;
+		}
+
+		@Override
+		public boolean isLocalDomainOrComponent(String domain) {
+			return false;
+		}
+
+		@Override
+		public boolean isAnonymousEnabled(String domain) {
+			return false;
+		}
+
+		@Override
+		public ServerComponent[] getComponentsForLocalDomain(String domain) {
+			return new ServerComponent[0];
+		}
+
+		@Override
+		public ServerComponent[] getComponentsForNonLocalDomain(String domain) {
+			return new ServerComponent[0];
+		}
+
+		@Override
+		public VHostItem getVHostItem(String domain) {
+			return items.get(domain);
+		}
+
+		@Override
+		public VHostItem getVHostItemDomainOrComponent(String domain) {
+			return items.get(domain);
+		}
+
+		@Override
+		public void addComponentDomain(String domain) {
+
+		}
+
+		@Override
+		public void removeComponentDomain(String domain) {
+
+		}
+
+		@Override
+		public BareJID getDefVHostItem() {
+			return items.values()
+					.stream()
+					.map(VHostItem::getVhost)
+					.map(JID::toString)
+					.map(BareJID::bareJIDInstanceNS)
+					.findFirst()
+					.orElse(BareJID.bareJIDInstanceNS("not@available"));
+		}
+
+		@Override
+		public List<JID> getAllVHosts() {
+			return items.values().stream().map(VHostItem::getVhost).collect(Collectors.toList());
+		}
+	}
 }
