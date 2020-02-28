@@ -387,7 +387,10 @@ public class MessageArchivePlugin
 				if (willArchive(packet, session)) {
 					try {
 						synchronized (packet) {
-							String by = session.getBareJID().toString();
+							String by = session == null ? Optional.ofNullable(packet.getStanzaTo())
+									.map(JID::getBareJID)
+									.map(BareJID::toString)
+									.get() : session.getBareJID().toString();
 							String stableId = packet.getStableId();
 							if (stableId != null && packet.getElement().findChild(stanzaIdMatcher(by)) == null) {
 								Element stanzaIdEl = new Element("stanza-id");
