@@ -96,8 +96,12 @@ begin
 
 	START TRANSACTION;
 	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
+	COMMIT;
+	START TRANSACTION;
 	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
+	COMMIT;
 
+	START TRANSACTION;
     set x = LAST_INSERT_ID();
 	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, stable_id)
 		values (_owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, Tig_MA_UuidToOrdered(_stableId));

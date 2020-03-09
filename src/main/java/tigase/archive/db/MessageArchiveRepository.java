@@ -17,7 +17,6 @@
  */
 package tigase.archive.db;
 
-import tigase.annotations.TigaseDeprecated;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;

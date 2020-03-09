@@ -115,7 +115,7 @@ public class MessageArchivePlugin
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "store"}, MESSAGE_HINTS_XMLNS, true),
 			new ElementMatcher(new String[]{Message.ELEM_NAME}, false, null,
 							   new String[][]{new String[]{"type", "headline"}}, false),
-			new ElementMatcher(new String[]{Message.ELEM_NAME, "*"}, "http://jabber.org/protocol/chatstates", false),
+			new ElementMatcher(new String[]{Message.ELEM_NAME}, true, "http://jabber.org/protocol/chatstates", null, false),
 			new ElementMatcher(new String[]{Message.ELEM_NAME}, null, true),
 			};
 	@ConfigField(desc = "Global default store method", alias = DEFAULT_STORE_METHOD_KEY)
@@ -634,9 +634,10 @@ public class MessageArchivePlugin
 			return;
 		}
 
-		Settings settings = getSettings(session.getBareJID(), session);
+		BareJID userJid = session == null ? packet.getStanzaTo().getBareJID() : session.getBareJID();
+		Settings settings = getSettings(userJid, session);
 		// redirecting to message archiving component
-		storeMessage(packet, session.getBareJID(), settings, results);
+		storeMessage(packet, userJid, settings, results);
 	}
 
 	private void storeMessage(Packet packet, BareJID owner, Settings settings, Queue<Packet> results)
