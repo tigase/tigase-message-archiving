@@ -57,6 +57,9 @@ begin
 
         create unique index tig_ma_msgs_owner_id_buddy_id_stable_id_index on tig_ma_msgs (owner_id, buddy_id, stable_id);
     end if;
+    if not exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id_buddy_res_index') then
+        drop index tig_ma_msgs_owner_id_buddy_id_buddy_res_index on tig_ma_msgs;
+    end if;
 end //
 -- QUERY END:
 
@@ -84,6 +87,8 @@ drop procedure if exists Tig_MA_GetMessagePosition;
 
 delimiter //
 
+drop procedure if exists Tig_MA_AddMessage;
+
 -- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8,
 	 _buddyRes varchar(1024)  CHARSET utf8, _ts timestamp(6), _direction smallint, _type varchar(20) CHARSET utf8,
@@ -94,6 +99,13 @@ begin
 	declare _msg_id bigint;
 	declare x bigint;
 
+	DECLARE exit handler for sqlexception
+		BEGIN
+			-- ERROR
+		ROLLBACK;
+		RESIGNAL;
+	END;
+	
 	START TRANSACTION;
 	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
 	COMMIT;
@@ -103,7 +115,7 @@ begin
 
 	START TRANSACTION;
     set x = LAST_INSERT_ID();
-	insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, stable_id)
+	insert ignore into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, `type`, body, msg, stable_id)
 		values (_owner_id, _buddy_id, _buddyRes, _ts, _direction, _type, _body, _msg, Tig_MA_UuidToOrdered(_stableId));
 
 	select LAST_INSERT_ID() into _msg_id;

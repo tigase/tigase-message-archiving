@@ -32,8 +32,8 @@ if not exists (select 1 from information_schema.columns where table_catalog = cu
 
     create unique index tig_ma_msgs_owner_id_buddy_id_stable_id_index on tig_ma_msgs (owner_id, buddy_id, stable_id );
 end if;
-if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index')) is not null) then
-    drop index tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index;
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')) is not null) then
+    drop index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index;
 end if;
 end$$;
 -- QUERY END:
