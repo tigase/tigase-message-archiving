@@ -145,6 +145,32 @@ public class MessageArchivePluginTest
 		messageArchivePlugin.process(packet, session1, null, results, null);
 		Assert.assertTrue("should not sent packet " + packet + " for storage", results.isEmpty());
 	}
+	
+	@Test
+	public void testCarbons_IngoringArchivizationOfCarbons() throws Exception {
+		BareJID userJid = BareJID.bareJIDInstance("user1@example.com");
+		JID res1 = JID.jidInstance(userJid, "res1");
+		XMPPResourceConnection session1 = getSession(JID.jidInstance("c2s@example.com/" + UUID.randomUUID().toString()),
+													 res1);
+		Settings settings = new Settings();
+		session1.putCommonSessionData("message-archive/settings", settings);
+		Queue<Packet> results = new ArrayDeque<Packet>();
+
+		settings.setAuto(true);
+
+		Packet packet = Packet.packetInstance(new Element("message", new Element[]{new Element("sent", new Element[]{
+				new Element("forwarded", new Element[]{
+						new Element("message", new Element[]{new Element("body", "Test body messages")},
+									new String[]{"from", "to"},
+									new String[]{"user2@example.com", "user1@example.com"})}, new String[]{"xmlns"},
+							new String[]{"urn:xmpp:forward:0"})}, new String[]{"xmlns"}, new String[]{
+				"urn:xmpp:carbons:2"})}, new String[]{"from", "to"},
+														  new String[]{"from@example.com/res1",
+																	   "to@example.com/res2"}));
+
+		messageArchivePlugin.process(packet, session1, null, results, null);
+		Assert.assertTrue("should not sent packet " + packet + " for storage", results.isEmpty());
+	}
 
 	public static class DummyVHostManager
 			implements VHostManagerIfc {

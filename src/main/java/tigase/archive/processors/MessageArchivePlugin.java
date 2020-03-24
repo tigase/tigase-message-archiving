@@ -110,6 +110,7 @@ public class MessageArchivePlugin
 	private ElementMatcher[] archivingMatchers = new ElementMatcher[]{
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "result"}, "urn:xmpp:mam:1", false),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "result"}, "urn:xmpp:mam:2", false),
+			new ElementMatcher(new String[]{Message.ELEM_NAME}, true, "urn:xmpp:carbons:2", null, false),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "no-store"}, MESSAGE_HINTS_XMLNS, false),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "body"}, null, true),
 			new ElementMatcher(new String[]{Message.ELEM_NAME, "store"}, MESSAGE_HINTS_XMLNS, true),
