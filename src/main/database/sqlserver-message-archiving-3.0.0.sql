@@ -47,6 +47,12 @@ DROP INDEX IX_tig_ma_msgs_owner_id_buddy_id_stanza_hash_ts_index ON [dbo].[tig_m
 GO
 
 -- QUERY START:
+IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_buddy_id_index')
+CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_index ON [dbo].[tig_ma_msgs] ([owner_id], [buddy_id]);
+-- QUERY END:
+GO
+
+-- QUERY START:
 IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_AddMessage')
 	DROP PROCEDURE Tig_MA_AddMessage
 -- QUERY END:

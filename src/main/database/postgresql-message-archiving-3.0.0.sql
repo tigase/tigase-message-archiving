@@ -35,6 +35,15 @@ end if;
 if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index')) is not null) then
     drop index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index;
 end if;
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_buddy_id_buddy_res_index')) is not null) then
+    drop index tig_ma_msgs_owner_id_buddy_id_buddy_res_index;
+end if;
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_buddy_id_index')) is not null) then
+    drop index tig_ma_msgs_owner_id_buddy_id_index;
+end if;
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_index')) is not null) then
+    drop index tig_ma_msgs_owner_id_index;
+end if;
 end$$;
 -- QUERY END:
 

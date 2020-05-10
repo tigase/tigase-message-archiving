@@ -48,6 +48,7 @@ end;
 -- QUERY START:
 create procedure Tig_MA_Upgrade()
 begin
+    declare _cname varchar(64);
     if not exists (select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'stable_id') then
         alter table tig_ma_msgs add column stable_id binary(16);
 
@@ -57,8 +58,35 @@ begin
 
         create unique index tig_ma_msgs_owner_id_buddy_id_stable_id_index on tig_ma_msgs (owner_id, buddy_id, stable_id);
     end if;
-    if not exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id_buddy_res_index') then
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id_buddy_res_index') then
         drop index tig_ma_msgs_owner_id_buddy_id_buddy_res_index on tig_ma_msgs;
+    end if;
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index') then
+        drop index tig_ma_msgs_owner_id_ts_buddy_id_stanza_hash_index on tig_ma_msgs;
+    end if;
+    if exists (select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'stanza_hash') then
+        alter table tig_ma_msgs drop column stanza_hash;
+    end if;
+    if exists(select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'owner_id' and is_nullable = 'YES') then
+        select constraint_name into _cname from information_schema.key_column_usage where table_schema = database() and table_name = 'tig_ma_msgs' and referenced_table_name = 'tig_ma_jids' and column_name = 'owner_id';
+        set @query = CONCAT("alter table tig_ma_msgs drop foreign key ", _cname);
+        prepare stmt from @query;
+        execute stmt;
+        deallocate prepare stmt;
+        alter table tig_ma_msgs change owner_id owner_id bigint unsigned not null;
+        alter table tig_ma_msgs add foreign key (owner_id) references tig_ma_jids (jid_id);
+    end if;
+    if exists(select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'buddy_id' and is_nullable = 'YES') then
+        select constraint_name into _cname from information_schema.key_column_usage where table_schema = database() and table_name = 'tig_ma_msgs' and referenced_table_name = 'tig_ma_jids' and column_name = 'buddy_id';
+        set @query = CONCAT("alter table tig_ma_msgs drop foreign key ", _cname);
+        prepare stmt from @query;
+        execute stmt;
+        deallocate prepare stmt;
+        alter table tig_ma_msgs change buddy_id buddy_id bigint unsigned not null;
+        alter table tig_ma_msgs add foreign key (buddy_id) references tig_ma_jids (jid_id);
+    end if;
+    if not exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id_ts_index') then
+        create index tig_ma_msgs_owner_id_buddy_id_ts_index on tig_ma_msgs (owner_id, buddy_id, ts);
     end if;
 end //
 -- QUERY END:
