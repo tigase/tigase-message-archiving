@@ -94,18 +94,28 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 	default void destroy() {
 	}
 
-	;
+	String getStableId(BareJID owner, BareJID buddy, String stanzaId) throws TigaseDBException;
 
 	void removeItems(BareJID owner, String withJid, Date start, Date end) throws TigaseDBException;
 
 	List<String> getTags(BareJID owner, String startsWith, Q criteria) throws TigaseDBException;
 
-	void queryCollections(Q query, CollectionHandler<Q> collectionHandler) throws TigaseDBException;
+	void queryCollections(Q query, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws TigaseDBException;
 
-	interface CollectionHandler<Q extends Query> {
+	interface CollectionHandler<Q extends Query, C extends Collection> {
 
-		void collectionFound(Q query, String with, Date start, String type);
+		void collectionFound(Q query, C collection);
 
+	}
+
+	interface Collection {
+
+		Date getStartTs();
+
+		String getWith();
+
+		default void addAdditionalData(Element collectionElem) {}
+		
 	}
 
 	interface Item

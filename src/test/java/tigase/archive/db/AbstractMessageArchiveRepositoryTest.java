@@ -178,7 +178,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		} else {
 			tags.add("#Test123");
 		}
-		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.incoming, date, msg, UUID.randomUUID().toString(), tags);
+		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, UUID.randomUUID().toString(), tags);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -194,7 +194,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Assert.assertEquals("Incorrect number of message", 1, msgs.size());
 
 		Element res = msgs.get(0);
-		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(),
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
 							res.getName());
 		Assert.assertEquals("Incorrect message body", body, res.getChildCData(res.getName() + "/body"));
 	}
@@ -207,8 +207,8 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		crit.setStart(testStart);
 
 		List<ColItem> chats = new ArrayList<>();
-		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(
-				new ColItem(with, ts)));
+		repo.queryCollections(crit, (QueryCriteria qc, MessageArchiveRepository.Collection col) -> chats.add(
+				new ColItem(col.getWith(), col.getStartTs())));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 
 		ColItem chat = chats.get(0);
@@ -228,8 +228,18 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 			crit.addTag("#Test123");
 		}
 		List<ColItem> chats = new ArrayList<>();
-		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(
-				new ColItem(with, ts)));
+		repo.queryCollections(crit, (QueryCriteria qc, MessageArchiveRepository.Collection col) -> chats.add(
+				new ColItem(col.getWith(), col.getStartTs())));
+		if (chats.isEmpty()) {
+			List<ColItem> chats1 = new ArrayList<>();
+			crit = repo.newQuery();
+			crit.setQuestionerJID(owner.copyWithoutResource());
+			crit.setWith(buddy.copyWithoutResource());
+			crit.setStart(testStart);
+			repo.queryCollections(crit, (QueryCriteria qc, MessageArchiveRepository.Collection col) -> chats1.add(
+					new ColItem(col.getWith(), col.getStartTs())));
+			System.out.println("total no. of chats: " + chats1.size());
+		}
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 
 		ColItem chat = chats.get(0);
@@ -262,7 +272,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 							res.getChildCData(res.getName() + "/body"));
 
 		res = msgs.get(1);
-		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(),
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
 							res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""),
 							res.getChildCData(res.getName() + "/body"));
@@ -325,7 +335,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 							res.getChildCData(res.getName() + "/body"));
 
 		res = msgs.get(1);
-		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(),
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
 							res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""),
 							res.getChildCData(res.getName() + "/body"));
@@ -385,7 +395,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Assert.assertEquals("Incorrect number of message", 1, msgs.size());
 
 		Element res = msgs.get(0);
-		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(),
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
 							res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""),
 							res.getChildCData(res.getName() + "/body"));
@@ -447,7 +457,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Assert.assertEquals("Incorrect number of message", 1, msgs.size());
 
 		Element res = msgs.get(0);
-		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.incoming.toElementName(),
+		Assert.assertEquals("Incorrect direction", MessageArchiveRepository.Direction.outgoing.toElementName(),
 							res.getName());
 		Assert.assertEquals("Incorrect message body", "Test 2 with #Test123" + (checkEmoji ? emoji : ""),
 							res.getChildCData(res.getName() + "/body"));
@@ -492,8 +502,8 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		crit.addContains("Test 1");
 
 		List<ColItem> chats = new ArrayList<>();
-		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(
-				new ColItem(with, ts)));
+		repo.queryCollections(crit, (QueryCriteria qc, MessageArchiveRepository.Collection col) -> chats.add(
+				new ColItem(col.getWith(), col.getStartTs())));
 		Assert.assertEquals("Incorrect number of collections", 1, chats.size());
 
 		ColItem chat = chats.get(0);
@@ -511,8 +521,8 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		}
 
 		chats.clear();
-		repo.queryCollections(crit, (QueryCriteria qc, String with, Date ts, String type) -> chats.add(
-				new ColItem(with, ts)));
+		repo.queryCollections(crit, (QueryCriteria qc, MessageArchiveRepository.Collection col) -> chats.add(
+				new ColItem(col.getWith(), col.getStartTs())));
 		Assert.assertEquals("Incorrect number of collections", 0, chats.size());
 	}
 

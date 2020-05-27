@@ -55,8 +55,8 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void addMessage(String ownerJid, String buddyJid, String buddyRes, Timestamp ts, short direction,
-								  String type, String body, String msg, String stableId, ResultSet[] data)
+	public static void addMessage(String ownerJid, String buddyJid, Timestamp ts, String stableId, String stanzaId, String refStableId,
+								  String body, String msg)
 			throws SQLException {
 		long ownerId = ensureJid(ownerJid);
 		long buddyId = ensureJid(buddyJid);
@@ -67,49 +67,26 @@ public class StoredProcedures {
 
 		try {
 			PreparedStatement ps = conn.prepareStatement("" +
-																 "insert into tig_ma_msgs (owner_id, buddy_id, buddy_res, ts, direction, \"type\", body, msg, stable_id)" +
+																 "insert into tig_ma_msgs (owner_id, buddy_id, ts, stable_id, stanza_id, is_ref, ref_stable_id, body, msg)" +
 																 " select ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 																 " from SYSIBM.SYSDUMMY1" + " where not exists (" +
-																 " select 1 from tig_ma_msgs where owner_id = ? and buddy_id = ? and stable_id = ? and ts between ? and ?" +
+																 " select 1 from tig_ma_msgs where owner_id = ? and stable_id = ?" +
 																 ")", Statement.RETURN_GENERATED_KEYS);
-
-			Timestamp from = ts;
-			Timestamp to = ts;
-
-			if ("groupchat".equals(type)) {
-				from = new Timestamp(ts.getTime() - 30 * 60 * 1000);
-				to = new Timestamp(ts.getTime() + 30 * 60 * 1000);
-			}
-
+			
 			int i = 0;
 			ps.setLong(++i, ownerId);
 			ps.setLong(++i, buddyId);
-			ps.setString(++i, buddyRes);
 			ps.setTimestamp(++i, ts);
-			ps.setShort(++i, direction);
-			ps.setString(++i, type);
+			ps.setString(++i, stableId);
+			ps.setString(++i, stanzaId);
+			ps.setShort(++i,  (short) (refStableId == null ? 0 : 1));
+			ps.setString(++i, refStableId);
 			ps.setString(++i, body);
 			ps.setString(++i, msg);
-			ps.setString(++i, stableId);
 
 			ps.setLong(++i, ownerId);
-			ps.setLong(++i, buddyId);
 			ps.setString(++i, stableId);
-			ps.setTimestamp(++i, from);
-			ps.setTimestamp(++i, to);
-
 			ps.execute();
-
-			ps = conn.prepareStatement(
-					"select msg_id from tig_ma_msgs where owner_id = ? and buddy_id = ? and stable_id = ? and ts between ? and ?");
-			i = 0;
-			ps.setLong(++i, ownerId);
-			ps.setLong(++i, buddyId);
-			ps.setString(++i, stableId);
-			ps.setTimestamp(++i, from);
-			ps.setTimestamp(++i, to);
-
-			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
@@ -117,26 +94,19 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void addTagToMessage(long msgId, String tag) throws SQLException {
+	public static void addTagToMessage(String ownerJid, String stableId, String tag) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
-			PreparedStatement ps = conn.prepareStatement("select owner_id from tig_ma_msgs where msg_id = ?");
-
-			ps.setLong(1, msgId);
-			ResultSet rs = ps.executeQuery();
-			rs.next();
-			long ownerId = rs.getLong(1);
-			rs.close();
-
-			ps = conn.prepareStatement("select tag_id from tig_ma_tags where owner_id = ? and tag = ?");
+			Long ownerId = ensureJid(ownerJid);
+			PreparedStatement ps = conn.prepareStatement("select tag_id from tig_ma_tags where owner_id = ? and tag = ?");
 
 			ps.setLong(1, ownerId);
 			ps.setString(2, tag);
 
-			rs = ps.executeQuery();
+			ResultSet rs = ps.executeQuery();
 			long tagId = -1;
 			if (!rs.next()) {
 				rs.close();
@@ -152,13 +122,15 @@ public class StoredProcedures {
 			rs.close();
 
 			ps = conn.prepareStatement(
-					"insert into tig_ma_msgs_tags (msg_id, tag_id) select ?, ? from SYSIBM.SYSDUMMY1" +
-							" where not exists (select 1 from tig_ma_msgs_tags mt where mt.msg_id = ? and mt.tag_id = ?)");
+					"insert into tig_ma_msgs_tags (msg_owner_id, msg_stable_id, tag_id) select ?, ?, ? from SYSIBM.SYSDUMMY1" +
+							" where not exists (select 1 from tig_ma_msgs_tags mt where mt.msg_owner_id = ? and mt.msg_stable_id = ? and mt.tag_id = ?)");
 
-			ps.setLong(1, msgId);
-			ps.setLong(2, tagId);
-			ps.setLong(3, msgId);
-			ps.setLong(4, tagId);
+			ps.setLong(1, ownerId);
+			ps.setString(2, stableId);
+			ps.setLong(3, tagId);
+			ps.setString(4, stableId);
+			ps.setLong(5, ownerId);
+			ps.setLong(6, tagId);
 
 			ps.executeUpdate();
 		} catch (SQLException e) {
@@ -179,7 +151,7 @@ public class StoredProcedures {
 		if (tags != null) {
 			sb.append(" and exists(select 1 from tig_ma_msgs_tags mt " +
 							  "inner join tig_ma_tags t on mt.tag_id = t.tag_id " +
-							  "where m.msg_id = mt.msg_id and t.owner_id = o.jid_id and t.tag IN (")
+							  "where m.owner_id = mt.msg_owner_id and m.stable_id = mt.msg_stable_id and t.owner_id = o.jid_id and t.tag IN (")
 					.append(tags)
 					.append("))");
 		}
@@ -187,7 +159,7 @@ public class StoredProcedures {
 	}
 
 	private static int countMessages(Connection conn) throws SQLException {
-		ResultSet rs = conn.prepareStatement("select count(msg_id) from tig_ma_msgs").executeQuery();
+		ResultSet rs = conn.prepareStatement("select count(1) from tig_ma_msgs").executeQuery();
 		if (rs.next()) {
 			return rs.getInt(1);
 		}
@@ -234,7 +206,7 @@ public class StoredProcedures {
 	}
 
 	public static void getCollections(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
-									  String contains, short byType, Integer limit, Integer offset, ResultSet[] data)
+									  String contains, Integer limit, Integer offset, ResultSet[] data)
 			throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
@@ -244,18 +216,13 @@ public class StoredProcedures {
 			StringBuilder sb = new StringBuilder();
 
 			sb.append("select min(m.ts), b.jid");
-			if (byType == 1) {
-				sb.append(
-						", case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end as \"type\"");
-			} else {
-				sb.append(", cast(null as varchar(20)) as \"type\"");
-			}
 
 			sb.append(" from tig_ma_msgs m" + " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
 				sb.append(" and b.jid_sha1 = ?");
 			}
+			sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
 			if (from != null) {
 				sb.append(" and m.ts >= ?");
 			}
@@ -264,12 +231,7 @@ public class StoredProcedures {
 			}
 			appendTagsQuery(sb, tags);
 			appendContainsQuery(sb, contains);
-			if (byType == 1) {
-				sb.append(
-						" group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end");
-			} else {
-				sb.append(" group by date(m.ts), m.buddy_id, b.jid");
-			}
+			sb.append(" group by date(m.ts), m.buddy_id, b.jid");
 
 			sb.append(" order by min(m.ts), b.jid");
 			sb.append(" offset ? rows fetch next ? rows only");
@@ -298,7 +260,7 @@ public class StoredProcedures {
 	}
 
 	public static void getCollectionsCount(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
-										   String contains, short byType, ResultSet[] data) throws SQLException {
+										   String contains, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -307,18 +269,12 @@ public class StoredProcedures {
 			StringBuilder sb = new StringBuilder();
 
 			sb.append("select count(1) from (select min(m.ts), b.jid");
-			if (byType == 1) {
-				sb.append(
-						", case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end as \"type\"");
-			} else {
-				sb.append(", cast(null as varchar(20)) as \"type\"");
-			}
-
 			sb.append(" from tig_ma_msgs m" + " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
 				sb.append(" and b.jid_sha1 = ?");
 			}
+			sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
 			if (from != null) {
 				sb.append(" and m.ts >= ?");
 			}
@@ -327,12 +283,7 @@ public class StoredProcedures {
 			}
 			appendTagsQuery(sb, tags);
 			appendContainsQuery(sb, contains);
-			if (byType == 1) {
-				sb.append(
-						" group by date(m.ts), m.buddy_id, b.jid, case when m.type = 'groupchat' then cast('groupchat' as varchar(20)) else cast('' as varchar(20)) end");
-			} else {
-				sb.append(" group by date(m.ts), m.buddy_id, b.jid");
-			}
+			sb.append(" group by date(m.ts), m.buddy_id, b.jid");
 
 			sb.append(") x");
 
@@ -379,7 +330,7 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void getMessagePosition(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
+	public static void getMessagePosition(String ownerJid, String buddyJid, Timestamp from, Timestamp to, short refType, String tags,
 										  String contains, String stableId, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
@@ -393,6 +344,11 @@ public class StoredProcedures {
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
 				sb.append(" and b.jid_sha1 = ?");
+			}
+			if (refType == 1) {
+				sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
+			} else {
+				sb.append(" and (m.is_ref = 0)");
 			}
 			if (from != null) {
 				sb.append(" and m.ts >= ?");
@@ -437,7 +393,7 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void getMessages(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
+	public static void getMessages(String ownerJid, String buddyJid, Timestamp from, Timestamp to, short refType, String tags,
 								   String contains, Integer limit, Integer offset, ResultSet[] data)
 			throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
@@ -447,11 +403,16 @@ public class StoredProcedures {
 		try {
 			StringBuilder sb = new StringBuilder();
 
-			sb.append("select m.msg, m.ts, m.direction, b.jid, m.stable_id" + " from tig_ma_msgs m" +
+			sb.append("select m.msg, m.ts, b.jid, m.stable_id, m.ref_stable_id" + " from tig_ma_msgs m" +
 							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
 				sb.append(" and b.jid_sha1 = ?");
+			}
+			if (refType == 1) {
+				sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
+			} else {
+				sb.append(" and (m.is_ref = 0)");
 			}
 			if (from != null) {
 				sb.append(" and m.ts >= ?");
@@ -488,7 +449,7 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void getMessagesCount(String ownerJid, String buddyJid, Timestamp from, Timestamp to, String tags,
+	public static void getMessagesCount(String ownerJid, String buddyJid, Timestamp from, Timestamp to, short refType, String tags,
 										String contains, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
@@ -497,11 +458,16 @@ public class StoredProcedures {
 		try {
 			StringBuilder sb = new StringBuilder();
 
-			sb.append("select count(m.msg_id)" + " from tig_ma_msgs m" +
+			sb.append("select count(1)" + " from tig_ma_msgs m" +
 							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
 							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
 			if (buddyJid != null) {
 				sb.append(" and b.jid_sha1 = ?");
+			}
+			if (refType == 1) {
+				sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
+			} else {
+				sb.append(" and (m.is_ref = 0)");
 			}
 			if (from != null) {
 				sb.append(" and m.ts >= ?");

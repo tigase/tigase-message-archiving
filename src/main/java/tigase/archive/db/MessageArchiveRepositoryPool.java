@@ -72,12 +72,17 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
+	public String getStableId(BareJID owner, BareJID buddy, String stanzaId) throws TigaseDBException {
+		return getRepository(owner.getDomain()).getStableId(owner, buddy, stanzaId);
+	}
+
+	@Override
 	public Q newQuery() {
 		return getRepository("default").newQuery();
 	}
 
 	@Override
-	public void queryCollections(Q query, CollectionHandler<Q> collectionHandler) throws TigaseDBException {
+	public void queryCollections(Q query, CollectionHandler<Q, Collection> collectionHandler) throws TigaseDBException {
 		getRepository(query.getQuestionerJID().getDomain()).queryCollections(query, collectionHandler);
 	}
 

@@ -49,6 +49,10 @@ public class QueryCriteria
 		this.contains.add(contain);
 	}
 
+	public FasteningCollation getFasteningCollation() {
+		return FasteningCollation.full;
+	}
+
 	public Set<String> getTags() {
 		return Collections.unmodifiableSet(tags);
 	}

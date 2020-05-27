@@ -19,7 +19,7 @@ package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import tigase.annotations.TigaseDeprecated;
+import tigase.archive.FasteningCollation;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
@@ -50,7 +50,7 @@ import java.util.logging.Logger;
 @Repository.Meta(supportedUris = {"jdbc:[^:]+:.*"}, isDefault = true)
 @Repository.SchemaId(id = Schema.MA_SCHEMA_ID, name = Schema.MA_SCHEMA_NAME)
 public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
-		extends AbstractMessageArchiveRepository<Q, DataRepository>
+		extends AbstractMessageArchiveRepository<Q, DataRepository, JDBCMessageArchiveRepository.AddMessageAdditionalDataProvider>
 		implements RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCMessageArchiveRepository.class.getCanonicalName());
@@ -59,18 +59,17 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	private static final SimpleParser parser = SingletonFactory.getParserInstance();
 
 	private static final String STORE_PLAINTEXT_BODY_KEY = "store-plaintext-body";
-	private static final String GROUP_BY_TYPE_KEY = "group-by-chat-type";
 
 	private static final String DELETE_EXPIRED_QUERY_TIMEOUT_KEY = "remove-expired-messages-query-timeout";
 	private static final int DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL = 5 * 60;
 
-	private static final String DEF_GET_MESSAGES_QUERY = "{ call Tig_MA_GetMessages(?,?,?,?,?,?,?,?) }";
-	private static final String DEF_GET_MESSAGES_COUNT_QUERY = "{ call Tig_MA_GetMessagesCount(?,?,?,?,?,?) }";
-	private static final String DEF_GET_MESSAGES_POSITION_QUERY = "{ call Tig_MA_GetMessagePosition(?,?,?,?,?,?,?) }";
-	private static final String DEF_GET_COLLECTIONS_QUERY = "{ call Tig_MA_GetCollections(?,?,?,?,?,?,?,?,?) }";
-	private static final String DEF_GET_COLLECTIONS_COUNT_QUERY = "{ call Tig_MA_GetCollectionsCount(?,?,?,?,?,?,?) }";
-	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_AddMessage(?,?,?,?,?,?,?,?,?) }";
-	private static final String DEF_ADD_TAG_TO_MESSAGE_QUERY = "{ call Tig_MA_AddTagToMessage(?,?) }";
+	private static final String DEF_GET_MESSAGES_QUERY = "{ call Tig_MA_GetMessages(?,?,?,?,?,?,?,?,?) }";
+	private static final String DEF_GET_MESSAGES_COUNT_QUERY = "{ call Tig_MA_GetMessagesCount(?,?,?,?,?,?,?) }";
+	private static final String DEF_GET_MESSAGES_POSITION_QUERY = "{ call Tig_MA_GetMessagePosition(?,?,?,?,?,?,?,?) }";
+	private static final String DEF_GET_COLLECTIONS_QUERY = "{ call Tig_MA_GetCollections(?,?,?,?,?,?,?,?) }";
+	private static final String DEF_GET_COLLECTIONS_COUNT_QUERY = "{ call Tig_MA_GetCollectionsCount(?,?,?,?,?,?) }";
+	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_AddMessage(?,?,?,?,?,?,?,?) }";
+	private static final String DEF_ADD_TAG_TO_MESSAGE_QUERY = "{ call Tig_MA_AddTagToMessage(?,?,?) }";
 	private static final String DEF_REMOVE_MESSAGES_QUERY = "{ call Tig_MA_RemoveMessages(?,?,?,?) }";
 	private static final String DEF_DELETE_EXPIRED_MESSAGES_QUERY = "{ call Tig_MA_DeleteExpiredMessages(?,?) }";
 	private static final String DEF_GET_TAGS_FOR_USER_QUERY = "{ call Tig_MA_GetTagsForUser(?,?,?,?) }";
@@ -102,8 +101,6 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	protected DataRepository data_repo = null;
 	@ConfigField(desc = "Delete expired messages statement query timeout", alias = DELETE_EXPIRED_QUERY_TIMEOUT_KEY)
 	private int delete_expired_timeout = DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL;
-	@ConfigField(desc = "Group collections by stanza type", alias = GROUP_BY_TYPE_KEY)
-	private boolean groupByType = false;
 	@ConfigField(desc = "Store plaintext body in separate field", alias = STORE_PLAINTEXT_BODY_KEY)
 	private boolean storePlaintextBody = true;
 
@@ -119,12 +116,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 	}
 
-	@TigaseDeprecated(since = "2.1.0", removeIn = "3.0.0", note = "New version of this method will be introduced in 3.0.0")
-	@Deprecated
 	@Override
-	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId,
-							   Set<String> tags) {
-		archiveMessage(owner, buddy, direction, timestamp, msg, stableId, tags, null);
+	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId, Set<String> tags) {
+		archiveMessage(owner, buddy.getBareJID(), timestamp, msg, stableId, tags, null);
 	}
 
 	@Override
@@ -151,7 +145,12 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	@Override
-	public void queryCollections(Q crit, CollectionHandler<Q> collectionHandler) throws TigaseDBException {
+	public String getStableId(BareJID owner, BareJID buddy, String stanzaId) throws TigaseDBException {
+		return null;
+	}
+
+	@Override
+	public void queryCollections(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws TigaseDBException {
 		try {
 			Integer count = getCollectionsCount(crit);
 			if (count == null) {
@@ -271,10 +270,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return results;
 	}
 
-	public void setItemsQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType)
+	public void setItemsQueryParams(PreparedStatement stmt, Q crit, FasteningCollation fasteningCollation)
 			throws SQLException {
-		stmt.setString(1, ownerJid);
-		int i = setQueryParams(stmt, crit, groupByType, 2);
+		int i = setQueryParams(stmt, crit, fasteningCollation);
 		stmt.setInt(i++, crit.getRsm().getMax());
 		stmt.setInt(i++, crit.getRsm().getIndex());
 	}
@@ -299,92 +297,55 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_QUERY, GET_TAGS_FOR_USER_QUERY);
 		data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT_QUERY, GET_TAGS_FOR_USER_COUNT_QUERY);
 	}
-
-	protected Long archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId,
-								  Set<String> tags, Map<String, Object> additionalData) {
+	
+	protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId, String stanzaId, String refStableId,
+								  Set<String> tags, AddMessageAdditionalDataProvider additionParametersProvider) {
 		try {
-			ResultSet rs = null;
 			java.sql.Timestamp mtime = new java.sql.Timestamp(timestamp.getTime());
-			msg.addAttribute("time", String.valueOf(mtime.getTime()));
 
-			String type = msg.getAttributeStaticStr("type");
 			String msgStr = msg.toString();
 			String body = storePlaintextBody ? msg.getChildCData(MSG_BODY_PATH) : null;
 			PreparedStatement add_message_st = data_repo.getPreparedStatement(owner, ADD_MESSAGE_QUERY);
 
-			Long msgId = null;
-
 			synchronized (add_message_st) {
-				try {
-					int i = 1;
-					add_message_st.setString(i++, owner.toString());
-					add_message_st.setString(i++, buddy.getBareJID().toString());
-					add_message_st.setString(i++, buddy.getResource());
-					data_repo.setTimestamp(add_message_st, i++, mtime);
-					add_message_st.setShort(i++, direction.getValue());
-					add_message_st.setString(i++, type);
-					add_message_st.setString(i++, body);
-					add_message_st.setString(i++, msgStr);
-					add_message_st.setString(i++, stableId);
+				int i = 1;
+				add_message_st.setString(i++, owner.toString());
+				add_message_st.setString(i++, buddy.toString());
+				data_repo.setTimestamp(add_message_st, i++, mtime);
+				add_message_st.setString(i++, stableId);
+				add_message_st.setString(i++, stanzaId);
+				add_message_st.setString(i++, refStableId);
+				add_message_st.setString(i++, body);
+				add_message_st.setString(i++, msgStr);
 
-					i = addMessageAdditionalInfo(add_message_st, i, additionalData);
-
-					// works for MSSQL, MySQL and PostgreSQL
-					rs = add_message_st.executeQuery();
-					if (rs.next()) {
-						msgId = rs.getLong(1);
-					}
-
-					// below works for MySQL and PostgreSQL
-//					add_message_st.executeUpdate();
-//					if (tags != null) {
-//						rs = add_message_st.getResultSet();
-//						if (rs.next()) {
-//								msgId = rs.getLong(1);
-//						}
-//					}
-
-				} finally {
-					data_repo.release(null, rs);
+				if (additionParametersProvider != null) {
+					additionParametersProvider.apply(add_message_st, i);
 				}
-			}
 
-			// in case we tried to archive message which was already archived (ie. by other
-			// session or cluster node) server may ignore insert so it will not return id of inserted
-			// record as insert was not executed
-			// in this case we need to exit from this function
-			if (msgId == null || msgId == 0) {
-				return msgId;
+				add_message_st.executeUpdate();
 			}
 
 			if (tags != null && !tags.isEmpty()) {
 				PreparedStatement add_message_tag_st = data_repo.getPreparedStatement(owner, ADD_TAG_TO_MESSAGE_QUERY);
 				synchronized (add_message_tag_st) {
 					for (String tag : tags) {
-						add_message_tag_st.setLong(1, msgId);
-						add_message_tag_st.setString(2, tag);
+						add_message_tag_st.setString(1, owner.toString());
+						add_message_tag_st.setString(2, stableId);
+						add_message_tag_st.setString(3, tag);
 						add_message_tag_st.addBatch();
 					}
 					add_message_tag_st.executeBatch();
 				}
 			}
-
-			return msgId;
 		} catch (SQLException ex) {
 			if (ex.getErrorCode() == 1366 || ex.getMessage() != null && ex.getMessage().startsWith("Incorrect string value")) {
 				log.log(Level.WARNING, "Your MySQL configuration can't handle extended Unicode (for example emoji) correctly. Please refer to <Support for emoji and other icons> section of the server documentation");
 			} else {
 				log.log(Level.WARNING, "Problem adding new entry to DB: " + msg, ex);
 			}
-			return null;
 		}
 	}
-
-	protected int addMessageAdditionalInfo(PreparedStatement stmt, int i, Map<String, Object> additionalData)
-			throws SQLException {
-		return i;
-	}
-
+	
 	protected Timestamp convertToTimestamp(Date date) {
 		if (date == null) {
 			return null;
@@ -392,13 +353,14 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return new Timestamp(date.getTime());
 	}
 
-	protected int setCountQueryParams(PreparedStatement stmt, String ownerJid, Q crit, Boolean groupByType)
+	protected int setCountQueryParams(PreparedStatement stmt, Q crit, FasteningCollation fasteningCollation)
 			throws SQLException {
-		stmt.setString(1, ownerJid);
-		return setQueryParams(stmt, crit, groupByType, 2);
+		return setQueryParams(stmt, crit, fasteningCollation);
 	}
-
-	protected int setQueryParams(PreparedStatement stmt, Q crit, Boolean groupByType, int i) throws SQLException {
+	
+	protected int setQueryParams(PreparedStatement stmt, Q crit, FasteningCollation fasteningCollation) throws SQLException {
+		int i = 1;
+		stmt.setString(i++, crit.getQuestionerJID().getBareJID().toString());
 		if (crit.getWith() != null) {
 			stmt.setString(i++, crit.getWith().getBareJID().toString());
 		} else {
@@ -413,6 +375,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getEnd()));
 		} else {
 			stmt.setObject(i++, null);
+		}
+		if (fasteningCollation != null) {
+			stmt.setShort(i++, fasteningCollation.getValue());
 		}
 		if (crit.getTags().isEmpty()) {
 			stmt.setObject(i++, null);
@@ -438,17 +403,18 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			}
 			stmt.setString(i++, sb.toString());
 		}
-		if (groupByType != null) {
-			stmt.setShort(i++, (short) (groupByType ? 1 : 0));
-		}
 		return i;
+	}
+
+	protected Collection newCollectionInstance() {
+		return new Collection();
 	}
 
 	protected Item newItemInstance() {
 		return new Item();
 	}
 
-	private void getCollectionsItems(Q crit, CollectionHandler<Q> collectionHandler) throws SQLException {
+	private void getCollectionsItems(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws SQLException {
 		ResultSet selectRs = null;
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_QUERY);
@@ -456,14 +422,14 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		int i = 2;
 		synchronized (get_collections_st) {
 			try {
-				setItemsQueryParams(get_collections_st, owner.toString(), crit, groupByType);
+				setItemsQueryParams(get_collections_st, crit, null);
 
 				selectRs = get_collections_st.executeQuery();
 				while (selectRs.next()) {
-					Timestamp startTs = data_repo.getTimestamp(selectRs, 1);
-					String with = selectRs.getString(2);
-					String type = selectRs.getString(3);
-					collectionHandler.collectionFound(crit, with, startTs, type);
+					Collection collection = newCollectionInstance();
+					collection.read(data_repo, selectRs, crit);
+
+					collectionHandler.collectionFound(crit, collection);
 				}
 			} finally {
 				data_repo.release(null, selectRs);
@@ -485,7 +451,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_collections_count = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_COUNT_QUERY);
 		synchronized (get_collections_count) {
 			try {
-				setCountQueryParams(get_collections_count, owner.toString(), crit, groupByType);
+				setCountQueryParams(get_collections_count, crit, null);
 				countRs = get_collections_count.executeQuery();
 				if (countRs.next()) {
 					count = countRs.getInt(1);
@@ -512,7 +478,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				setItemsQueryParams(get_messages_st, owner.toString(), crit, null);
+				setItemsQueryParams(get_messages_st, crit, FasteningCollation.full);
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
@@ -556,7 +522,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			crit.setStart(startTimestamp);
 		}
 	}
-
+	
 	private Integer getItemsCount(Q crit) throws SQLException {
 		Integer count = null;
 		ResultSet rs = null;
@@ -564,7 +530,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_COUNT_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				setCountQueryParams(get_messages_st, owner.toString(), crit, null);
+				setCountQueryParams(get_messages_st, crit, FasteningCollation.full);
 
 				rs = get_messages_st.executeQuery();
 				if (rs.next()) {
@@ -592,7 +558,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_message_position_st = data_repo.getPreparedStatement(owner, GET_MESSAGE_POSITION_QUERY);
 		synchronized (get_message_position_st) {
 			try {
-				int i = setCountQueryParams(get_message_position_st, owner.toString(), query, null);
+				int i = setCountQueryParams(get_message_position_st, query, FasteningCollation.full);
 				get_message_position_st.setString(i++, uid);
 
 				rs = get_message_position_st.executeQuery();
@@ -610,16 +576,42 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 		return position - 1;
 	}
-	
+
+	public static class Collection<Q extends QueryCriteria> implements MessageArchiveRepository.Collection {
+
+		private Date startTs;
+		private String with;
+
+		@Override
+		public Date getStartTs() {
+			return startTs;
+		}
+
+		@Override
+		public String getWith() {
+			return with;
+		}
+
+		protected int read(DataRepository repo, ResultSet rs, Q crit) throws SQLException {
+			int i = 1;
+			startTs = repo.getTimestamp(rs, i++);
+			with = rs.getString(i++);
+			return i;
+		}
+
+	}
+
+
 	public static class Item<Q extends QueryCriteria>
 			implements MessageArchiveRepository.Item {
 
-		Direction direction;
+		BareJID owner;
 		String id;
 		Element messageEl;
 		String messageStr;
 		Date timestamp;
 		String with;
+		String refId;
 
 		@Override
 		public String getId() {
@@ -628,7 +620,12 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 		@Override
 		public Direction getDirection() {
-			return direction;
+			JID jid = JID.jidInstanceNS(getMessage().getAttributeStaticStr("to"));
+			if (jid == null || !owner.equals(jid.getBareJID())) {
+				return Direction.outgoing;
+			} else {
+				return Direction.incoming;
+			}
 		}
 
 		@Override
@@ -647,19 +644,27 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 
 		protected int read(DataRepository repo, ResultSet rs, Q crit) throws SQLException {
+			owner = crit.getQuestionerJID().getBareJID();
 			int i = 1;
 			messageStr = rs.getString(i++);
 			timestamp = repo.getTimestamp(rs, i++);
-			direction = Direction.getDirection(rs.getShort(i++));
 			if (crit.getWith() == null) {
 				with = rs.getString(i);
 			}
 			i++;
 			id = rs.getString(i++).toLowerCase();
+			refId = rs.getString(i++);
+			if (refId != null) {
+				refId = refId.toLowerCase();
+			}
 			return i;
 		}
 	}
 
+	@FunctionalInterface
+	public interface AddMessageAdditionalDataProvider extends AbstractMessageArchiveRepository.AddMessageAdditionalDataProvider {
+		void apply(PreparedStatement stmt, int idx) throws SQLException;
+	}
 }
 
 //~ Formatted in Tigase Code Convention on 13/02/20

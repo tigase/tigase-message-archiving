@@ -19,9 +19,13 @@ package tigase.archive.db;
 
 import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
+import tigase.xml.Element;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.rsm.RSM;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Set;
 import java.util.TimeZone;
 
 /**
@@ -30,7 +34,7 @@ import java.util.TimeZone;
  *
  * @author andrzej
  */
-public abstract class AbstractMessageArchiveRepository<Q extends Query, DS extends DataSource>
+public abstract class AbstractMessageArchiveRepository<Q extends Query, DS extends DataSource, ADP extends AbstractMessageArchiveRepository.AddMessageAdditionalDataProvider>
 		implements MessageArchiveRepository<Q, DS> {
 
 	protected static final String[] MSG_BODY_PATH = {"message", "body"};
@@ -68,4 +72,32 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		rsm.setCount(count);
 	}
 
+	protected String extractOriginId(Element msg) {
+		Element originId = msg.getChild("origin-id", "urn:xmpp:sid:0");
+		if (originId != null) {
+			String id = originId.getAttributeStaticStr("id");
+			if (id != null) {
+				return id;
+			}
+		}
+		return msg.getAttributeStaticStr("id");
+	}
+
+	protected String findRefStableId(BareJID owner, BareJID buddy, String refOriginId) {
+		return null;
+	}
+
+	protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId,
+								  Set<String> tags, ADP additionParametersProvider) {
+		String stanzaId = extractOriginId(msg);
+		String refStableId = findRefStableId(owner, buddy, null);
+		archiveMessage(owner, buddy, timestamp, msg, stableId, stanzaId, refStableId, tags, additionParametersProvider);
+	}
+
+	abstract protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId, String stanzaId, String refStableId,
+								  Set<String> tags, ADP additionParametersProvider);
+
+	interface AddMessageAdditionalDataProvider {
+		
+	}
 }

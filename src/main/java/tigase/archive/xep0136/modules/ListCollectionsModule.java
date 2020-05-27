@@ -32,7 +32,6 @@ import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -49,7 +48,7 @@ public class ListCollectionsModule
 	private static final String LIST_ELEM = "list";
 
 	@Inject
-	private MessageArchiveRepository.CollectionHandler<QueryCriteria> collectionHandler;
+	private MessageArchiveRepository.CollectionHandler<QueryCriteria,MessageArchiveRepository.Collection> collectionHandler;
 
 	@Inject
 	private Xep0136QueryParser queryParser;
@@ -102,7 +101,7 @@ public class ListCollectionsModule
 
 	@Bean(name = "xep0136CollectionHandler", parent = MessageArchiveComponent.class, active = true)
 	public static class Xep0136CollectionHandler<Q extends QueryCriteria>
-			implements MessageArchiveRepository.CollectionHandler<Q> {
+			implements MessageArchiveRepository.CollectionHandler<Q, MessageArchiveRepository.Collection> {
 
 		private static final SimpleDateFormat TIMESTAMP_FORMATTER1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
@@ -111,15 +110,13 @@ public class ListCollectionsModule
 		}
 
 		@Override
-		public void collectionFound(Q query, String with, Date start, String type) {
+		public void collectionFound(Q query, MessageArchiveRepository.Collection collection) {
 			String formattedStart = null;
 			synchronized (TIMESTAMP_FORMATTER1) {
-				formattedStart = TIMESTAMP_FORMATTER1.format(start);
+				formattedStart = TIMESTAMP_FORMATTER1.format(collection.getStartTs());
 			}
-			Element elem = new Element("chat", new String[]{"with", "start"}, new String[]{with, formattedStart});
-			if (type != null && !type.isEmpty()) {
-				elem.addAttribute("type", type);
-			}
+			Element elem = new Element("chat", new String[]{"with", "start"}, new String[]{collection.getWith(), formattedStart});
+			collection.addAdditionalData(elem);
 			query.addCollection(elem);
 		}
 	}
