@@ -18,8 +18,15 @@
 package tigase.archive.xep0313;
 
 import tigase.archive.MessageArchiveComponent;
+import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.beans.Bean;
+import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.Query;
 import tigase.xmpp.mam.modules.QueryModule;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 /**
  * Created by andrzej on 29.12.2016.
@@ -28,4 +35,14 @@ import tigase.xmpp.mam.modules.QueryModule;
 public class MAMQueryModule
 		extends QueryModule {
 
+	@Override
+	public String[] getFeatures() {
+		return Stream.concat(Arrays.stream(super.getFeatures()), Stream.of("tigase:mamfc:0")).toArray(String[]::new);
+	}
+
+	@Override
+	protected void queryItems(Query query, MAMRepository.ItemHandler itemHandler)
+			throws RepositoryException, ComponentException {
+		super.queryItems(query, itemHandler);
+	}
 }

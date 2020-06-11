@@ -17,5 +17,14 @@
 --
 
 -- QUERY START:
+create procedure Tig_MA_GetStableId(ownerJid varchar(2049), buddyJid varchar(2049), stanzaId varchar(64))
+	PARAMETER STYLE JAVA
+	LANGUAGE JAVA
+	READS SQL DATA
+	DYNAMIC RESULT SETS 1
+	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getStableId';
+-- QUERY END:
+
+-- QUERY START:
 call TigSetComponentVersion('message-archiving', '3.0.0');
 -- QUERY END:

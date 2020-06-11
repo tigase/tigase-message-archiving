@@ -197,6 +197,10 @@ drop procedure if exists Tig_MA_AddTagToMessage;
 -- QUERY END:
 
 -- QUERY START:
+drop procedure if exists Tig_MA_GetStableId;
+-- QUERY END:
+
+-- QUERY START:
 drop function if exists Tig_MA_GetHasTagsQuery;
 -- QUERY END:
 
@@ -285,6 +289,20 @@ end //
 -- QUERY END:
 
 -- QUERY START:
+create procedure Tig_MA_GetStableId(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _stanzaId varchar(64) CHARSET utf8)
+begin
+    select Tig_MA_OrderedToUuid(m.stable_id) from tig_ma_msgs m
+        inner join tig_ma_jids o on m.owner_id = o.jid_id
+        inner join tig_ma_jids b on m.buddy_id = b.jid_id
+    where
+        o.jid_sha1 = SHA1(LOWER(_ownerJid))
+        and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
+        and m.stanza_id = _stanzaId
+        order by m.ts desc;
+end //
+-- QUERY END:
+
+-- QUERY START:
 create function Tig_MA_GetHasTagsQuery(_in_str text CHARSET utf8mb4 collate utf8mb4_bin) returns text CHARSET utf8mb4 collate utf8mb4_bin NO SQL
 begin
     if _in_str is not null then
@@ -350,53 +368,46 @@ begin
                     and (_to is null or m.ts <= _to)
                 order by m.ts
                 limit _limit offset _offset;
+            when 2 then
+                select m.msg, m.ts, b.jid, Tig_MA_OrderedToUuid(m.stable_id) as stable_id, Tig_MA_OrderedToUuid(m.ref_stable_id) as ref_stable_id
+                from (
+                    select m1.owner_id, ifnull(m1.ref_stable_id, m1.stable_id) as stable_id
+                    from tig_ma_msgs m1
+                        inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id
+                    where
+                        o1.jid_sha1 = SHA1(LOWER(_ownerJid))
+                        and (_buddyJid is null or b1.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                        and (m1.is_ref = 0 or m1.is_ref = 1)
+                        and (_from is null or m1.ts >= _from)
+                        and (_to is null or m1.ts <= _to)
+                    group by m1.owner_id, ifnull(m1.ref_stable_id, m1.stable_id)
+                    order by min(m1.ts) asc
+                    limit _limit offset _offset
+                    ) x
+                    straight_join tig_ma_msgs m use index (`PRIMARY`) on m.owner_id = x.owner_id and m.stable_id = x.stable_id
+                    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                order by m.ts asc;
             else
-                begin
-                    declare _startTs timestamp(6);
-                    declare _endTs timestamp(6);
-                    select max(ts), min(ts) into _endTs, _startTs
-                    from (
-                        select m.ts as ts
-                        from tig_ma_msgs m
-                            inner join tig_ma_jids o on m.owner_id = o.jid_id
-                            inner join tig_ma_jids b on b.jid_id = m.buddy_id
-                        where
-                            o.jid_sha1 = SHA1(LOWER(_ownerJid))
-                            and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
-                            and m.is_ref = 0
-                            and (_from is null or m.ts >= _from)
-                            and (_to is null or m.ts <= _to)
-                        order by m.ts
-                        limit _limit offset _offset
-                    ) x;
-
-                    if _buddyJid is null then
-                        select ref.msg, ref.ts, b.jid, Tig_MA_OrderedToUuid(ref.stable_id) as stable_id, Tig_MA_OrderedToUuid(ref.ref_stable_id) as ref_stable_id
-                        from tig_ma_msgs m
-                            inner join tig_ma_jids o on m.owner_id = o.jid_id
-                            inner join tig_ma_jids b on m.buddy_id = b.jid_id
-                            inner join tig_ma_msgs ref on ref.ref_stable_id = m.stable_id and ref.owner_id = o.jid_id and ref.buddy_id = m.buddy_id
-                        where
-                            o.jid_sha1 = SHA1(LOWER(_ownerJid))
-                            and m.is_ref = 0
-                            and m.ts >= _startTs
-                            and m.ts <= _endTs
-                        order by ref.ts;
-                    else
-                        select ref.msg, ref.ts, b.jid, Tig_MA_OrderedToUuid(ref.stable_id) as stable_id, Tig_MA_OrderedToUuid(ref.ref_stable_id) as ref_stable_id
-                        from tig_ma_msgs m
-                                 inner join tig_ma_jids o on m.owner_id = o.jid_id
-                                 inner join tig_ma_jids b on m.buddy_id = b.jid_id
-                                 inner join tig_ma_msgs ref on ref.ref_stable_id = m.stable_id and ref.owner_id = o.jid_id
-                        where
-                            o.jid_sha1 = SHA1(LOWER(_ownerJid))
-                            and b.jid_sha1 = SHA1(LOWER(_buddyJid))
-                            and m.is_ref = 0
-                            and m.ts >= _startTs
-                            and m.ts <= _endTs
-                        order by ref.ts;
-                    end if;
-                end;
+                select m.msg, m.ts, b.jid, Tig_MA_OrderedToUuid(m.stable_id) as stable_id, Tig_MA_OrderedToUuid(m.ref_stable_id) as ref_stable_id
+                from (
+                    select m1.owner_id, ifnull(m1.ref_stable_id, m1.stable_id) as stable_id
+                    from tig_ma_msgs m1
+                        inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id
+                    where
+                        o1.jid_sha1 = SHA1(LOWER(_ownerJid))
+                        and (_buddyJid is null or b1.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                        and (m1.is_ref = 0 or m1.is_ref = 1)
+                        and (_from is null or m1.ts >= _from)
+                        and (_to is null or m1.ts <= _to)
+                    group by m1.owner_id, ifnull(m1.ref_stable_id, m1.stable_id)
+                    order by min(m1.ts) asc
+                    limit _limit offset _offset
+                    ) x
+                    straight_join tig_ma_msgs m use index (tig_ma_msgs_ref_stable_id_owner_id_index) on m.ref_stable_id = x.stable_id and m.owner_id = x.owner_id
+                    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                order by m.ts asc;
 	    end case;
 	end if;
 end //
@@ -428,6 +439,17 @@ begin
         deallocate prepare stmt;
     else
         case _refType
+            when 0 then
+                select count(1)
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                where
+                    o.jid_sha1 = SHA1(LOWER(_ownerJid))
+                    and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                    and m.is_ref = 0
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to);
             when 1 then
                 select count(1)
                 from tig_ma_msgs m
@@ -439,15 +461,26 @@ begin
                     and (m.is_ref = 0 or m.is_ref = 1)
                     and (_from is null or m.ts >= _from)
                     and (_to is null or m.ts <= _to);
-            else
-                select count(1)
+            when 2 then
+                select count(distinct m.owner_id, ifnull(m.ref_stable_id, m.stable_id))
                 from tig_ma_msgs m
                     inner join tig_ma_jids o on m.owner_id = o.jid_id
-                    inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
                 where
                     o.jid_sha1 = SHA1(LOWER(_ownerJid))
                     and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
-                    and m.is_ref = 0
+                    and (m.is_ref = 0 or m.is_ref = 1)
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to);
+            else
+                select count(distinct m.owner_id, ifnull(m.ref_stable_id, m.stable_id))
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    o.jid_sha1 = SHA1(LOWER(_ownerJid))
+                    and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                    and m.is_ref = 1
                     and (_from is null or m.ts >= _from)
                     and (_to is null or m.ts <= _to);
         end case;
@@ -490,6 +523,25 @@ begin
 		deallocate prepare stmt;
 	else
         case _refType
+            when 0 then
+                select count(1) + 1
+                from tig_ma_msgs m
+                    join tig_ma_jids o on m.owner_id = o.jid_id
+                    join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    o.jid_sha1 = SHA1(LOWER(_ownerJid))
+                    and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                    and m.is_ref = 0
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to)
+                    and m.ts < (
+                        select ts
+                        from tig_ma_msgs m1
+                            join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        where
+                            o1.jid_sha1 = SHA1(LOWER(_ownerJid))
+                            and stable_id = Tig_MA_UuidToOrdered(_stableId)
+                    );
             when 1 then
                 select count(1) + 1
                 from tig_ma_msgs m
@@ -509,24 +561,43 @@ begin
                             o1.jid_sha1 = SHA1(LOWER(_ownerJid))
                         and stable_id = Tig_MA_UuidToOrdered(_stableId)
                     );
-            else
-                select count(1) + 1
+            when 2 then
+                select count(distinct m.owner_id, ifnull(m.ref_stable_id, m.stable_id)) + 1
                 from tig_ma_msgs m
-                    join tig_ma_jids o on m.owner_id = o.jid_id
-                    join tig_ma_jids b on m.buddy_id = b.jid_id
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
                 where
                     o.jid_sha1 = SHA1(LOWER(_ownerJid))
                     and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
-                    and m.is_ref = 0
+                    and (m.is_ref = 0 or m.is_ref = 1)
                     and (_from is null or m.ts >= _from)
                     and (_to is null or m.ts <= _to)
                     and m.ts < (
                         select ts
                         from tig_ma_msgs m1
-                            join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
                         where
                             o1.jid_sha1 = SHA1(LOWER(_ownerJid))
-                            and stable_id = Tig_MA_UuidToOrdered(_stableId)
+                            and m1.stable_id = Tig_MA_UuidToOrdered(_stableId)
+                    );
+            else
+                select count(distinct m.owner_id, ifnull(m.ref_stable_id, m.stable_id)) + 1
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    o.jid_sha1 = SHA1(LOWER(_ownerJid))
+                    and (_buddyJid is null or b.jid_sha1 = SHA1(LOWER(_buddyJid)))
+                    and m.is_ref = 1
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to)
+                    and m.ts < (
+                        select ts
+                        from tig_ma_msgs m1
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        where
+                            o1.jid_sha1 = SHA1(LOWER(_ownerJid))
+                            and m1.stable_id = Tig_MA_UuidToOrdered(_stableId)
                     );
         end case;
 	end if;

@@ -17,16 +17,16 @@
  */
 package tigase.archive.db;
 
-import tigase.archive.xep0136.Query;
+import tigase.archive.Query;
 import tigase.db.DataSource;
+import tigase.db.TigaseDBException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.mam.MAMRepository;
 import tigase.xmpp.rsm.RSM;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * AbstractMessageArchiveRepository contains methods commonly used by other implementations to eliminate code
@@ -83,21 +83,144 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		return msg.getAttributeStaticStr("id");
 	}
 
-	protected String findRefStableId(BareJID owner, BareJID buddy, String refOriginId) {
+	protected String extractRefOriginId(Element msg) {
+		Element chatMarkerEl = msg.findChild(el -> el.getXMLNS() == "urn:xmpp:chat-markers:0");
+		if (chatMarkerEl != null) {
+			String id = chatMarkerEl.getAttributeStaticStr("id");
+			if (id != null) {
+				return id;
+			}
+		}
+
+		Element messageDeliveryReceipt = msg.getChild("received", "urn:xmpp:receipts");
+		if (messageDeliveryReceipt != null) {
+			String id = messageDeliveryReceipt.getAttributeStaticStr("id");
+			if (id != null) {
+				return id;
+			}
+		}
+
+		Element applyToEl = msg.getChild("apply-to", "urn:xmpp:fasten:0");
+		if (applyToEl != null) {
+			String id = applyToEl.getAttributeStaticStr("id");
+			if  (id != null) {
+				return id;
+			}
+		}
+		
 		return null;
 	}
-
+	
 	protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId,
 								  Set<String> tags, ADP additionParametersProvider) {
 		String stanzaId = extractOriginId(msg);
-		String refStableId = findRefStableId(owner, buddy, null);
+		String refOriginalId = extractRefOriginId(msg);
+		String refStableId = null;
+		if (refOriginalId != null) {
+			try {
+				refStableId = getStableId(owner, buddy, refOriginalId);
+			} catch (TigaseDBException ex) {
+				
+			}
+		}
 		archiveMessage(owner, buddy, timestamp, msg, stableId, stanzaId, refStableId, tags, additionParametersProvider);
 	}
 
 	abstract protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId, String stanzaId, String refStableId,
 								  Set<String> tags, ADP additionParametersProvider);
 
-	interface AddMessageAdditionalDataProvider {
+//	@Override
+//	public void queryItems(Q query, ItemHandler<Q, MAMRepository.Item> itemHandler)
+//			throws RepositoryException, ComponentException {
+//		switch (query.getFasteningCollation()) {
+//			case simplified:
+//			case full:
+//				queryItemsSimple(query, query.getFasteningCollation(), itemHandler);
+//				break;
+//			case collate:
+//			case fastenings:
+//				queryItemsCollated(query, itemHandler);
+//				break;
+//		}
+//	}
+
+//	abstract protected void queryItemsSimple(Q query, FasteningCollation collation, ItemHandler<Q, MAMRepository.Item> itemHandler);
+//
+//	abstract protected Item newItemInstance();
+//
+//	protected void queryItemsCollated(Q query, ItemHandler<Q, MAMRepository.Item> itemHandler) {
+//		Map<String, Item> items = new HashMap<>();
+//
+//		// query only messages
+//		if (query.getFasteningCollation() == FasteningCollation.collate) {
+//			queryItemsSimple(query, FasteningCollation.collate, (query1, item) -> {
+//				items.put(item.getId(), (Item) item);
+//			});
+//		}
+//		queryItemsSimple(query, FasteningCollation.fastenings, (query1, refItem) -> {
+//			Item item = (Item) refItem;
+//			String refId = item.getRefId();
+//			Item msgItem = items.computeIfAbsent(refId, (k) -> new NoMessageItem(refId, item.getTimestamp(), item.getWith()));
+//			msgItem.getFastenings().add(item);
+//		});
+//
+//		items.values()
+//				.stream()
+//				.sorted(Comparator.comparing(MAMRepository.Item::getTimestamp))
+//				.forEach(item -> itemHandler.itemFound(query, item));
+//	}
+	  
+	public interface AddMessageAdditionalDataProvider {
 		
+	}
+
+	public class NoMessageItem
+			implements Item {
+
+		private final String id;
+		private final Date ts;
+		private final String with;
+		private final List<MAMRepository.Item> fastenings = new ArrayList<>();
+
+		public NoMessageItem(String id, Date ts, String with) {
+			this.id = id;
+			this.ts = ts;
+			this.with = with;
+		}
+
+		@Override
+		public String getRefId() {
+			return null;
+		}
+
+		@Override
+		public Direction getDirection() {
+			return null;
+		}
+
+		@Override
+		public String getWith() {
+			return with;
+		}
+
+		@Override
+		public String getId() {
+			return id;
+		}
+
+		@Override
+		public Element getMessage() {
+			return null;
+		}
+
+		@Override
+		public Date getTimestamp() {
+			return ts;
+		}
+
+		@Override
+		public List<MAMRepository.Item> getFastenings() {
+			return fastenings;
+		}
 	}
 }

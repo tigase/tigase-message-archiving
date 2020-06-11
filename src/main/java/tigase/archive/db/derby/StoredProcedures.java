@@ -400,32 +400,99 @@ public class StoredProcedures {
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
+		StringBuilder sb = new StringBuilder();
 		try {
-			StringBuilder sb = new StringBuilder();
+			switch (refType) {
+				case 0:
+				case 1:
+					sb.append("select m.msg, m.ts, b.jid, m.stable_id, m.ref_stable_id" + " from tig_ma_msgs m" +
+									  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
+									  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " +
+									  " o.jid_sha1 = ?");
+					if (buddyJid != null) {
+						sb.append(" and b.jid_sha1 = ?");
+					}
+					switch (refType) {
+						case 0:
+							sb.append(" and (m.is_ref = 0)");
+							break;
+						case 1:
+							sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
+							break;
+						case 2:
+						case 3:
+						default:
+							break;
+					}
+					if (from != null) {
+						sb.append(" and m.ts >= ?");
+					}
+					if (to != null) {
+						sb.append(" and m.ts <= ?");
+					}
+					appendTagsQuery(sb, tags);
+					appendContainsQuery(sb, contains);
 
-			sb.append("select m.msg, m.ts, b.jid, m.stable_id, m.ref_stable_id" + " from tig_ma_msgs m" +
-							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
-							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" + " where " + " o.jid_sha1 = ?");
-			if (buddyJid != null) {
-				sb.append(" and b.jid_sha1 = ?");
+					sb.append(" order by m.ts");
+					sb.append(" offset ? rows fetch next ? rows only");
+					break;
+				case 2:
+					sb.append("select m.msg, m.ts, b.jid, m.stable_id as stable_id, m.ref_stable_id as ref_stable_id\n" +
+									  " from (" +
+									  " select m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id) as stable_id" +
+									  " from tig_ma_msgs m1" +
+									  " inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id" +
+									  " inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id" +
+									  " where" +
+									  " o1.jid_sha1 = ?");
+					if (buddyJid != null) {
+						sb.append(" and b1.jid_sha1 = ?");
+					}
+					sb.append(" and (m1.is_ref = 0 or m1.is_ref = 1)");
+					if (from != null) {
+						sb.append(" and m1.ts >= ?");
+					}
+					if (to != null) {
+						sb.append(" and m1.ts <= ?");
+					}
+					sb.append(" group by m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id)" +
+									  " order by min(m1.ts) asc" +
+									  " offset ? rows fetch next ? rows only" +
+									  " ) x" +
+									  " join tig_ma_msgs m on m.owner_id = x.owner_id and m.stable_id = x.stable_id" +
+									  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
+									  " order by m.ts asc");
+					break;
+				case 3:
+					sb.append("select m.msg, m.ts, b.jid, m.stable_id as stable_id, m.ref_stable_id as ref_stable_id\n" +
+									  " from (" +
+									  " select m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id) as stable_id" +
+									  " from tig_ma_msgs m1" +
+									  " inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id" +
+									  " inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id" +
+									  " where" +
+									  " o1.jid_sha1 = ?");
+					if (buddyJid != null) {
+						sb.append(" and b1.jid_sha1 = ?");
+					}
+					sb.append(" and (m1.is_ref = 0 or m1.is_ref = 1)");
+					if (from != null) {
+						sb.append(" and m1.ts >= ?");
+					}
+					if (to != null) {
+						sb.append(" and m1.ts <= ?");
+					}
+					sb.append(" group by m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id)" +
+									  " order by min(m1.ts) asc" +
+									  " offset ? rows fetch next ? rows only" +
+									  " ) x" +
+									  " join tig_ma_msgs m on m.owner_id = x.owner_id and m.ref_stable_id = x.stable_id" +
+									  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
+									  " order by m.ts asc");
+					break;
+				default:
+					throw new SQLException("Unknown refType!");
 			}
-			if (refType == 1) {
-				sb.append(" and (m.is_ref = 0 or m.is_ref = 1)");
-			} else {
-				sb.append(" and (m.is_ref = 0)");
-			}
-			if (from != null) {
-				sb.append(" and m.ts >= ?");
-			}
-			if (to != null) {
-				sb.append(" and m.ts <= ?");
-			}
-			appendTagsQuery(sb, tags);
-			appendContainsQuery(sb, contains);
-
-			sb.append(" order by m.ts");
-			sb.append(" offset ? rows fetch next ? rows only");
-
 			PreparedStatement ps = conn.prepareStatement(sb.toString());
 
 			int i = 0;
@@ -513,6 +580,27 @@ public class StoredProcedures {
 			ps.setString(2, tagStartsWith);
 			ps.setInt(3, offset);
 			ps.setInt(4, limit);
+
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void getStableId(String ownerJid, String buddyJid, String stanzaId, ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"select stable_id from tig_ma_msgs m inner join tig_ma_jids o on m.owner_id = o.jid_id inner join tig_ma_jids b on m.buddy_id = b.jid_id where o.jid_sha1 = ? and b.jid_sha1 = ? and m.stanza_id = ? order by m.ts desc");
+
+			ps.setString(1, sha1OfLower(ownerJid));
+			ps.setString(2, sha1OfLower(buddyJid));
+			ps.setString(3, stanzaId);
 
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {

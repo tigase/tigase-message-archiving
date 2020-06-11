@@ -17,11 +17,20 @@
  */
 package tigase.archive;
 
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 public enum FasteningCollation {
 	simplified,
 	full,
 	collate,
 	fastenings;
+
+	private static final Map<String, FasteningCollation> nameToCollationMap = EnumSet.allOf(FasteningCollation.class)
+			.stream()
+			.collect(Collectors.toMap(FasteningCollation::name, Function.identity()));
 
 	public short getValue() {
 		switch (this) {
@@ -29,10 +38,16 @@ public enum FasteningCollation {
 				return 0;
 			case full:
 				return 1;
-			case fastenings:
+			case collate:
 				return 2;
+			case fastenings:
+				return 3;
 			default:
 				throw new IllegalArgumentException("Collate is not supported on the database level!");
 		}
+	}
+
+	public static FasteningCollation forName(String name) {
+		return nameToCollationMap.get(name);
 	}
 }

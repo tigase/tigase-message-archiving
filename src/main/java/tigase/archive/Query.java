@@ -15,7 +15,7 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  */
-package tigase.archive.xep0136;
+package tigase.archive;
 
 import tigase.xml.Element;
 
@@ -49,5 +49,9 @@ public interface Query
 	void addItem(Element item);
 
 	List<Element> getItems();
+
+	FasteningCollation getFasteningCollation();
+
+	void setFasteningCollation(FasteningCollation collation);
 
 }

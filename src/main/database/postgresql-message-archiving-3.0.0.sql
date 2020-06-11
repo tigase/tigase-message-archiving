@@ -187,6 +187,24 @@ $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
 -- QUERY START:
+create or replace function Tig_MA_GetStableId(_ownerJid varchar(2049), _buddyJid varchar(2049), _stanzaId varchar(64)) returns table(
+	"stable_id" varchar(36)
+) as $$
+begin
+    return query select cast(m.stable_id as varchar(36))
+        from tig_ma_msgs m
+            inner join tig_ma_jids o on m.owner_id = o.jid_id
+            inner join tig_ma_jids b on m.buddy_id = b.jid_id
+        where
+            LOWER(o.jid) = LOWER(_ownerJid)
+            and (_buddyJid is null or LOWER(b.jid) = LOWER(_buddyJid))
+            and m.stanza_id = _stanzaId
+            order by m.ts desc;
+end;
+$$ LANGUAGE 'plpgsql';
+-- QUERY END:
+
+-- QUERY START:
 create or replace function Tig_MA_GetHasTagsQuery(_in_str text) returns text as $$
 begin
     if _in_str is not null then
@@ -264,35 +282,46 @@ begin
                         and (_to is null or m.ts <= _to)
                     order by m.ts
                     limit _limit offset _offset;
-            else
-                select into endTs, startTs max(x.ts), min(x.ts)
-                from (
-                    select m.ts as ts
-                    from tig_ma_msgs m
-                        inner join tig_ma_jids o on m.owner_id = o.jid_id
+            when 2 then
+                return query select m.msg, m.ts, b.jid, cast(m.stable_id as varchar(36)) as stable_id, cast(m.ref_stable_id as varchar(36)) as ref_stable_id
+                    from (
+                        select m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id) as stable_id
+                        from tig_ma_msgs m1
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                            inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id
+                        where
+                            lower(o1.jid) = lower(_ownerJid)
+                            and (_buddyJid is null or lower(b1.jid) = lower(_buddyJid))
+                            and (m1.is_ref = 0 or m1.is_ref = 1)
+                            and (_from is null or m1.ts >= _from)
+                            and (_to is null or m1.ts <= _to)
+                        group by m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id)
+                        order by min(m1.ts) asc
+                        limit _limit offset _offset
+                        ) x
+                        inner join tig_ma_msgs m on m.owner_id = x.owner_id and m.stable_id = x.stable_id
                         inner join tig_ma_jids b on b.jid_id = m.buddy_id
-                    where
-                        lower(o.jid) = lower(_ownerJid)
-                        and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
-                        and m.is_ref = 0
-                        and (_from is null or m.ts >= _from)
-                        and (_to is null or m.ts <= _to)
-                    order by m.ts
-                    limit _limit offset _offset
-                ) x;
-
-                return query select ref.msg, ref.ts, b.jid, cast(ref.stable_id as varchar(36)) as stable_id, cast(ref.ref_stable_id as varchar(36)) as ref_stable_id
-                    from tig_ma_msgs m
-                        inner join tig_ma_jids o on m.owner_id = o.jid_id
-                        inner join tig_ma_jids b on m.buddy_id = b.jid_id
-                        inner join tig_ma_msgs ref on ref.ref_stable_id = m.stable_id and ref.owner_id = o.jid_id
-                    where
-                        lower(o.jid) = lower(_ownerJid)
-                        and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
-                        and m.is_ref = 0
-                        and m.ts >= startTs
-                        and m.ts <= endTs
-                    order by ref.ts;
+                    order by m.ts asc;
+            else
+                return query select m.msg, m.ts, b.jid, cast(m.stable_id as varchar(36)) as stable_id, cast(m.ref_stable_id as varchar(36)) as ref_stable_id
+                    from (
+                        select m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id) as stable_id
+                        from tig_ma_msgs m1
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                            inner join tig_ma_jids b1 on m1.buddy_id = b1.jid_id
+                        where
+                            lower(o1.jid) = lower(_ownerJid)
+                            and (_buddyJid is null or lower(b1.jid) = lower(_buddyJid))
+                            and (m1.is_ref = 0 or m1.is_ref = 1)
+                            and (_from is null or m1.ts >= _from)
+                            and (_to is null or m1.ts <= _to)
+                        group by m1.owner_id, coalesce(m1.ref_stable_id, m1.stable_id)
+                        order by min(m1.ts) asc
+                        limit _limit offset _offset
+                        ) x
+                        inner join tig_ma_msgs m on m.ref_stable_id = x.stable_id and m.owner_id = x.owner_id
+                        inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                    order by m.ts asc;
         end case;
     end if;
 end;
@@ -335,6 +364,17 @@ begin
         return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to);
     else
         case _refType
+            when 0 then
+                return query select count(1)
+                    from tig_ma_msgs m
+                        inner join tig_ma_jids o on m.owner_id = o.jid_id
+                        inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                    where
+                        lower(o.jid) = lower(_ownerJid)
+                        and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                        and m.is_ref = 0
+                        and (_from is null or m.ts >= _from)
+                        and (_to is null or m.ts <= _to);
             when 1 then
 		        return query select count(1)
                     from tig_ma_msgs m
@@ -346,17 +386,28 @@ begin
                         and (m.is_ref = 0 or m.is_ref = 1)
                         and (_from is null or m.ts >= _from)
                         and (_to is null or m.ts <= _to);
+            when 2 then
+                return query select count(distinct coalesce(m.ref_stable_id, m.stable_id))
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    lower(o.jid) = lower(_ownerJid)
+                    and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                    and (m.is_ref = 0 or m.is_ref = 1)
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to);
             else
-		        return query select count(1)
-                    from tig_ma_msgs m
-                        inner join tig_ma_jids o on m.owner_id = o.jid_id
-                        inner join tig_ma_jids b on b.jid_id = m.buddy_id
-                    where
-                        lower(o.jid) = lower(_ownerJid)
-                        and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
-                        and m.is_ref = 0
-                        and (_from is null or m.ts >= _from)
-                        and (_to is null or m.ts <= _to);
+                return query select count(distinct coalesce(m.ref_stable_id, m.stable_id))
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    lower(o.jid) = lower(_ownerJid)
+                    and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                    and m.is_ref = 1
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to);
         end case;
     end if;
 end;
@@ -409,6 +460,20 @@ begin
 		return query execute format(query_sql, _ownerJid, _buddyJid, _buddyJid, _from, _from, _to, _to, uuid(_stableId));
 	else
         case _refType
+            when 0 then
+		        return query select x.position from (
+                    select row_number() over (w) as position, m.stable_id
+                    from tig_ma_msgs m
+                        inner join tig_ma_jids o on m.owner_id = o.jid_id
+                        inner join tig_ma_jids b on b.jid_id = m.buddy_id
+                    where
+                        lower(o.jid) = lower(_ownerJid)
+                        and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                        and m.is_ref = 0
+                        and (_from is null or m.ts >= _from)
+                        and (_to is null or m.ts <= _to)
+                    window w as (order by ts)
+                ) x where x.stable_id = uuid(_stableId);
             when 1 then
 		        return query select x.position from (
                     select row_number() over (w) as position, m.stable_id
@@ -423,20 +488,44 @@ begin
                         and (_to is null or m.ts <= _to)
                     window w as (order by ts)
                 ) x where x.stable_id = uuid(_stableId);
+            when 2 then
+                return query select count(distinct coalesce(m.ref_stable_id, m.stable_id)) + 1
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    lower(o.jid) = lower(_ownerJid)
+                    and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                    and (m.is_ref = 0 or m.is_ref = 1)
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to)
+                    and m.ts < (
+                        select ts
+                        from tig_ma_msgs m1
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        where
+                            lower(o1.jid) = lower(_ownerJid)
+                            and m1.stable_id = uuid(_stableId)
+                    );
             else
-		        return query select x.position from (
-		            select row_number() over (w) as position, m.stable_id
-		            from tig_ma_msgs m
-			            inner join tig_ma_jids o on m.owner_id = o.jid_id
-			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		            where
-			            lower(o.jid) = lower(_ownerJid)
-			            and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
-		                and m.is_ref = 0
-			            and (_from is null or m.ts >= _from)
-			            and (_to is null or m.ts <= _to)
-		            window w as (order by ts)
-                ) x where x.stable_id = uuid(_stableId);
+                return query select count(distinct coalesce(m.ref_stable_id, m.stable_id)) + 1
+                from tig_ma_msgs m
+                    inner join tig_ma_jids o on m.owner_id = o.jid_id
+                    inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                where
+                    lower(o.jid) = lower(_ownerJid)
+                    and (_buddyJid is null or lower(b.jid) = lower(_buddyJid))
+                    and m.is_ref = 1
+                    and (_from is null or m.ts >= _from)
+                    and (_to is null or m.ts <= _to)
+                    and m.ts < (
+                        select ts
+                        from tig_ma_msgs m1
+                            inner join tig_ma_jids o1 on m1.owner_id = o1.jid_id
+                        where
+                            lower(o1.jid) = lower(_ownerJid)
+                            and m1.stable_id = uuid(_stableId)
+                    );
         end case;
 	end if;
 end;

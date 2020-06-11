@@ -34,7 +34,7 @@ import java.util.Set;
 /**
  * @author andrzej
  */
-public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query, DS extends DataSource>
+public interface MessageArchiveRepository<Q extends tigase.archive.Query, DS extends DataSource>
 		extends DataSourceAware<DS>, MAMRepository<Q, MAMRepository.Item> {
 
 	enum Direction {
@@ -120,6 +120,8 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 
 	interface Item
 			extends MAMRepository.Item {
+
+		String getRefId();
 
 		Direction getDirection();
 

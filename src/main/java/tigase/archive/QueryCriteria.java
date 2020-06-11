@@ -17,7 +17,6 @@
  */
 package tigase.archive;
 
-import tigase.archive.xep0136.Query;
 import tigase.archive.xep0313.QueryImpl;
 import tigase.xml.Element;
 import tigase.xmpp.rsm.RSM;
@@ -36,6 +35,8 @@ public class QueryCriteria
 	private final Set<String> contains = new HashSet<String>();
 	private final Set<String> tags = new HashSet<String>();
 
+	private FasteningCollation fasteningCollation = FasteningCollation.full;
+
 	private List<Element> collections;
 	private List<Element> items;
 
@@ -50,7 +51,15 @@ public class QueryCriteria
 	}
 
 	public FasteningCollation getFasteningCollation() {
-		return FasteningCollation.full;
+		return fasteningCollation;
+	}
+
+	@Override
+	public void setFasteningCollation(FasteningCollation collation) {
+		if (collation == null) {
+			throw new IllegalArgumentException("Fastening collation cannot be null!");
+		}
+		this.fasteningCollation = collation;
 	}
 
 	public Set<String> getTags() {

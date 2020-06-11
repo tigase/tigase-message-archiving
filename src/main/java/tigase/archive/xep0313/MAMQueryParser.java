@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0313;
 
+import tigase.archive.FasteningCollation;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.MessageArchiveConfig;
 import tigase.component.exceptions.ComponentException;
@@ -28,10 +29,8 @@ import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.mam.Query;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Created by andrzej on 19.07.2016.
@@ -43,6 +42,8 @@ public class MAMQueryParser
 	private static final String CONTAINS_FIELD_NAME = "tigase:body:contains";
 	private static final String TAGS_FIELD_NAME = "tigase:tags";
 	private static final String MAM2_XMLNS = "urn:xmpp:mam:2";
+	private static final String MAMFC_XMLNS = "tigase:mamfc:0";
+	private static final String MAMFC_SUMMARY = "{" + MAMFC_XMLNS + "}collation";
 
 	protected static final Set<String> XMLNSs = Collections.unmodifiableSet(
 			new HashSet<>(Arrays.asList(MAM_XMLNS, MAM2_XMLNS)));
@@ -59,26 +60,32 @@ public class MAMQueryParser
 	public Query parseQuery(Query query, Packet packet) throws ComponentException {
 		Query result = super.parseQuery(query, packet);
 
-		Element queryEl = packet.getElement().getChildStaticStr("query", MAM_XMLNS);
+		Element queryEl = packet.getElement().getChild("query");
+
+		FasteningCollation mamfc = Optional.ofNullable(DataForm.getFieldValue(queryEl, MAMFC_SUMMARY))
+				.map(FasteningCollation::forName)
+				.orElse(FasteningCollation.full);
+		((tigase.archive.Query) query).setFasteningCollation(mamfc);
+
 		String[] contains = DataForm.getFieldValues(queryEl, CONTAINS_FIELD_NAME);
 		if (contains != null && contains.length > 0) {
-			if (!(query instanceof tigase.archive.xep0136.Query)) {
+			if (!(query instanceof tigase.archive.Query)) {
 				throw new ComponentException(Authorization.BAD_REQUEST, "Unsupported feature " + CONTAINS_FIELD_NAME);
 			}
 
 			for (String it : contains) {
-				((tigase.archive.xep0136.Query) query).addContains(it);
+				((tigase.archive.Query) query).addContains(it);
 			}
 		}
 
 		String[] tags = DataForm.getFieldValues(queryEl, TAGS_FIELD_NAME);
 		if (tags != null && tags.length > 0) {
-			if (!(query instanceof tigase.archive.xep0136.Query) || !config.isTagSupportEnabled()) {
+			if (!(query instanceof tigase.archive.Query) || !config.isTagSupportEnabled()) {
 				throw new ComponentException(Authorization.BAD_REQUEST, "Unsupported feature " + TAGS_FIELD_NAME);
 			}
 
 			for (String it : tags) {
-				((tigase.archive.xep0136.Query) query).addTag(it);
+				((tigase.archive.Query) query).addTag(it);
 			}
 		}
 
@@ -86,11 +93,17 @@ public class MAMQueryParser
 	}
 
 	@Override
-	public Element prepareForm(Element elem) {
-		Element form = super.prepareForm(elem);
+	public Element prepareForm(Element elem, String xmlns) {
+		Element form = super.prepareForm(elem, xmlns);
 		Element x = form.getChild("x", "jabber:x:data");
 
 		if (x != null) {
+			String[] options = Stream.of(FasteningCollation.simplified, FasteningCollation.full,
+										 FasteningCollation.collate, FasteningCollation.fastenings)
+					.map(FasteningCollation::name)
+					.toArray(String[]::new);
+			DataForm.addFieldValue(x, MAMFC_SUMMARY, FasteningCollation.full.name(), "MAM Fastening Collation", options, options);
+
 			addField(x, CONTAINS_FIELD_NAME, "text-multi", "Contains in body");
 
 			if (config.isTagSupportEnabled()) {

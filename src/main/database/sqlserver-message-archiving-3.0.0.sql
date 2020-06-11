@@ -313,6 +313,32 @@ end
 GO
 
 -- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetStableId')
+	DROP PROCEDURE [dbo].[Tig_MA_GetStableId]
+-- QUERY END:
+GO
+-- QUERY START:
+create procedure Tig_MA_GetStableId
+	@_ownerJid nvarchar(2049),
+	@_buddyJid nvarchar(2049),
+	@_stanzaId nvarchar(64)
+AS
+begin
+    select convert(nvarchar(36),m.stable_id) as stable_id
+        from tig_ma_msgs m
+            inner join tig_ma_jids o on m.owner_id = o.jid_id
+            inner join tig_ma_jids b on m.buddy_id = b.jid_id
+        where
+            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+            and m.stanza_id = @_stanzaId
+            order by m.ts desc;
+end
+-- QUERY END:
+GO
+
+
+-- QUERY START:
 IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MA_GetHasTagsQuery')
 	DROP PROCEDURE [dbo].[Tig_MA_GetHasTagsQuery]
 -- QUERY END:
@@ -379,25 +405,25 @@ begin
 		end
 	else
 		begin
-		if @_refType = 0
+		if @_refType < 2
 		    begin
-		    	;with results_cte as (
-		            select m.msg, m.ts, b.jid, convert(nvarchar(36),m.stable_id) as stable_id, convert(nvarchar(36),m.ref_stable_id) as ref_stable_id, row_number() over (order by m.ts) as row_num
-		            from tig_ma_msgs m
-			            inner join tig_ma_jids o on m.owner_id = o.jid_id
-			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		            where
-			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
-			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
-			            and (m.is_ref = 0)
-			            and (@_from is null or m.ts >= @_from)
-			            and (@_to is null or m.ts <= @_to)
-		        )
-		        select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
-		    end
-		else
-		    begin
-		    if @_refType = 1
+		    if @_refType = 0
+		        begin
+		    	    ;with results_cte as (
+		                select m.msg, m.ts, b.jid, convert(nvarchar(36),m.stable_id) as stable_id, convert(nvarchar(36),m.ref_stable_id) as ref_stable_id, row_number() over (order by m.ts) as row_num
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 0)
+			                and (@_from is null or m.ts >= @_from)
+			                and (@_to is null or m.ts <= @_to)
+		            )
+		            select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
+		        end
+		    else
 		        begin
 		            ;with results_cte as (
 		                select m.msg, m.ts, b.jid, convert(nvarchar(36),m.stable_id) as stable_id, convert(nvarchar(36),m.ref_stable_id) as ref_stable_id, row_number() over (order by m.ts) as row_num
@@ -413,23 +439,48 @@ begin
 		            )
 		            select * from results_cte where row_num >= @_offset + 1 and row_num < @_offset + 1 + @_limit order by row_num;
 		        end
-		    else
+		    end
+		else
+		    begin
+		    if @_refType = 2
 		        begin
 		        	;with results_cte as (
-		                select m.owner_id, m.stable_id, row_number() over (order by m.ts) as row_num
+		                select m.owner_id, coalesce(m.ref_stable_id, m.stable_id) as stable_id, row_number() over (order by min(m.ts)) as row_num
 		                from tig_ma_msgs m
 			                inner join tig_ma_jids o on m.owner_id = o.jid_id
 			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		                where
 			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
 			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
-			                and (m.is_ref = 0)
+			                and (m.is_ref = 0 or m.is_ref = 1)
 			                and (@_from is null or m.ts >= @_from)
 			                and (@_to is null or m.ts <= @_to)
+			            group by m.owner_id, coalesce(m.ref_stable_id, m.stable_id)
 		            )
 		            select m.msg, m.ts, b.jid, convert(nvarchar(36),m.stable_id) as stable_id, convert(nvarchar(36),m.ref_stable_id) as ref_stable_id
 		            from results_cte cte
-		                inner join tigma_msgs m on m.owner_id = cte.owner_id and m.ref_stable_id = cte.stable_id
+		                inner join tig_ma_msgs m on m.owner_id = cte.owner_id and m.stable_id = cte.stable_id
+		                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where cte.row_num >= @_offset + 1 and cte.row_num < @_offset + 1 + @_limit order by m.ts;
+		        end
+		    else
+		        begin
+		        	;with results_cte as (
+		                select m.owner_id, coalesce(m.ref_stable_id, m.stable_id) as stable_id, row_number() over (order by min(m.ts)) as row_num
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 0 or m.is_ref = 1)
+			                and (@_from is null or m.ts >= @_from)
+			                and (@_to is null or m.ts <= @_to)
+			            group by m.owner_id, coalesce(m.ref_stable_id, m.stable_id)
+		            )
+		            select m.msg, m.ts, b.jid, convert(nvarchar(36),m.stable_id) as stable_id, convert(nvarchar(36),m.ref_stable_id) as ref_stable_id
+		            from results_cte cte
+		                inner join tig_ma_msgs m on m.ref_stable_id = cte.stable_id and m.owner_id = cte.owner_id
 		                inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		                where cte.row_num >= @_offset + 1 and cte.row_num < @_offset + 1 + @_limit order by m.ts;
 		        end
@@ -483,31 +534,63 @@ begin
 		end
 	else
 		begin
-		if @_refType = 1
+		if @_refType < 2
 		    begin
-		        select count(1)
-		        from tig_ma_msgs m
-			        inner join tig_ma_jids o on m.owner_id = o.jid_id
-			        inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		        where
-			        o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
-			        and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
-			        and (m.is_ref = 0 or m.is_ref = 1)
-			        and (@_from is null or m.ts >= @_from)
-			        and (@_to is null or m.ts <= @_to)
-		    end
-		else
-		    begin
-		        select count(1)
-		        from tig_ma_msgs m
-			        inner join tig_ma_jids o on m.owner_id = o.jid_id
-			        inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		        where
-			        o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+		    if @_refType = 0
+		        begin
+		            select count(1)
+		            from tig_ma_msgs m
+			            inner join tig_ma_jids o on m.owner_id = o.jid_id
+			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		            where
+			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
 			        and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
 			        and (m.is_ref = 0)
 			        and (@_from is null or m.ts >= @_from)
 			        and (@_to is null or m.ts <= @_to)
+		        end
+		    else
+		        begin
+		            select count(1)
+		            from tig_ma_msgs m
+			            inner join tig_ma_jids o on m.owner_id = o.jid_id
+			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		            where
+			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			            and (m.is_ref = 0 or m.is_ref = 1)
+			            and (@_from is null or m.ts >= @_from)
+			            and (@_to is null or m.ts <= @_to)
+		        end
+		    end
+		else
+		    begin
+		    if @_refType = 2
+		        begin
+                    select count(distinct coalesce(m.ref_stable_id, m.stable_id))
+                        from tig_ma_msgs m
+                            inner join tig_ma_jids o on m.owner_id = o.jid_id
+                            inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                        where
+			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+                        and (m.is_ref = 0 or m.is_ref = 1)
+			            and (@_from is null or m.ts >= @_from)
+			            and (@_to is null or m.ts <= @_to);
+                end
+		    else
+		        begin
+                    select count(distinct coalesce(m.ref_stable_id, m.stable_id))
+                        from tig_ma_msgs m
+                            inner join tig_ma_jids o on m.owner_id = o.jid_id
+                            inner join tig_ma_jids b on m.buddy_id = b.jid_id
+                        where
+			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+                        and (m.is_ref = 1)
+			            and (@_from is null or m.ts >= @_from)
+			            and (@_to is null or m.ts <= @_to);
+		        end
 			end
 		end
 end
@@ -560,35 +643,75 @@ begin
 		end
 	else
 		begin
-		if @_refType = 1
+		if @_refType < 2
 		    begin
-		        select x.position from (
-		            select m.stable_id, row_number() over (order by m.ts) as position
-		            from tig_ma_msgs m
-			            inner join tig_ma_jids o on m.owner_id = o.jid_id
-			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		            where
-			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
-			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
-			            and (m.is_ref = 0 or m.is_ref = 1)
-        			    and (@_from is null or m.ts >= @_from)
-		        	    and (@_to is null or m.ts <= @_to)) x
-	            where x.stable_id = convert(uniqueidentifier,@_stableId)
+		    if @_refType = 0
+		        begin
+		            select x.position from (
+		                select m.stable_id, row_number() over (order by m.ts) as position
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 0)
+        			        and (@_from is null or m.ts >= @_from)
+		        	        and (@_to is null or m.ts <= @_to)) x
+	                where x.stable_id = convert(uniqueidentifier,@_stableId)
+		        end
+		    else
+		        begin
+		            select x.position from (
+		                select m.stable_id, row_number() over (order by m.ts) as position
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 0 or m.is_ref = 1)
+        			        and (@_from is null or m.ts >= @_from)
+		        	        and (@_to is null or m.ts <= @_to)) x
+	                where x.stable_id = convert(uniqueidentifier,@_stableId)
+		        end
 		    end
 		else
 		    begin
-		        select x.position from (
-		            select m.stable_id, row_number() over (order by m.ts) as position
-		            from tig_ma_msgs m
-			            inner join tig_ma_jids o on m.owner_id = o.jid_id
-			            inner join tig_ma_jids b on b.jid_id = m.buddy_id
-		            where
-			            o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
-			            and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
-			            and (m.is_ref = 0)
-        			    and (@_from is null or m.ts >= @_from)
-		        	    and (@_to is null or m.ts <= @_to)) x
-	            where x.stable_id = convert(uniqueidentifier,@_stableId)
+		    if @_refType = 2
+		        begin
+		            select x.position from (
+		                select coalesce(m.ref_stable_id, m.stable_id) as stable_id, row_number() over (order by min(m.ts)) as position
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 0 or m.is_ref = 1)
+        			        and (@_from is null or m.ts >= @_from)
+		        	        and (@_to is null or m.ts <= @_to)
+		        	    group by coalesce(m.ref_stable_id, m.stable_id)
+		        	    ) x
+	                where x.stable_id = convert(uniqueidentifier,@_stableId)
+		        end
+		    else
+		        begin
+		            select x.position from (
+		                select coalesce(m.ref_stable_id, m.stable_id) as stable_id, row_number() over (order by min(m.ts)) as position
+		                from tig_ma_msgs m
+			                inner join tig_ma_jids o on m.owner_id = o.jid_id
+			                inner join tig_ma_jids b on b.jid_id = m.buddy_id
+		                where
+			                o.jid_sha1 = HASHBYTES('SHA1', LOWER(@_ownerJid))
+			                and (@_buddyJid is null or b.jid_sha1 = HASHBYTES('SHA1', LOWER(@_buddyJid)))
+			                and (m.is_ref = 1)
+        			        and (@_from is null or m.ts >= @_from)
+		        	        and (@_to is null or m.ts <= @_to)
+		        	    group by coalesce(m.ref_stable_id, m.stable_id)
+		        	    ) x
+	                where x.stable_id = convert(uniqueidentifier,@_stableId)
+		        end
 	        end
 		end
 end

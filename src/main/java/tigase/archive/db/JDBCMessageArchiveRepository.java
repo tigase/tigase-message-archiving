@@ -70,6 +70,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	private static final String DEF_GET_COLLECTIONS_COUNT_QUERY = "{ call Tig_MA_GetCollectionsCount(?,?,?,?,?,?) }";
 	private static final String DEF_ADD_MESSAGE_QUERY = "{ call Tig_MA_AddMessage(?,?,?,?,?,?,?,?) }";
 	private static final String DEF_ADD_TAG_TO_MESSAGE_QUERY = "{ call Tig_MA_AddTagToMessage(?,?,?) }";
+	private static final String DEF_GET_MESSAGE_STABLE_ID_QUERY = "{ call Tig_MA_GetStableId(?,?,?) }";
 	private static final String DEF_REMOVE_MESSAGES_QUERY = "{ call Tig_MA_RemoveMessages(?,?,?,?) }";
 	private static final String DEF_DELETE_EXPIRED_MESSAGES_QUERY = "{ call Tig_MA_DeleteExpiredMessages(?,?) }";
 	private static final String DEF_GET_TAGS_FOR_USER_QUERY = "{ call Tig_MA_GetTagsForUser(?,?,?,?) }";
@@ -84,6 +85,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	protected String GET_COLLECTIONS_COUNT_QUERY = DEF_GET_COLLECTIONS_COUNT_QUERY;
 	@ConfigField(desc = "Query to retrieve list of collections", alias = "get-collections-query")
 	protected String GET_COLLECTIONS_QUERY = DEF_GET_COLLECTIONS_QUERY;
+	@ConfigField(desc = "Query to retrieve stable id of a message", alias = "get-message-stable-id-query")
+	protected String GET_MESSAGE_STABLE_ID_QUERY = DEF_GET_MESSAGE_STABLE_ID_QUERY;
 	@ConfigField(desc = "Query to retrieve number of messages", alias = "get-messages-count-query")
 	protected String GET_MESSAGES_COUNT_QUERY = DEF_GET_MESSAGES_COUNT_QUERY;
 	@ConfigField(desc = "Query to retrieve list of messages", alias = "get-messages-query")
@@ -146,7 +149,29 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 	@Override
 	public String getStableId(BareJID owner, BareJID buddy, String stanzaId) throws TigaseDBException {
-		return null;
+		try {
+			PreparedStatement stmt = data_repo.getPreparedStatement(owner, GET_MESSAGE_STABLE_ID_QUERY);
+			synchronized (stmt) {
+				ResultSet rs = null;
+				try {
+					stmt.setString(1, owner.toString());
+					stmt.setString(2, buddy.toString());
+					stmt.setString(3, stanzaId);
+					rs = stmt.executeQuery();
+					if (rs.next()) {
+						String stableId = rs.getString(1);
+						if (stableId != null) {
+							return stableId.toLowerCase();
+						}
+					}
+					return null;
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Cound not retrieve stable id", ex);
+		}
 	}
 
 	@Override
@@ -182,7 +207,31 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 			calculateOffsetAndPosition(crit, count, before, after);
 
-			getItemsItems(crit, itemHandler);
+			switch (crit.getFasteningCollation()) {
+				case simplified:
+				case full:
+					getItemsItems(crit, crit.getFasteningCollation(), itemHandler);
+					break;
+				case collate:
+				case fastenings:
+					final Map<String, MessageArchiveRepository.Item> items = new HashMap<>();
+					if (crit.getFasteningCollation() == FasteningCollation.collate) {
+						getItemsItems(crit, FasteningCollation.collate, (query1, item) -> {
+							items.put(item.getId(), (MessageArchiveRepository.Item) item);
+						});
+					}
+					getItemsItems(crit, FasteningCollation.fastenings, (query1, refItem) -> {
+						MessageArchiveRepository.Item item = (MessageArchiveRepository.Item) refItem;
+						String refId = item.getRefId();
+						MessageArchiveRepository.Item msgItem = items.computeIfAbsent(refId, (k) -> new NoMessageItem(refId, item.getTimestamp(), item.getWith()));
+						msgItem.getFastenings().add(item);
+					});
+					items.values()
+							.stream()
+							.sorted(Comparator.comparing(MAMRepository.Item::getTimestamp))
+							.forEach(item -> itemHandler.itemFound(crit, item));
+					break;
+			}
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Cound not retrieve items", ex);
 		}
@@ -288,6 +337,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		data_repo.initPreparedStatement(GET_MESSAGES_QUERY, GET_MESSAGES_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGES_COUNT_QUERY, GET_MESSAGES_COUNT_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGE_POSITION_QUERY, GET_MESSAGE_POSITION_QUERY);
+		data_repo.initPreparedStatement(GET_MESSAGE_STABLE_ID_QUERY, GET_MESSAGE_STABLE_ID_QUERY);
 		data_repo.initPreparedStatement(GET_COLLECTIONS_QUERY, GET_COLLECTIONS_QUERY);
 		data_repo.initPreparedStatement(GET_COLLECTIONS_COUNT_QUERY, GET_COLLECTIONS_COUNT_QUERY);
 		data_repo.initPreparedStatement(ADD_MESSAGE_QUERY, ADD_MESSAGE_QUERY);
@@ -471,14 +521,14 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return Integer.parseInt(uid);
 	}
 
-	private void getItemsItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler) throws SQLException {
+	private void getItemsItems(Q crit, FasteningCollation collation, ItemHandler<Q, MAMRepository.Item> itemHandler) throws SQLException {
 		ResultSet rs = null;
 		Queue<Item> results = new ArrayDeque<Item>();
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				setItemsQueryParams(get_messages_st, crit, FasteningCollation.full);
+				setItemsQueryParams(get_messages_st, crit, collation);
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
@@ -519,7 +569,9 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 				i++;
 			}
 
-			crit.setStart(startTimestamp);
+			if (crit.getFasteningCollation() != FasteningCollation.collate && crit.getFasteningCollation() != FasteningCollation.fastenings) {
+				crit.setStart(startTimestamp);
+			}
 		}
 	}
 	
@@ -530,7 +582,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_COUNT_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				setCountQueryParams(get_messages_st, crit, FasteningCollation.full);
+				setCountQueryParams(get_messages_st, crit, crit.getFasteningCollation());
 
 				rs = get_messages_st.executeQuery();
 				if (rs.next()) {
@@ -558,7 +610,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		PreparedStatement get_message_position_st = data_repo.getPreparedStatement(owner, GET_MESSAGE_POSITION_QUERY);
 		synchronized (get_message_position_st) {
 			try {
-				int i = setCountQueryParams(get_message_position_st, query, FasteningCollation.full);
+				int i = setCountQueryParams(get_message_position_st, query, query.getFasteningCollation());
 				get_message_position_st.setString(i++, uid);
 
 				rs = get_message_position_st.executeQuery();
@@ -612,10 +664,15 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		Date timestamp;
 		String with;
 		String refId;
+		List<MAMRepository.Item> fastenings = new ArrayList<>();
 
 		@Override
 		public String getId() {
 			return id;
+		}
+
+		public String getRefId() {
+			return refId;
 		}
 
 		@Override
@@ -626,6 +683,11 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			} else {
 				return Direction.incoming;
 			}
+		}
+
+		@Override
+		public List<MAMRepository.Item> getFastenings() {
+			return fastenings;
 		}
 
 		@Override
