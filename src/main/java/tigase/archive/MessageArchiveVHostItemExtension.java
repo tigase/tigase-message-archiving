@@ -112,7 +112,8 @@ public class MessageArchiveVHostItemExtension
 
 	@Override
 	public void initFromElement(Element item) {
-		enabled = Boolean.parseBoolean(item.getAttributeStaticStr("enabled"));
+		final String enabledAttribute = item.getAttributeStaticStr("enabled");
+		this.enabled = enabledAttribute == null || Boolean.parseBoolean(enabledAttribute);
 		defaultStoreMethod = Optional.ofNullable(item.getAttributeStaticStr("default-store-method"))
 				.map(StoreMethod::valueof);
 		requiredStoreMethod = Optional.ofNullable(item.getAttributeStaticStr("required-store-method"))
@@ -157,7 +158,7 @@ public class MessageArchiveVHostItemExtension
 	@Override
 	public Element toElement() {
 		Element el = new Element(getId());
-		if (enabled) {
+		if (!enabled) {
 			el.setAttribute("enabled", String.valueOf(enabled));
 		}
 		defaultStoreMethod.ifPresent(v -> el.setAttribute("default-store-method", v.toString()));
@@ -169,7 +170,7 @@ public class MessageArchiveVHostItemExtension
 			el.setAttribute("retention-days", String.valueOf(retentionDays));
 		}
 		saveMuc.ifPresent(v -> el.setAttribute("save-muc", v.toString()));
-		return el.getAttributes().isEmpty() ? null : el;
+		return (el.getAttributes() == null || el.getAttributes().isEmpty()) ? null : el;
 	}
 	
 	@Override
