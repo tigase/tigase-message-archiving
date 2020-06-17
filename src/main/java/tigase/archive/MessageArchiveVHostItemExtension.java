@@ -129,7 +129,8 @@ public class MessageArchiveVHostItemExtension
 
 	@Override
 	public void initFromCommand(String prefix, Packet packet) throws IllegalArgumentException {
-		enabled = Command.getCheckBoxFieldValue(packet, prefix + "-enabled");
+		Optional.ofNullable(Command.getFieldValue(packet, prefix + "-enabled"))
+				.ifPresent(s -> enabled = Boolean.parseBoolean(s));
 		defaultStoreMethod = Optional.ofNullable(Command.getFieldValue(packet, prefix + "-default-store-method"))
 				.filter(s -> !s.isEmpty())
 				.map(StoreMethod::valueof);
