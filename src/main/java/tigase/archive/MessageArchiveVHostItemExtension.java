@@ -157,7 +157,9 @@ public class MessageArchiveVHostItemExtension
 	@Override
 	public Element toElement() {
 		Element el = new Element(getId());
-		el.setAttribute("enabled", String.valueOf(enabled));
+		if (enabled) {
+			el.setAttribute("enabled", String.valueOf(enabled));
+		}
 		defaultStoreMethod.ifPresent(v -> el.setAttribute("default-store-method", v.toString()));
 		requiredStoreMethod.ifPresent(v -> el.setAttribute("required-store-method", v.toString()));
 		if (retentionType != RetentionType.userDefined) {
@@ -167,7 +169,7 @@ public class MessageArchiveVHostItemExtension
 			el.setAttribute("retention-days", String.valueOf(retentionDays));
 		}
 		saveMuc.ifPresent(v -> el.setAttribute("save-muc", v.toString()));
-		return el;
+		return el.getAttributes().isEmpty() ? null : el;
 	}
 	
 	@Override
