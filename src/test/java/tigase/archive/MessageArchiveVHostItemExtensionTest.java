@@ -31,5 +31,11 @@ public class MessageArchiveVHostItemExtensionTest {
 		extension.initFromElement(item);
 		assertTrue(extension.isEnabled());
 		assertNull(extension.toElement());
+		extension.initFromElement(new Element(extension.getId(), new String[]{"enabled"}, new String[] {"false"}));
+		assertFalse(extension.isEnabled());
+		assertNotNull(extension.toElement());
+		extension.initFromElement(new Element(extension.getId(), new String[]{"enabled"}, new String[] {"true"}));
+		assertTrue(extension.isEnabled());
+		assertNull(extension.toElement());
 	}
 }

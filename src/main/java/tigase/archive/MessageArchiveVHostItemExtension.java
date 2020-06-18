@@ -49,7 +49,9 @@ public class MessageArchiveVHostItemExtension
 	
 	public static final String ID = "message-archive";
 
-	private boolean enabled = true;
+	public static final boolean DEFAULT_ENABLED_VAL = true;
+
+	private boolean enabled = DEFAULT_ENABLED_VAL;
 	private Optional<StoreMethod> defaultStoreMethod = Optional.empty();
 	private Optional<StoreMethod> requiredStoreMethod = Optional.empty();
 	private RetentionType retentionType = RetentionType.userDefined;
@@ -113,7 +115,7 @@ public class MessageArchiveVHostItemExtension
 	@Override
 	public void initFromElement(Element item) {
 		final String enabledAttribute = item.getAttributeStaticStr("enabled");
-		this.enabled = enabledAttribute == null || Boolean.parseBoolean(enabledAttribute);
+		this.enabled = enabledAttribute == null ? DEFAULT_ENABLED_VAL : Boolean.parseBoolean(enabledAttribute);
 		defaultStoreMethod = Optional.ofNullable(item.getAttributeStaticStr("default-store-method"))
 				.map(StoreMethod::valueof);
 		requiredStoreMethod = Optional.ofNullable(item.getAttributeStaticStr("required-store-method"))
@@ -159,7 +161,7 @@ public class MessageArchiveVHostItemExtension
 	@Override
 	public Element toElement() {
 		Element el = new Element(getId());
-		if (!enabled) {
+		if (enabled != DEFAULT_ENABLED_VAL) {
 			el.setAttribute("enabled", String.valueOf(enabled));
 		}
 		defaultStoreMethod.ifPresent(v -> el.setAttribute("default-store-method", v.toString()));
