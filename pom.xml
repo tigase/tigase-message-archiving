@@ -5,12 +5,12 @@
     <parent>
         <groupId>tigase</groupId>
         <artifactId>tigase-projects-parent</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3</version>
         <relativePath />
     </parent>
 
     <artifactId>tigase-message-archiving</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.1.0</version>
     <packaging>bundle</packaging>
 
     <properties>
@@ -26,7 +26,7 @@
         <connection>scm:git:${scm_repo_base}/tigase-message-archiving.git</connection>
         <developerConnection>scm:git:${scm_repo_base}/tigase-message-archiving.git</developerConnection>
         <url>https://github.com/tigase/tigase-message-archiving.git</url>
-      <tag>HEAD</tag>
+      <tag>tigase-message-archiving-2.1.0</tag>
   </scm>
 
     <build>
@@ -102,13 +102,13 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>8.1.0-SNAPSHOT</version>
+            <version>8.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>8.1.0-SNAPSHOT</version>
+            <version>8.1.0</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
