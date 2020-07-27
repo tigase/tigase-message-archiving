@@ -97,7 +97,7 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 	abstract protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId, String stanzaId, String refStableId,
 								  Set<String> tags, ADP additionParametersProvider);
 
-	interface AddMessageAdditionalDataProvider {
+	public interface AddMessageAdditionalDataProvider {
 		
 	}
 }
