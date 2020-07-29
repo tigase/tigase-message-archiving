@@ -231,6 +231,12 @@ CREATE INDEX IX_tig_ma_msgs_ref_stable_id_owner_id_index ON [dbo].[tig_ma_msgs] 
 GO
 
 -- QUERY START:
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = 'stanza_id' AND object_id = object_id('dbo.tig_ma_msgs'))
+ALTER TABLE [tig_ma_msgs] ADD [stanza_id] [nvarchar](64);
+-- QUERY END:
+GO
+
+-- QUERY START:
 IF NOT EXISTS(SELECT * FROM sys.indexes WHERE object_id = object_id('dbo.tig_ma_msgs') AND NAME ='IX_tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index')
 CREATE INDEX IX_tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index ON [dbo].[tig_ma_msgs] ([owner_id], [buddy_id], [stanza_id], [ts]);
 -- QUERY END:
