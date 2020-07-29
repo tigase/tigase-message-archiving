@@ -15,6 +15,9 @@
 
     <properties>
         <license.inlineHeader>${inlineHeader_agpl3}</license.inlineHeader>
+        
+        <guide_name>Tigase_Message_Archiving</guide_name>
+        <documentation_phases.all_converters>generate-resources</documentation_phases.all_converters>
     </properties>
 
     <name>Tigase Message Archiving Component</name>
@@ -43,61 +46,7 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>dist</id>
-
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>dist</name>
-                </property>
-            </activation>
-
-            <properties>
-                <maven.javadoc.skip>false</maven.javadoc.skip>
-                <guide_name>Tigase_Message_Archiving</guide_name>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.asciidoctor</groupId>
-                        <artifactId>asciidoctor-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>output-html</id>
-                                <phase>generate-resources</phase>
-                            </execution>
-                            <execution>
-                                <id>output-docbook</id>
-                                <phase>generate-resources</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.agilejava.docbkx</groupId>
-                        <artifactId>docbkx-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>generate-webhelp</id>
-                                <phase>generate-resources</phase>
-                            </execution>
-                            <execution>
-                                <id>generate-pdf</id>
-                                <phase>generate-resources</phase>
-                            </execution>
-                            <execution>
-                                <id>generate-html</id>
-                                <phase>generate-resources</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
+    
     <dependencies>
         <dependency>
             <groupId>tigase</groupId>
