@@ -41,6 +41,7 @@ import tigase.server.xmppsession.SessionManager;
 import tigase.server.xmppsession.SessionManagerHandler;
 import tigase.server.xmppsession.UserConnectedEvent;
 import tigase.util.cache.LRUConcurrentCache;
+import tigase.util.datetime.TimestampHelper;
 import tigase.util.dns.DNSResolverFactory;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.vhosts.VHostItem;
@@ -60,6 +61,8 @@ import tigase.xmpp.impl.roster.RosterFactory;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Predicate;
@@ -96,6 +99,7 @@ public class MessageArchivePlugin
 	private static final String[] MESSAGE_HINTS_NO_PERMANENT_STORE = {Message.ELEM_NAME, "no-permanent-store"};
 	private static final String MESSAGE_HINTS_XMLNS = "urn:xmpp:hints";
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 	@ConfigField(desc = "Message archiving component JID", alias = "component-jid")
 	protected JID componentJid = null;
 	@Inject
@@ -377,6 +381,40 @@ public class MessageArchivePlugin
 	@Override
 	public void generateStableId(Packet packet) {
 		if (packet.getStableId() == null) {
+			if (packet.getType() == StanzaType.groupchat && packet.getElemChild("mix") == null) {
+				StringBuilder sb = new StringBuilder();
+				if (packet.getStanzaFrom() != null) {
+					sb.append(packet.getStanzaFrom().toString());
+				}
+				sb.append(":");
+				Element delay = packet.getElemChild("delay", "urn:xmpp:delay");
+				if (packet.getElemChild("subject") == null && packet.getStanzaId() != null) {
+					sb.append(packet.getStanzaId());
+				}
+				long ts = System.currentTimeMillis();
+				if (delay != null) {
+					try {
+						Date stamp = timestampHelper.parseTimestamp(delay.getAttributeStaticStr("stamp"));
+						if (stamp != null) {
+							ts = stamp.getTime();
+						}
+					} catch (ParseException ex) {
+						// invalid timestamp, lets ignore it..
+					}
+				}
+
+				sb.append(":").append((ts/60000l));
+				String body = packet.getElement().getChildCData(new String[] {"message", "body"});
+				if (body != null) {
+					sb.append(body);
+				}
+				String subject = packet.getElement().getCDataStaticStr(new String[]{"message", "subject"});
+				if (subject != null) {
+					sb.append(subject);
+				}
+				packet.setStableId(UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8)).toString());
+				return;
+			}
 			packet.setStableId(UUID.randomUUID().toString());
 		}
 	}
