@@ -53,10 +53,15 @@ for temprow in
 loop
     execute 'alter table tig_ma_msgs drop constraint ' || quote_ident(temprow.constraint_name) || ';';
 end loop;
+
+alter table tig_ma_msgs
+    add column is_ref smallint default 0;
+update tig_ma_msgs set is_ref = 0 where is_ref is null;
+alter table tig_ma_msgs
+    alter column  is_ref set not null;
 alter table tig_ma_msgs
     add column stanza_id varchar(64),
     add column ref_stable_id uuid,
-    add column is_ref smallint not null default 0,
     add primary key (owner_id, stable_id);
 end if;
 if not exists(select 1 from information_schema.columns where table_catalog = current_database() AND table_schema = 'public' AND table_name = 'tig_ma_msgs_tags' AND column_name = 'msg_owner_id') then
