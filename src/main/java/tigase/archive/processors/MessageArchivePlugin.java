@@ -24,10 +24,7 @@ import tigase.archive.Settings;
 import tigase.archive.StoreMethod;
 import tigase.archive.StoreMuc;
 import tigase.component.exceptions.RepositoryException;
-import tigase.db.AuthRepository;
-import tigase.db.NonAuthUserRepository;
-import tigase.db.TigaseDBException;
-import tigase.db.UserRepository;
+import tigase.db.*;
 import tigase.eventbus.EventBus;
 import tigase.eventbus.HandleEvent;
 import tigase.kernel.beans.Bean;
@@ -371,6 +368,8 @@ public class MessageArchivePlugin
 					dataConsumer.set(SETTINGS, MUC_SAVE, null);
 				}
 			}
+		} catch (UserNotFoundException ex) {
+			log.log(Level.FINEST, "User does not exist", ex);
 		} catch (RepositoryException ex) {
 			log.log(Level.WARNING, "Exception reading settings from database", ex);
 		}
