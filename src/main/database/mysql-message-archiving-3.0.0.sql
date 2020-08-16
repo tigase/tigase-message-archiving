@@ -175,6 +175,14 @@ begin
         create index tig_ma_msgs_owner_id_is_ref_ts_index on tig_ma_msgs (owner_id, is_ref, ts);
     end if;
 
+    if exists(select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'body' and column_type = 'text') then
+        alter table tig_ma_msgs
+           modify column body mediumtext character set utf8mb4 collate utf8mb4_bin;
+    end if;
+    if exists(select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_ma_msgs' and column_name = 'msg' and column_type = 'text') then
+        alter table tig_ma_msgs
+           modify column msg mediumtext character set utf8mb4 collate utf8mb4_bin;
+    end if;
 end //
 -- QUERY END:
 
@@ -225,7 +233,7 @@ delimiter //
 -- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _ts timestamp(6),
     _stableId varchar(36) CHARSET utf8,  _stanzaId varchar(64) CHARSET utf8, _refStableId varchar(36) CHARSET utf8,
-    _body text CHARSET utf8mb4 collate utf8mb4_bin, _msg text CHARSET utf8mb4 collate utf8mb4_bin)
+    _body mediumtext CHARSET utf8mb4 collate utf8mb4_bin, _msg mediumtext CHARSET utf8mb4 collate utf8mb4_bin)
 begin
 	declare _owner_id bigint;
 	declare _buddy_id bigint;
