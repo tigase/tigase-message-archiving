@@ -206,6 +206,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		packetEl.addChild(prefs);
 
 		Packet packet = Packet.packetInstance(packetEl);
+		packet.setPacketFrom(JID.jidInstance("c2s@hostname/id"));
 
 		Queue<Packet> results = new ArrayDeque<>();
 		xep0313Processor.process(packet, session1, null, results, null);
@@ -243,6 +244,7 @@ public class Xep0313MessageArchiveManagementProcessorTest
 		packetEl.addChild(prefs);
 
 		Packet packet = Packet.packetInstance(packetEl);
+		packet.setPacketFrom(JID.jidInstance("c2s@hostname/id"));
 
 		Queue<Packet> results = new ArrayDeque<>();
 		xep0313Processor.process(packet, session1, null, results, null);

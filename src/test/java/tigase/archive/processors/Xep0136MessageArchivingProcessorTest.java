@@ -183,6 +183,7 @@ public class Xep0136MessageArchivingProcessorTest
 		pref.addChild(new Element("auto", new String[]{"save"}, new String[]{"false"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
+		packet.setPacketFrom(JID.jidInstance("c2s@hostname/id"));
 
 		Queue<Packet> results = new ArrayDeque<>();
 		Packet result = null;
@@ -260,6 +261,7 @@ public class Xep0136MessageArchivingProcessorTest
 		pref.addChild(new Element("default", new String[]{"save"}, new String[]{"body"}));
 
 		Packet packet = Packet.packetInstance(packetEl);
+		packet.setPacketFrom(JID.jidInstance("c2s@hostname/id"));
 
 		Queue<Packet> results = new ArrayDeque<>();
 		Packet result = null;
