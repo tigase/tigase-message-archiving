@@ -128,8 +128,8 @@ public class StoredProcedures {
 			ps.setLong(1, ownerId);
 			ps.setString(2, stableId);
 			ps.setLong(3, tagId);
-			ps.setString(4, stableId);
-			ps.setLong(5, ownerId);
+			ps.setLong(4, ownerId);
+			ps.setString(5, stableId);
 			ps.setLong(6, tagId);
 
 			ps.executeUpdate();
