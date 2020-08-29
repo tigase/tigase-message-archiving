@@ -117,7 +117,8 @@ public abstract class AbstractMAMProcessor
 			throws PacketErrorTypeException, NotAuthorizedException {
 		Element always = prefs.getChild("always");
 		Element never = prefs.getChild("never");
-		if ((never != null && !never.getChildren().isEmpty()) || (always != null && !always.getChildren().isEmpty())) {
+		if (Optional.ofNullable(never).map(Element::getChildren).filter(list -> !list.isEmpty()).isPresent() ||
+				Optional.ofNullable(always).map(Element::getChildren).filter(list -> !list.isEmpty()).isPresent()) {
 			results.offer(Authorization.BAD_REQUEST.getResponseMessage(packet,
 																	   "Could not set list of always or never - feature not implemented!",
 																	   true));
