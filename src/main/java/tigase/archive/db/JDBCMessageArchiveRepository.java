@@ -367,12 +367,20 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			stmt.setObject(i++, null);
 		}
 		if (crit.getStart() != null) {
-			data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getStart()));
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getStart().getTime() == 0) {
+				stmt.setObject(i++, null);
+			} else {
+				data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getStart()));
+			}
 		} else {
 			stmt.setObject(i++, null);
 		}
 		if (crit.getEnd() != null) {
-			data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getEnd()));
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getEnd().getTime() == 0) {
+				stmt.setObject(i++, null);
+			} else {
+				data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getEnd()));
+			}
 		} else {
 			stmt.setObject(i++, null);
 		}
