@@ -48,7 +48,7 @@ public abstract class AbstractMAMProcessor
 	private static final Logger log = Logger.getLogger(
 			AbstractMAMProcessor.class.getCanonicalName());
 	@Inject
-	private MessageArchivePlugin messageArchivePlugin;
+	protected MessageArchivePlugin messageArchivePlugin;
 
 	abstract protected String getXMLNS();
 

@@ -126,6 +126,8 @@ public class MessageArchivePlugin
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
 	@ConfigField(desc = "Store MUC messages in archive using automatic archiving", alias = STORE_MUC_MESSAGES_KEY)
 	private StoreMuc globalStoreMucMessages = StoreMuc.User;
+	@ConfigField(desc = "Store MIX messages in a local user archive", alias = "store-mix-messages")
+	private boolean globalStoreMixMessages = true;
 	@Inject
 	private MessageDeliveryLogic message;
 	private RosterAbstract rosterUtil = RosterFactory.getRosterImplementation(true);
@@ -138,6 +140,10 @@ public class MessageArchivePlugin
 	private List<AbstractMAMProcessor> mamProcessors = new ArrayList<>();
 
 	private boolean stanzaIdSupport = false;
+
+	public boolean isArchivingOfMixMessageEnabled() {
+		return globalStoreMixMessages;
+	}
 
 	public void setCacheSize(int cacheSize) {
 		this.cacheSize = cacheSize;
@@ -582,6 +588,9 @@ public class MessageArchivePlugin
 			case groupchat:
 				Element mix = packet.getElemChild("mix", "urn:xmpp:mix:core:1");
 				if (mix != null) {
+					if (!isArchivingOfMixMessageEnabled()) {
+						return false;
+					}
 					if (!isInRoster.test(buddyJid)) {
 						return false;
 					}
