@@ -90,6 +90,11 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 	protected void archiveMessage(BareJID owner, BareJID buddy, Date timestamp, Element msg, String stableId,
 								  Set<String> tags, ADP additionParametersProvider) {
 		String stanzaId = extractOriginId(msg);
+		// Some clients are sending large `id` attributes and we support storage only for 64 chars. `stanzaId` is only
+		// for a reference and future optimizations we may ignore too large values and just store null for them.
+		if (stanzaId != null && stanzaId.length() >= 64) {
+			stanzaId = null;
+		}
 		String refStableId = findRefStableId(owner, buddy, null);
 		archiveMessage(owner, buddy, timestamp, msg, stableId, stanzaId, refStableId, tags, additionParametersProvider);
 	}
