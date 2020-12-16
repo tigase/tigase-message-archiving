@@ -80,7 +80,7 @@ alter table tig_ma_msgs_tags
     drop column msg_id;
 end if;
 if exists(select 1 from information_schema.columns where table_catalog = current_database() AND table_schema = 'public' AND table_name = 'tig_ma_msgs' AND column_name = 'msg_id') then
-    if exists(select 1 from information_schema.columns where table_catalog = current_database() AND table_schema = 'public' AND table_name = 'tig_ma_msgs' AND column_name = 'msg_id') then
+    if exists(select 1 from information_schema.columns where table_catalog = current_database() AND table_schema = 'public' AND table_name = 'tig_ma_msgs' AND column_name = 'offline') then
         alter table tig_ma_msgs
             drop column msg_id;
     else
