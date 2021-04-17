@@ -88,7 +88,7 @@ public class JDBCMessageArchiveRepositoryTest
 								message.addChild(
 										new Element("bind", UUID.randomUUID().toString(), new String[]{"action"},
 													new String[]{"login"}));
-								repo.archiveMessage(jid.getBareJID(), jid, MessageArchiveRepository.Direction.incoming,
+								repo.archiveMessage(jid.getBareJID(), jid,
 													new Date(), message, UUID.randomUUID().toString(), new HashSet<String>());
 							}
 							System.out.println("executed last insert for thread " + ti);

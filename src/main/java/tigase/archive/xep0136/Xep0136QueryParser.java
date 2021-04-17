@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0136;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.MessageArchiveConfig;
 import tigase.archive.QueryCriteria;
@@ -40,6 +41,8 @@ import java.util.List;
 /**
  * Created by andrzej on 19.07.2016.
  */
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
 @Bean(name = "xep0136QueryParser", parent = MessageArchiveComponent.class, active = true)
 public class Xep0136QueryParser<Q extends QueryCriteria>
 		implements QueryParser<Q> {

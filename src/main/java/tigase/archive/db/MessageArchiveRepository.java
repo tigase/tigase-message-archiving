@@ -17,6 +17,7 @@
  */
 package tigase.archive.db;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
 import tigase.db.TigaseDBException;
@@ -84,7 +85,7 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 
 	}
 
-	void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId, Set<String> tags);
+	void archiveMessage(BareJID owner, JID buddy, Date timestamp, Element msg, String stableId, Set<String> tags);
 
 	void deleteExpiredMessages(BareJID owner, LocalDateTime before) throws TigaseDBException;
 
@@ -100,14 +101,20 @@ public interface MessageArchiveRepository<Q extends tigase.archive.xep0136.Query
 
 	List<String> getTags(BareJID owner, String startsWith, Q criteria) throws TigaseDBException;
 
+	@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+	@Deprecated
 	void queryCollections(Q query, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws TigaseDBException;
 
+	@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+	@Deprecated
 	interface CollectionHandler<Q extends Query, C extends Collection> {
 
 		void collectionFound(Q query, C collection);
 
 	}
 
+	@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+	@Deprecated
 	interface Collection {
 
 		Date getStartTs();

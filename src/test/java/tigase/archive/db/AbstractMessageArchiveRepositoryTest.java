@@ -105,7 +105,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Element msg = new Element("message", new String[]{"from", "to", "type"},
 								  new String[]{owner.toString(), buddy2.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy2, MessageArchiveRepository.Direction.outgoing, date, msg, UUID.randomUUID().toString(), null);
+		repo.archiveMessage(owner.getBareJID(), buddy2, date, msg, UUID.randomUUID().toString(), null);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -140,7 +140,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Element msg = new Element("message", new String[]{"from", "to", "type"},
 								  new String[]{owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, UUID.randomUUID().toString(), null);
+		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, UUID.randomUUID().toString(), null);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -178,7 +178,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		} else {
 			tags.add("#Test123");
 		}
-		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, date, msg, UUID.randomUUID().toString(), tags);
+		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, UUID.randomUUID().toString(), tags);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -591,7 +591,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Date originalTime = new Date(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
 		delay.setAttribute("stamp", formatter2.format(originalTime));
 		msg.addChild(delay);
-		repo.archiveMessage(owner.getBareJID(), buddy, MessageArchiveRepository.Direction.outgoing, originalTime, msg,
+		repo.archiveMessage(owner.getBareJID(), buddy, originalTime, msg,
 							UUID.randomUUID().toString(), null);
 
 		QueryCriteria crit = repo.newQuery();
@@ -642,7 +642,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Element msg = new Element("message", new String[]{"from", "to", "type"},
 								  new String[]{ownerLower.toString(), buddyLower.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(ownerLower, buddyLower, MessageArchiveRepository.Direction.outgoing, testStart, msg, UUID.randomUUID().toString(), null);
+		repo.archiveMessage(ownerLower, buddyLower, testStart, msg, UUID.randomUUID().toString(), null);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());

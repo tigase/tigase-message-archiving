@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0136;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.xml.Element;
 
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.Set;
 /**
  * Created by andrzej on 21.07.2016.
  */
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
 public interface Query
 		extends tigase.xmpp.mam.Query {
 

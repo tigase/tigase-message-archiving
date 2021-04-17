@@ -62,8 +62,8 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
-	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId, Set tags) {
-		getRepository(owner.getDomain()).archiveMessage(owner, buddy, direction, timestamp, msg, stableId, tags);
+	public void archiveMessage(BareJID owner, JID buddy, Date timestamp, Element msg, String stableId, Set tags) {
+		getRepository(owner.getDomain()).archiveMessage(owner, buddy, timestamp, msg, stableId, tags);
 	}
 
 	@Override

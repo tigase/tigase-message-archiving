@@ -19,6 +19,7 @@ package tigase.archive.processors;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.*;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
@@ -43,7 +44,9 @@ import static tigase.archive.processors.MessageArchivePlugin.ARCHIVE;
  * MessageArchingPlugin is implementation of plugin which forwards messages with type set to "chat" to
  * MessageArchivingComponent to store this messages in message archive.
  */
-@Bean(name = Xep0136MessageArchivingProcessor.ID, parent = SessionManager.class, active = true)
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
+@Bean(name = Xep0136MessageArchivingProcessor.ID, parent = SessionManager.class, active = false)
 public class Xep0136MessageArchivingProcessor
 		extends XMPPProcessor
 		implements XMPPProcessorIfc {

@@ -98,7 +98,7 @@ public class ArchivingModule
 				tags = TagsHelper.extractTags(msg);
 			}
 
-			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, packet.getStableId(), tags);
+			msg_repo.archiveMessage(owner, buddy, timestamp, msg, packet.getStableId(), tags);
 		} else {
 			log.log(Level.INFO, "Owner attribute missing from packet: {0}", packet);
 		}

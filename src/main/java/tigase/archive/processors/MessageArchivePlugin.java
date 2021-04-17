@@ -140,9 +140,14 @@ public class MessageArchivePlugin
 	private List<AbstractMAMProcessor> mamProcessors = new ArrayList<>();
 
 	private boolean stanzaIdSupport = false;
+	private boolean archiveOffline = true;
 
 	public boolean isArchivingOfMixMessageEnabled() {
 		return globalStoreMixMessages;
+	}
+
+	public void setArchiveOffline(boolean archiveOffline) {
+		this.archiveOffline = archiveOffline;
 	}
 
 	public void setCacheSize(int cacheSize) {
@@ -522,6 +527,9 @@ public class MessageArchivePlugin
 						}
 					});
 		} else {
+			if (!archiveOffline) {
+				return false;
+			}
 			final BareJID userJid = packet.getStanzaTo().getBareJID();
 			return willArchive(packet, packet.getStanzaFrom(), getSettings(userJid, null), () -> Optional.ofNullable(vHostManager.getVHostItem(userJid.getDomain())), (JID jid) -> {
 				try {
@@ -557,7 +565,7 @@ public class MessageArchivePlugin
 			return false;
 		}
 		String domain = vhostItem.get().getVhost().getDomain();
-		if (packet.getElement().findChild(el -> el.getName() == "delay" && el.getXMLNS() == "urn:xmpp:delay" && domain.equals(el.getAttributeStaticStr("from"))) != null) {
+		if (packet.getElement().findChild(el -> el.getName() == "delay" && el.getXMLNS() == "urn:xmpp:delay" && domain.equals(el.getAttributeStaticStr("from"))) != null && archiveOffline) {
 			// this packet was already archived by local offline storage, which means that it was already processed by MAM..
 			return false;
 		}

@@ -117,7 +117,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	@Override
-	public void archiveMessage(BareJID owner, JID buddy, Direction direction, Date timestamp, Element msg, String stableId, Set<String> tags) {
+	public void archiveMessage(BareJID owner, JID buddy, Date timestamp, Element msg, String stableId,
+							   Set<String> tags) {
 		archiveMessage(owner, buddy.getBareJID(), timestamp, msg, stableId, tags, null);
 	}
 

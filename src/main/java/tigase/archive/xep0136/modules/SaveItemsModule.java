@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0136.modules;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
 import tigase.archive.db.MessageArchiveRepository;
@@ -41,6 +42,8 @@ import java.util.UUID;
 /**
  * Created by andrzej on 16.07.2016.
  */
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
 @Bean(name = "saveItems", parent = MessageArchiveComponent.class, active = true)
 public class SaveItemsModule
 		extends AbstractModule {
@@ -125,7 +128,7 @@ public class SaveItemsModule
 								tags = TagsHelper.extractTags(msg);
 							}
 
-							msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, UUID.randomUUID().toString(), tags);
+							msg_repo.archiveMessage(owner, buddy, timestamp, msg, UUID.randomUUID().toString(), tags);
 						}
 					}
 					Element chatResult = new Element("chat");

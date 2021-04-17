@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0136.modules;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
 import tigase.archive.modules.AbstractModule;
@@ -33,6 +34,8 @@ import tigase.xml.Element;
 /**
  * Created by andrzej on 16.07.2016.
  */
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
 @Bean(name = "removeItems", parent = MessageArchiveComponent.class, active = true)
 public class RemoveItemsModule
 		extends AbstractModule {

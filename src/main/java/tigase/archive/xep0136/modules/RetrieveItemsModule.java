@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0136.modules;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.QueryCriteria;
 import tigase.archive.db.MessageArchiveRepository;
@@ -41,6 +42,8 @@ import static tigase.archive.processors.Xep0136MessageArchivingProcessor.XEP0136
 /**
  * Created by andrzej on 16.07.2016.
  */
+@TigaseDeprecated(since = "3.0.0", note = "XEP-0136 support will be removed in future version")
+@Deprecated
 @Bean(name = "retrieveItems", parent = MessageArchiveComponent.class, active = true)
 public class RetrieveItemsModule
 		extends AbstractModule {
