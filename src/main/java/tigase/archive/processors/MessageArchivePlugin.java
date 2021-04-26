@@ -74,7 +74,7 @@ import java.util.logging.Logger;
 @Id(MessageArchivePlugin.ID)
 @Handles({@Handle(path = {"message"}, xmlns = "jabber:client")})
 @Bean(name = MessageArchivePlugin.ID, parents = {Xep0136MessageArchivingProcessor.class,
-												 Xep0313MessageArchiveManagementProcessor.class}, active = true, exportable = true)
+												 Xep0313MessageArchiveManagementProcessor.class, MAM2Processor.class}, active = true, exportable = true)
 public class MessageArchivePlugin
 		extends AnnotatedXMPPProcessor
 		implements XMPPProcessorIfc, SessionManager.MessageArchive, Initializable, UnregisterAware {
