@@ -47,6 +47,10 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 
 	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {
 		RSM rsm = query.getRsm();
+		calculateOffsetAndPosition(rsm, count, before, after);
+	}
+
+	protected void calculateOffsetAndPosition(RSM rsm, int count, Integer before, Integer after) {
 		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 		int limit = rsm.getMax();
 
