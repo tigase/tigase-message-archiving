@@ -41,18 +41,15 @@ Table stores archived messages.
 [cols="1,3,3",options="header"]
 |============
 | Field | Description | Comments
-| msg_id | Database ID of a message |
+| stable_id | Database ID of a message | Unique with matching `owner_id`
 | owner_id | ID of a bare JID of a message owner | References `jid_id` from `tig_ma_jids`
 | buddy_id | ID of a bare JID of a message recipient/sender (different than owner) | References `jid_id` from `tig_ma_jids`
-| buddy_res | Resource part of a message recipient/sender JID |
 | ts | Timestamp of a message | Timestamp of archivization or delayed delivery
-| direction | Direction of message | 0 - sent by owner
-
-1 - received by owner
-| type | Message type | Value of message `type` attribute
 | body | Body of a message |
 | msg | Serialized message |
-| stanza_hash | Hash of message parts | It is used to make sure that message is stored only once
+| stanza_id | ID attribute of archived message |
+| is_ref | Marks if message is a reference to other message |
+| ref_stable_id | `stable_id` of referenced message |
 |============
 
 === Table `tig_ma_tags`
@@ -70,6 +67,7 @@ Table stores relations between tags and archived messages with this tags.
 [cols="1,3,3",options="header"]
 |============
 | Field | Description | Comments
-| msg_id | Database ID of a message | References `msg_id` from `tig_ma_msgs`
+| msg_owner_id | ID of a bare JID of a tag owner | ID of bare JID of owner for which messages with this tag were archived
+| msg_stable_id | Database ID of a message | Unique with matching `msg_owner_id`
 | tag_id | Database ID of a tag | References `tag_id` from `tig_ma_tags`
 |============
