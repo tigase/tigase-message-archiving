@@ -228,7 +228,28 @@ drop procedure if exists Tig_MA_GetCollections;
 drop procedure if exists Tig_MA_GetCollectionsCount;
 -- QUERY END:
 
+-- QUERY START:
+drop function if exists Tig_MA_EnsureJid;
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists Tig_MA_EnsureJid;
+-- QUERY END:
+
 delimiter //
+
+-- QUERY START:
+create procedure Tig_MA_EnsureJid(_jid varchar(2049) CHARSET utf8, out _jid_id bigint)
+begin
+    select jid_id into _jid_id from tig_ma_jids where jid_sha1 = SHA1(LOWER(_jid));
+    if _jid_id is null then
+        insert into tig_ma_jids (jid, jid_sha1, `domain`)
+        values (_jid, SHA1(LOWER(_jid)), SUBSTR(jid, LOCATE('@', _jid) + 1))
+        on duplicate key update jid_id = LAST_INSERT_ID(jid_id);
+        select LAST_INSERT_ID() into _jid_id;
+    end if;
+end //
+-- QUERY END:
 
 -- QUERY START:
 create procedure Tig_MA_AddMessage(_ownerJid varchar(2049) CHARSET utf8, _buddyJid varchar(2049) CHARSET utf8, _ts timestamp(6),
@@ -238,23 +259,16 @@ begin
 	declare _owner_id bigint;
 	declare _buddy_id bigint;
 
-	DECLARE exit handler for sqlexception
-		BEGIN
-			-- ERROR
-		ROLLBACK;
-		RESIGNAL;
-	END;
-
     set @is_ref = 0;
     if _refStableId is not null then
         set @is_ref = 1;
     end if;
 
     START TRANSACTION;
-	select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
+	call Tig_MA_EnsureJid(_ownerJid, _owner_id);
 	COMMIT;
 	START TRANSACTION;
-	select Tig_MA_EnsureJid(_buddyJid) into _buddy_id;
+	call Tig_MA_EnsureJid(_buddyJid, _buddy_id);
 	COMMIT;
 
 	START TRANSACTION;
@@ -272,7 +286,7 @@ begin
     declare x bigint;
 
     START TRANSACTION;
-    select Tig_MA_EnsureJid(_ownerJid) into _owner_id;
+    call Tig_MA_EnsureJid(_ownerJid, _owner_id);
     COMMIT;
     
     START TRANSACTION;
