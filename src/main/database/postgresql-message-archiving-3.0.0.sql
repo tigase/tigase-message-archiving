@@ -17,6 +17,10 @@
 --
 
 -- QUERY START:
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- QUERY END:
+
+-- QUERY START:
 do $$
 declare temprow record;
 begin
