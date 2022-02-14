@@ -9,7 +9,7 @@ Welcome to Tigase Message Archiving component guide
 
 
 include::text/Overview.asciidoc[leveloffset=+1]
-include::text/Announcement.asciidoc[leveloffset=+1]
+include::text/tigase-message-archiving-release-notes.asciidoc[leveloffset=+1]
 include::text/Additional_features.asciidoc[leveloffset=+1]
 include::text/Database.asciidoc[leveloffset=+1]
 include::text/Configuration.asciidoc[leveloffset=+1]
