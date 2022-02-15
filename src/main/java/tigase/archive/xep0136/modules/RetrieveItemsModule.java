@@ -55,6 +55,8 @@ public class RetrieveItemsModule
 	private Xep0136QueryParser queryParser;
 	private TimestampHelper timestampHelper = new TimestampHelper();
 
+	private final static System.Logger log = System.getLogger(RetrieveItemsModule.class.getName());
+
 	@Override
 	public String[] getFeatures() {
 		return new String[0];
@@ -81,6 +83,8 @@ public class RetrieveItemsModule
 			QueryCriteria query = msg_repo.newQuery();
 			query.setUseMessageIdInRsm(false);
 			queryParser.parseQuery(query, packet);
+
+			log.log(System.Logger.Level.TRACE, () -> "Retrieving items for packet: " + packet + " using query: " + query);
 
 			msg_repo.queryItems(query, itemHandler);
 
