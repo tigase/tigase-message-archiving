@@ -5,7 +5,7 @@
 == Major Changes
 
 * Add support for urn:xmpp:mam:2
-* Add support for [XEP-0308: Last Message Correction](https://xmpp.org/extensions/xep-0308.html)
+* Add support for https://xmpp.org/extensions/xep-0308.html[XEP-0308: Last Message Correction]
 
 == All Changes
 
