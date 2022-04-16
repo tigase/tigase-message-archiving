@@ -16,3 +16,23 @@
 -- If not, see http://www.gnu.org/licenses/.
 --
 
+-- QUERY START:
+drop procedure if exists Tig_MA_GetMessage;
+-- QUERY END:
+
+delimiter //
+
+-- QUERY START:
+create procedure Tig_MA_GetMessage( _ownerJid varchar(2049) CHARSET utf8, _stableId varchar(36) CHARSET utf8)
+begin
+    select m.msg, m.ts, b.jid, Tig_MA_OrderedToUuid(m.stable_id) as stable_id, Tig_MA_OrderedToUuid(m.ref_stable_id) as ref_stable_id
+    from tig_ma_msgs m
+             inner join tig_ma_jids o on m.owner_id = o.jid_id
+             inner join tig_ma_jids b on b.jid_id = m.buddy_id
+    where
+        m.stable_id = Tig_MA_UuidToOrdered(_stableId)
+        and o.jid_sha1 = SHA1(LOWER(_ownerJid));
+end //
+-- QUERY END:
+
+delimiter ;

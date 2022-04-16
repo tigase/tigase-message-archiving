@@ -16,3 +16,11 @@
 -- If not, see http://www.gnu.org/licenses/.
 --
 
+-- QUERY START:
+create procedure Tig_MA_GetMessage(ownerJid varchar(2049), stableId varchar(36))
+    PARAMETER STYLE JAVA
+	LANGUAGE JAVA
+	READS SQL DATA
+	DYNAMIC RESULT SETS 1
+	EXTERNAL NAME 'tigase.archive.db.derby.StoredProcedures.getMessage';
+-- QUERY END:

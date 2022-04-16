@@ -393,6 +393,33 @@ public class StoredProcedures {
 		}
 	}
 
+	public static void getMessage(String ownerJid, String stableId, ResultSet[] data)
+			throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			StringBuilder sb = new StringBuilder();
+
+			sb.append("select m.msg, m.ts, b.jid, m.stable_id, m.ref_stable_id" + " from tig_ma_msgs m" +
+							  " inner join tig_ma_jids o on m.owner_id = o.jid_id" +
+							  " inner join tig_ma_jids b on b.jid_id = m.buddy_id" +
+							  " where m.stable_id = ? and o.jid_sha1 = ?");
+
+			PreparedStatement ps = conn.prepareStatement(sb.toString());
+
+			int i = 0;
+			ps.setString(++i, stableId);
+			ps.setString(++i, sha1OfLower(ownerJid));
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+	
 	public static void getMessages(String ownerJid, String buddyJid, Timestamp from, Timestamp to, short refType, String tags,
 								   String contains, Integer limit, Integer offset, ResultSet[] data)
 			throws SQLException {

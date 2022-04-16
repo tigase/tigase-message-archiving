@@ -40,6 +40,9 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author andrzej
@@ -80,6 +83,8 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 	protected DataSource dataSource;
 	protected MessageArchiveRepository<QueryCriteria, DataSource> repo;
 
+	private static List<String> archivedMessagesIds = new ArrayList<>();
+
 	@BeforeClass
 	public static void initialize() {
 		owner = JID.jidInstanceNS("UA-" + UUID.randomUUID(), "test", "tigase-1");
@@ -105,7 +110,9 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Element msg = new Element("message", new String[]{"from", "to", "type"},
 								  new String[]{owner.toString(), buddy2.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy2, date, msg, UUID.randomUUID().toString(), null);
+		String stableId = UUID.randomUUID().toString();
+		repo.archiveMessage(owner.getBareJID(), buddy2, date, msg, stableId, null);
+		archivedMessagesIds.add(stableId);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -140,7 +147,9 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		Element msg = new Element("message", new String[]{"from", "to", "type"},
 								  new String[]{owner.toString(), buddy.toString(), StanzaType.chat.name()});
 		msg.addChild(new Element("body", body));
-		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, UUID.randomUUID().toString(), null);
+		String stableId = UUID.randomUUID().toString();
+		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, stableId, null);
+		archivedMessagesIds.add(stableId);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -178,7 +187,9 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 		} else {
 			tags.add("#Test123");
 		}
-		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, UUID.randomUUID().toString(), tags);
+		String stableId = UUID.randomUUID().toString();
+		repo.archiveMessage(owner.getBareJID(), buddy, date, msg, stableId, tags);
+		archivedMessagesIds.add(stableId);
 
 		QueryCriteria crit = repo.newQuery();
 		crit.setQuestionerJID(owner.copyWithoutResource());
@@ -307,7 +318,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
-		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);
+		assertTrue("Incorrect number of message", msgs.size() >= 1);
 	}
 
 	@Test
@@ -367,12 +378,64 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
-		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);
+		assertTrue("Incorrect number of message", msgs.size() >= 1);
+	}
+
+	@Test
+	public void test4_getItemWithIds() throws RepositoryException, ComponentException {
+		QueryCriteria crit = repo.newQuery();
+		crit.setQuestionerJID(owner);
+		String stableId = archivedMessagesIds.get(0);
+		crit.setIds(Collections.singleton(stableId));
+
+		List<MAMRepository.Item> items = new ArrayList<>();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
+			items.add(item);
+		});
+
+		Assert.assertEquals(1, items.size());
+		Assert.assertEquals(stableId, items.get(0).getId());
+
+		items.clear();
+
+		stableId = archivedMessagesIds.get(archivedMessagesIds.size()-1);
+		crit.setIds(Collections.singleton(stableId));
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
+			items.add(item);
+		});
+
+		Assert.assertEquals(1, items.size());
+		Assert.assertEquals(stableId, items.get(0).getId());
+	}
+
+	@Test
+	public void test4_getItemWithAfterIdBeforeId() throws RepositoryException, ComponentException {
+		QueryCriteria crit = repo.newQuery();
+		crit.setQuestionerJID(owner);
+		assertTrue(archivedMessagesIds.size() >= 3);
+		String afterId = archivedMessagesIds.get(0);
+		String beforeId = archivedMessagesIds.get(archivedMessagesIds.size()-1);
+		List<String> expectedIds = archivedMessagesIds.stream()
+				.skip(1)
+				.limit(archivedMessagesIds.size() - 2)
+				.collect(Collectors.toList());
+
+		crit.setAfterId(afterId);
+		crit.setBeforeId(beforeId);
+		
+		List<MAMRepository.Item> items = new ArrayList<>();
+		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> {
+			items.add(item);
+		});
+
+		Assert.assertEquals(expectedIds.size(), items.size());
+		Assert.assertArrayEquals(expectedIds.toArray(), items.stream().map(MAMRepository.Item::getId).toArray());
 	}
 
 	@Test
 	public void test4_getItemsWithTag_withIndex() throws InterruptedException, RepositoryException, ComponentException {
 		QueryCriteria crit = repo.newQuery();
+		crit.setQuestionerJID(owner);
 		crit.setUseMessageIdInRsm(false);
 		crit.setQuestionerJID(owner.copyWithoutResource());
 		crit.setWith(buddy.copyWithoutResource());
@@ -430,7 +493,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
-		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);
+		assertTrue("Incorrect number of message", msgs.size() >= 1);
 	}
 
 	@Test
@@ -490,7 +553,7 @@ public abstract class AbstractMessageArchiveRepositoryTest<DS extends DataSource
 
 		msgs.clear();
 		repo.queryItems(crit, (QueryCriteria qc, MAMRepository.Item item) -> msgs.add(item.getMessage()));
-		Assert.assertTrue("Incorrect number of message", msgs.size() >= 1);
+		assertTrue("Incorrect number of message", msgs.size() >= 1);
 	}
 
 	@Test

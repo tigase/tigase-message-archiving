@@ -18,6 +18,7 @@
 package tigase.archive.processors;
 
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.config.ConfigField;
 import tigase.server.xmppsession.SessionManager;
 import tigase.xml.Element;
 import tigase.xmpp.XMPPResourceConnection;
@@ -26,7 +27,9 @@ import tigase.xmpp.impl.annotation.Handle;
 import tigase.xmpp.impl.annotation.Handles;
 import tigase.xmpp.impl.annotation.Id;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static tigase.archive.processors.MAM2Processor.ID;
@@ -45,21 +48,29 @@ public class MAM2Processor
 	private static final Logger log = Logger.getLogger(
 			MAM2Processor.class.getCanonicalName());
 	private static final Element MIX_PAM2_FEATURE = new Element("feature", new String[] { "var" }, new String[] { "urn:xmpp:mix:pam:2#archive" });
+	private static final Element MAM2_EXTENDED = new Element("feature", new String[] { "var" }, new String[] { "urn:xmpp:mam:2#extended" });
+
+	@ConfigField(desc = "Enable extended MAM 2 capabilities")
+	private boolean mam2exteded = true;
 
 	@Override
 	public Element[] supDiscoFeatures(XMPPResourceConnection session) {
-		if (messageArchivePlugin != null && messageArchivePlugin.isArchivingOfMixMessageEnabled()) {
-			Element[] features = super.supDiscoFeatures(session);
-			if (features != null) {
-				Element[] results = Arrays.copyOf(features, features.length + 1);
-				results[features.length] = MIX_PAM2_FEATURE;
-				return results;
-			} else {
-				return new Element[] { MIX_PAM2_FEATURE };
-			}
-		} else {
-			return super.supDiscoFeatures(session);
+		List<Element> features = new ArrayList<>();
+
+		Element[] origFeatures = super.supDiscoFeatures(session);
+		if (origFeatures != null) {
+			features.addAll(Arrays.asList(origFeatures));
 		}
+
+		if (mam2exteded) {
+			features.add(MAM2_EXTENDED);
+		}
+
+		if (messageArchivePlugin != null && messageArchivePlugin.isArchivingOfMixMessageEnabled()) {
+			features.add(MIX_PAM2_FEATURE);
+		}
+
+		return features.toArray(Element[]::new);
 	}
 
 	@Override
