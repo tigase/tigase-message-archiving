@@ -72,8 +72,8 @@ public class MAMQueryParser
 	}
 
 	@Override
-	public Element prepareForm(Element elem) {
-		Element form = super.prepareForm(elem);
+	public Element prepareForm(Element elem, String xmlns, Packet packet) {
+		Element form = super.prepareForm(elem, xmlns, packet);
 		Element x = form.getChild("x", "jabber:x:data");
 
 		if (x != null) {

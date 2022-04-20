@@ -524,6 +524,14 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 				if (rs.next()) {
 					Item item = newItemInstance();
 					item.read(data_repo, rs, crit);
+
+					DomBuilderHandler domHandler = new DomBuilderHandler();
+					parser.parse(domHandler, item.messageStr.toCharArray(), 0, item.messageStr.length());
+
+					Queue<Element> queue = domHandler.getParsedElements();
+					item.messageStr = null;
+					item.messageEl = queue.poll();
+					queue.clear();
 					return item;
 				}
 			} finally {
