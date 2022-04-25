@@ -82,6 +82,11 @@ public class MessageArchiveRepositoryPool<Q extends QueryCriteria, R extends Mes
 	}
 
 	@Override
+	public Q newQuery(BareJID jid) {
+		return getRepository(jid.getDomain()).newQuery(jid);
+	}
+
+	@Override
 	public void queryCollections(Q query, CollectionHandler<Q, Collection> collectionHandler) throws TigaseDBException {
 		getRepository(query.getQuestionerJID().getDomain()).queryCollections(query, collectionHandler);
 	}

@@ -17,10 +17,13 @@
  */
 package tigase.archive.db;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.xep0136.Query;
 import tigase.db.DataSource;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.mam.util.MAMUtil;
+import tigase.xmpp.mam.util.Range;
 import tigase.xmpp.rsm.RSM;
 
 import java.text.SimpleDateFormat;
@@ -45,11 +48,23 @@ public abstract class AbstractMessageArchiveRepository<Q extends Query, DS exten
 		TIMESTAMP_FORMATTER1.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use MAMUtil::calculateOffsetAndPosition directly", since = "3.1.0")
+	@Deprecated
+	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after, Range range) {
+		RSM rsm = query.getRsm();
+		MAMUtil.calculateOffsetAndPosition(rsm, count, before, after, range);
+	}
+
+
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `range` parameter", since = "3.1.0")
+	@Deprecated
 	protected void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {
 		RSM rsm = query.getRsm();
 		calculateOffsetAndPosition(rsm, count, before, after);
 	}
 
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `range` parameter", since = "3.1.0")
+	@Deprecated
 	protected void calculateOffsetAndPosition(RSM rsm, int count, Integer before, Integer after) {
 		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
 		int limit = rsm.getMax();

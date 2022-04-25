@@ -19,6 +19,7 @@ package tigase.archive.db;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.FasteningCollation;
 import tigase.archive.QueryCriteria;
 import tigase.component.exceptions.ComponentException;
@@ -35,6 +36,8 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.util.MAMUtil;
+import tigase.xmpp.mam.util.Range;
 import tigase.xmpp.rsm.RSM;
 
 import java.sql.PreparedStatement;
@@ -63,6 +66,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	private static final String DELETE_EXPIRED_QUERY_TIMEOUT_KEY = "remove-expired-messages-query-timeout";
 	private static final int DEF_DELETE_EXPIRED_QUERY_TIMEOUT_VAL = 5 * 60;
 
+	private static final String DEF_GET_MESSAGE_QUERY = "{ call Tig_MA_GetMessage(?,?) }";
 	private static final String DEF_GET_MESSAGES_QUERY = "{ call Tig_MA_GetMessages(?,?,?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_MESSAGES_COUNT_QUERY = "{ call Tig_MA_GetMessagesCount(?,?,?,?,?,?,?) }";
 	private static final String DEF_GET_MESSAGES_POSITION_QUERY = "{ call Tig_MA_GetMessagePosition(?,?,?,?,?,?,?,?) }";
@@ -84,6 +88,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	protected String GET_COLLECTIONS_COUNT_QUERY = DEF_GET_COLLECTIONS_COUNT_QUERY;
 	@ConfigField(desc = "Query to retrieve list of collections", alias = "get-collections-query")
 	protected String GET_COLLECTIONS_QUERY = DEF_GET_COLLECTIONS_QUERY;
+	@ConfigField(desc = "Query to retrieve message with id", alias = "get-message-query")
+	protected String GET_MESSAGE_QUERY = DEF_GET_MESSAGE_QUERY;
 	@ConfigField(desc = "Query to retrieve number of messages", alias = "get-messages-count-query")
 	protected String GET_MESSAGES_COUNT_QUERY = DEF_GET_MESSAGES_COUNT_QUERY;
 	@ConfigField(desc = "Query to retrieve list of messages", alias = "get-messages-query")
@@ -161,7 +167,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			Integer after = getColletionPosition(crit.getRsm().getAfter(), crit);
 			Integer before = getColletionPosition(crit.getRsm().getBefore(), crit);
 
-			calculateOffsetAndPosition(crit, count, before, after);
+			calculateOffsetAndPosition(crit, count, before, after, Range.FULL);
 
 			getCollectionsItems(crit, collectionHandler);
 		} catch (SQLException ex) {
@@ -173,17 +179,33 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	public void queryItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler)
 			throws TigaseDBException, ComponentException {
 		try {
-			Integer count = getItemsCount(crit);
-			if (count == null) {
-				count = 0;
+			if (!crit.getIds().isEmpty()) {
+				ArrayDeque<MAMRepository.Item> items = new ArrayDeque<>();
+				for (String id : crit.getIds()) {
+					MAMRepository.Item item = getItem(crit, id);
+					if (item == null) {
+						throw new ComponentException(Authorization.ITEM_NOT_FOUND, "Item with ID '" + id + "' does not exist.");
+					}
+					items.add(item);
+				}
+				for (MAMRepository.Item item : items) {
+					itemHandler.itemFound(crit, item);
+				}
+			} else {
+				Integer count = getItemsCount(crit);
+				if (count == null) {
+					count = 0;
+				}
+
+				Range range = MAMUtil.rangeFromPositions(getItemPosition(crit.getAfterId(), crit), getItemPosition(crit.getBeforeId(), crit));
+
+				Integer afterPosRSM = getItemPosition(crit.getRsm().getAfter(), crit);
+				Integer beforePosRSM = getItemPosition(crit.getRsm().getBefore(), crit);
+
+				calculateOffsetAndPosition(crit, count, beforePosRSM, afterPosRSM, range);
+
+				getItemsItems(crit, range, itemHandler);
 			}
-
-			Integer after = getItemPosition(crit.getRsm().getAfter(), crit);
-			Integer before = getItemPosition(crit.getRsm().getBefore(), crit);
-
-			calculateOffsetAndPosition(crit, count, before, after);
-
-			getItemsItems(crit, itemHandler);
 		} catch (SQLException ex) {
 			throw new TigaseDBException("Cound not retrieve items", ex);
 		}
@@ -237,7 +259,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			String beforeStr = crit.getRsm().getBefore();
 			String afterStr = crit.getRsm().getAfter();
 			calculateOffsetAndPosition(crit, count, beforeStr == null ? null : Integer.parseInt(beforeStr),
-									   afterStr == null ? null : Integer.parseInt(afterStr));
+									   afterStr == null ? null : Integer.parseInt(afterStr), Range.FULL);
 
 			PreparedStatement get_tags_st = data_repo.getPreparedStatement(owner, GET_TAGS_FOR_USER_QUERY);
 			synchronized (get_tags_st) {
@@ -271,11 +293,20 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return results;
 	}
 
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `range` parameter", since = "3.1.0")
+	@Deprecated
 	public void setItemsQueryParams(PreparedStatement stmt, Q crit, FasteningCollation fasteningCollation)
 			throws SQLException {
 		int i = setQueryParams(stmt, crit, fasteningCollation);
 		stmt.setInt(i++, crit.getRsm().getMax());
 		stmt.setInt(i++, crit.getRsm().getIndex());
+	}
+
+	public void setItemsQueryParams(PreparedStatement stmt, Q crit, Range range, FasteningCollation fasteningCollation)
+			throws SQLException {
+		int i = setQueryParams(stmt, crit, fasteningCollation);
+		stmt.setInt(i++, Math.min(range.size(), crit.getRsm().getMax()));
+		stmt.setInt(i++, range.getLowerBound() + crit.getRsm().getIndex());
 	}
 
 	//~--- methods --------------------------------------------------------------
@@ -286,6 +317,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	protected void initPreparedStatements(DataRepository data_repo) throws SQLException {
+		data_repo.initPreparedStatement(GET_MESSAGE_QUERY, GET_MESSAGE_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGES_QUERY, GET_MESSAGES_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGES_COUNT_QUERY, GET_MESSAGES_COUNT_QUERY);
 		data_repo.initPreparedStatement(GET_MESSAGE_POSITION_QUERY, GET_MESSAGE_POSITION_QUERY);
@@ -480,14 +512,43 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return Integer.parseInt(uid);
 	}
 
-	private void getItemsItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler) throws SQLException {
+	private MAMRepository.Item getItem(Q crit, String itemId) throws SQLException {
+		ResultSet rs = null;
+		BareJID owner = crit.getQuestionerJID().getBareJID();
+		PreparedStatement get_message_st = data_repo.getPreparedStatement(owner, GET_MESSAGE_QUERY);
+		synchronized (get_message_st) {
+			try {
+				get_message_st.setString(1, owner.toString());
+				get_message_st.setString(2, itemId);
+				rs = get_message_st.executeQuery();
+				if (rs.next()) {
+					Item item = newItemInstance();
+					item.read(data_repo, rs, crit);
+
+					DomBuilderHandler domHandler = new DomBuilderHandler();
+					parser.parse(domHandler, item.messageStr.toCharArray(), 0, item.messageStr.length());
+
+					Queue<Element> queue = domHandler.getParsedElements();
+					item.messageStr = null;
+					item.messageEl = queue.poll();
+					queue.clear();
+					return item;
+				}
+			} finally {
+				data_repo.release(null, rs);
+			}
+		}
+		return null;
+	}
+
+	private void getItemsItems(Q crit, Range range, ItemHandler<Q, MAMRepository.Item> itemHandler) throws SQLException {
 		ResultSet rs = null;
 		Queue<Item> results = new ArrayDeque<Item>();
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
 		synchronized (get_messages_st) {
 			try {
-				setItemsQueryParams(get_messages_st, crit, FasteningCollation.full);
+				setItemsQueryParams(get_messages_st, crit, range, FasteningCollation.full);
 
 				rs = get_messages_st.executeQuery();
 				while (rs.next()) {
@@ -580,7 +641,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 
 		if (position == null || position < 1) {
-			throw new ComponentException(Authorization.BAD_REQUEST, "Item with " + uid + " not found");
+			throw new ComponentException(Authorization.ITEM_NOT_FOUND, "Item with id " + uid + " not found");
 		}
 
 		return position - 1;

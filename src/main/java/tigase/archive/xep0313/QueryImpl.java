@@ -21,6 +21,6 @@ package tigase.archive.xep0313;
  * Created by andrzej on 21.07.2016.
  */
 public class QueryImpl
-		extends tigase.xmpp.mam.QueryImpl {
+		extends tigase.xmpp.mam.ExtendedQueryImpl {
 
 }

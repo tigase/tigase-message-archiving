@@ -37,7 +37,7 @@ public class JDBCMessageArchiveRepositoryTest
 		extends AbstractMessageArchiveRepositoryTest<DataRepository, MessageArchiveRepository> {
 
 	private static final String PROJECT_ID = "message-archiving";
-	private static final String VERSION = "3.0.0-SNAPSHOT";
+	private static final String VERSION = "3.1.0-SNAPSHOT";
 
 	@ClassRule
 	public static TestRule rule = new TestRule() {
