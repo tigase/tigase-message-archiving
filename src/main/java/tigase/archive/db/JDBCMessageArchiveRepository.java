@@ -545,19 +545,23 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		ResultSet rs = null;
 		Queue<Item> results = new ArrayDeque<Item>();
 		BareJID owner = crit.getQuestionerJID().getBareJID();
-		PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
-		synchronized (get_messages_st) {
-			try {
-				setItemsQueryParams(get_messages_st, crit, range, FasteningCollation.full);
 
-				rs = get_messages_st.executeQuery();
-				while (rs.next()) {
-					Item item = newItemInstance();
-					item.read(data_repo, rs, crit);
-					results.offer(item);
+		// there is no point to execute query if limit is estimated to be 0
+		if (Math.min(range.size(), crit.getRsm().getMax()) > 0) {
+			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
+			synchronized (get_messages_st) {
+				try {
+					setItemsQueryParams(get_messages_st, crit, range, FasteningCollation.full);
+
+					rs = get_messages_st.executeQuery();
+					while (rs.next()) {
+						Item item = newItemInstance();
+						item.read(data_repo, rs, crit);
+						results.offer(item);
+					}
+				} finally {
+					data_repo.release(null, rs);
 				}
-			} finally {
-				data_repo.release(null, rs);
 			}
 		}
 
