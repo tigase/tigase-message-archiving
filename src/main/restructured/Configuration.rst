@@ -15,7 +15,7 @@ Custom Database
 
 You can specify a custom database to be used for message archiving. To do this, define the archive-repo-uri property.
 
-.. code:: dsl
+.. code:: text
 
    'message-archive' () {
        'archive-repo-uri' = 'jdbc:mysql://localhost/messagearchivedb?user=test&password=test'
@@ -37,6 +37,8 @@ To be able to use Message Archiving component with `XEP-0136: Message Archiving 
 
 This is required for some advanced options.
 
+.. _Support_for_MAM:
+
 Support for MAM
 --------------------
 
@@ -49,6 +51,7 @@ If you want to use Message Archiving component with `XEP-0313: Message Archive M
        }
    }
 
+.. _setting_default_value_of_archiving_level_for_message_on_a_server:
 
 Setting default value of archiving level for message on a server
 -----------------------------------------------------------------
@@ -64,7 +67,7 @@ Possible values are:
    Only message body will be stored. Message without a body will not be stored with this value set
 
 **message**
-   While message stanza will be archived (if message should be stored, see `Saving Options <#nonBodyStore>`__)
+   While message stanza will be archived (if message should be stored, see :ref:`Saving Options<SavingOptions>`)
 
 **stream**
    In this mode every stanza should be archived. *(Not supported)*
@@ -85,7 +88,7 @@ Setting required value of archiving level for messages on a server
 
 Setting this property will change required archiving level for messages for every account on server. User will be able to change this to any lower value by setting default modes as described in `XEP-0136 section 2.4 <http://xmpp.org/extensions/xep-0136.html#pref-default>`__ but user will be allowed to set higher archiving level. If this property is set to higher value then default archiving level is set then this setting will be used as default archiving level setting.
 
-Possible values for this setting are the same as values for default archiving level setting, see `Setting default value of archiving level for message on a server <#_setting_default_value_of_archiving_level_for_message_on_a_server>`__ for list of possible values.
+Possible values for this setting are the same as values for default archiving level setting, see :ref:`Setting default value of archiving level for message on a server<setting_default_value_of_archiving_level_for_message_on_a_server>` for list of possible values.
 
 To set required level to ``body`` you need to set ``required-store-method`` of ``message-archive`` processor to ``body``:
 
@@ -97,6 +100,7 @@ To set required level to ``body`` you need to set ``required-store-method`` of `
        }
    }
 
+.. _Enabling_support_for_tags:
 
 Enabling support for tags
 --------------------------
@@ -112,6 +116,8 @@ To enable this feature Message Archiving component needs to be configured proper
 where:
 
 -  ``message-archive`` - is name of configuration section under which Message Archiving component is configured to run
+
+.. _SavingOptions:
 
 Saving Options
 ^^^^^^^^^^^^^^^^^
@@ -135,6 +141,8 @@ Where above will set the archive to store messages with <body/> or <subject/> el
 .. Tip::
 
    Enabling this for elements such as iq, or presence will quickly load the archive. Configure this setting carefully!
+
+.. _Configuration_of_automatic archiving of MUC messages:
 
 Configuration of automatic archiving of MUC messages
 ------------------------------------------------------
@@ -181,7 +189,7 @@ This feature allows for automatic removal of entries older than a configured num
 
 There are 3 settings available for this feature: To enable the feature:
 
-.. code:: dsl
+.. code:: text
 
    'message-archive' {
        'remove-expired-messages' = true
@@ -189,13 +197,13 @@ There are 3 settings available for this feature: To enable the feature:
 
 This setting changes the initial delay after the server is started to begin removing old entries. In other words, MA purging will not take place until the specified time after the server starts. Default setting is PT1H, or one hour.
 
-.. code:: dsl
+.. code:: text
 
        'remove-expired-messages-delay' = 'PT2H'
 
 This setting sets how long MA purging will wait between passes to check for and remove old entries. Default setting is P1D which is once a day.
 
-.. code:: dsl
+.. code:: text
 
        'remove-expired-messages-period' = 'PT2D'
 
@@ -214,6 +222,8 @@ This configuration is done by execution of Update item configuration adhoc comma
 In adhoc select domain for which messages should be removed and then in field XEP-0136 - retention type select value Number of days and in field XEP-0136 - retention period (in days) enter number of days after which events should be removed from MA.
 
 In HTTP UI select Other, then Update Item Configuration (Vhost-man), select the domain, and from there you can set XEP-0136 retention type, and set number of days at XEP-0136 retention period (in days).
+
+.. _Using_seperate_store_fora_archived_messages:
 
 Using separate store for archived messages
 -----------------------------------------------
@@ -263,9 +273,9 @@ It is also possible to configure separate store for particular domain, i.e. ``ex
 Setting Pool Sizes
 -------------------
 
-There are a high number of prepared statements which are used to process and archive messages as they go through the server, and you may experience an increase in resource use with the archive turned on. It is recommended to decrease the repository connection pool to help balance server load from this component using the `Pool Size <#dataRepoPoolSize>`__ property:
+There are a high number of prepared statements which are used to process and archive messages as they go through the server, and you may experience an increase in resource use with the archive turned on. It is recommended to decrease the repository connection pool to help balance server load from this component using the `Pool Size <dataRepoPoolSize>`__ property:
 
-.. code:: dsl
+.. code:: text
 
    'message-archive' (class: tigase.archive.MessageArchiveComponent) {
        'archive-repo-uri' = 'jdbc:mysql://localhost/messagearchivedb?user=test&password=test'
@@ -286,7 +296,7 @@ Activating Tagging
 
 To enable this feature, the following line must be in the config.tdsl file (or may be added with Admin or Web UI)
 
-.. code:: dsl
+.. code:: text
 
    'message-archive' (class: tigase.archive.MessageArchiveComponent) {
        'tags-support' = true

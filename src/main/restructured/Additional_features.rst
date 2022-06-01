@@ -67,7 +67,7 @@ Retrieving collections containing messages with "test failed" string with user `
 Querying by tags
 ------------------
 
-This feature adds support for tagging messages archived by Message Archiving component and by default is disabled (to learn how to enable this feature please see `??? <#Enabling support for tags>`__ section).
+This feature adds support for tagging messages archived by Message Archiving component and by default is disabled (to learn how to enable this feature please see :ref:`Enabling support for tags<Enabling_support_for_tags>` section).
 
 Tagging can be done only by user sending message as to tag message tag needs to be included in message content (message body to be exact).
 
@@ -161,7 +161,7 @@ Automatic archiving of MUC messages
 
 If this feature is enabled MUC messages are stored in Message Archiving repository and are added in same way as for any other messages and ``jid`` of MUC room is used as ``jid`` of message sender, so if MUC message sent from ``test@muc.example.com`` was stored then to retrieve this messages ``test@muc.example.com`` needs to be passed as ``with`` attribute to message retrieve request. Retrieved MUC messages will be retrieved in same format as normal message with one exception - each message will contain ``name`` attribute with name of occupant in room which sent this message.
 
-This feature is by default disabled but it is possible to enable it for particular user. Additionally it is possible to change default setting on installation level and on hosted domain level to enable this feature, disable feature or allow user to decide if user want this feature to be enabled. For more information about configuration of this feature look at `??? <#Configuration of automatic archiving of MUC messages>`__
+This feature is by default disabled but it is possible to enable it for particular user. Additionally it is possible to change default setting on installation level and on hosted domain level to enable this feature, disable feature or allow user to decide if user want this feature to be enabled. For more information about configuration of this feature look at :ref:`Configuration of automatic archiving of MUC messages<Configuration_of_automatic archiving of MUC messages>`
 
 .. Note::
 

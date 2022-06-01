@@ -8,24 +8,24 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TigaseDoc \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-04-19 01:41-0700\n"
+"POT-Creation-Date: 2022-06-01 15:14-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.8.0\n"
 
 #: ../../Database.rst:2
 msgid "Database"
 msgstr ""
 
-#: ../../Database.rst:5
+#: ../../Database.rst:7
 msgid "Preparation of database"
 msgstr ""
 
-#: ../../Database.rst:7
+#: ../../Database.rst:9
 msgid ""
 "Before you will be able to use Tigase Message Archiving Component and "
 "store messages in particular database you need to initialize this "
@@ -33,7 +33,7 @@ msgid ""
 "PostgreSQL, SQLServer and DerbyDB."
 msgstr ""
 
-#: ../../Database.rst:9
+#: ../../Database.rst:11
 msgid ""
 "They are placed in ``database/`` directory of installation package and "
 "named in ``dbtype-message-archiving-version.sql``, where ``dbname`` in "
@@ -42,260 +42,281 @@ msgid ""
 "designed."
 msgstr ""
 
-#: ../../Database.rst:11
+#: ../../Database.rst:13
 msgid ""
 "You need to manually select schema for correct database and component and"
 " load this schema to database. For more information about loading "
-"database schema look into `??? <#Database Preparation>`__ section of `???"
-" <#Tigase XMPP Server Administration Guide>`__"
-msgstr ""
-
-#: ../../Database.rst:14
-msgid "Upgrade of database schema"
+"database schema look into `Database Preparation <#Database "
+"Preparation>`__ section of `Tigae XMPP Server Administration Guide "
+"<#Tigase XMPP Server Administration Guide>`__"
 msgstr ""
 
 #: ../../Database.rst:16
+msgid "Upgrade of database schema"
+msgstr ""
+
+#: ../../Database.rst:18
 msgid ""
 "Database schema for our components may change between versions and if so "
 "it needs to be updated before new version may be started. To upgrade "
-"schema please follow instructions from `Preparation of database "
-"<#_preparation_of_database>`__ section."
+"schema please follow instructions from :ref:`Preparation of "
+"database<Preparationofdatabase>` section."
 msgstr ""
 
-#: ../../Database.rst:20
+#: ../../Database.rst:22
 msgid ""
 "If you use SNAPSHOT builds then schema may change for same version as "
 "this are versions we are still working on."
 msgstr ""
 
-#: ../../Database.rst:23
+#: ../../Database.rst:25
 msgid "Schema description"
 msgstr ""
 
-#: ../../Database.rst:25
+#: ../../Database.rst:27
 msgid ""
 "Tigase Message Archiving component uses few tables and stored procedures."
 " To make it easier to find them on database level they are prefixed with "
 "``tig_ma_``."
 msgstr ""
 
-#: ../../Database.rst:28
+#: ../../Database.rst:30
 msgid "Table ``tig_ma_jids``"
 msgstr ""
 
-#: ../../Database.rst:30
+#: ../../Database.rst:32
 msgid ""
 "This table stores all jids related to stored messages, ie. from ``to`` "
 "and ``from`` attributes of archived stanzas."
 msgstr ""
 
-#: ../../Database.rst:33 ../../Database.rst:52 ../../Database.rst:80
-#: ../../Database.rst:95
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
 msgid "Field"
 msgstr ""
 
-#: ../../Database.rst:33 ../../Database.rst:52 ../../Database.rst:80
-#: ../../Database.rst:95
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
 msgid "Description"
 msgstr ""
 
-#: ../../Database.rst:33 ../../Database.rst:52 ../../Database.rst:80
-#: ../../Database.rst:95
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
 msgid "Comments"
 msgstr ""
 
-#: ../../Database.rst:35
+#: ../../Database.rst:37
 msgid "jid_id"
 msgstr ""
 
-#: ../../Database.rst:35
+#: ../../Database.rst:37
 msgid "Database ID of a JID"
 msgstr ""
 
-#: ../../Database.rst:37
+#: ../../Database.rst:39
 msgid "jid"
 msgstr ""
 
-#: ../../Database.rst:37
+#: ../../Database.rst:39
 msgid "Value of a bare JID"
 msgstr ""
 
-#: ../../Database.rst:39
+#: ../../Database.rst:41
 msgid "jid_sha1"
 msgstr ""
 
-#: ../../Database.rst:39
+#: ../../Database.rst:41
 msgid "SHA1 value of lowercased bare JID"
 msgstr ""
 
-#: ../../Database.rst:39
+#: ../../Database.rst:41
 msgid "Used for proper bare JID comparison during lookup."
 msgstr ""
 
-#: ../../Database.rst:41
+#: ../../Database.rst:43
 msgid "(N/A to PostgreSQL schema)"
 msgstr ""
 
-#: ../../Database.rst:43
+#: ../../Database.rst:45
 msgid "domain"
 msgstr ""
 
-#: ../../Database.rst:43
+#: ../../Database.rst:45
 msgid "Domain part of a bare JID"
 msgstr ""
 
-#: ../../Database.rst:43
+#: ../../Database.rst:45
 msgid "Stored for easier lookup of messages owned by users of a particular domain"
 msgstr ""
 
-#: ../../Database.rst:47
+#: ../../Database.rst:49
 msgid "Table ``tig_ma_msgs``"
 msgstr ""
 
-#: ../../Database.rst:49
+#: ../../Database.rst:51
 msgid "Table stores archived messages."
 msgstr ""
 
-#: ../../Database.rst:54
+#: ../../Database.rst:56
 msgid "stable_id"
 msgstr ""
 
-#: ../../Database.rst:54 ../../Database.rst:99
+#: ../../Database.rst:56 ../../Database.rst:101
 msgid "Database ID of a message"
 msgstr ""
 
-#: ../../Database.rst:54
+#: ../../Database.rst:56
 msgid "Unique with matching ``owner_id``"
 msgstr ""
 
-#: ../../Database.rst:56 ../../Database.rst:84
+#: ../../Database.rst:58 ../../Database.rst:86
 msgid "owner_id"
 msgstr ""
 
-#: ../../Database.rst:56
+#: ../../Database.rst:58
 msgid "ID of a bare JID of a message owner"
 msgstr ""
 
-#: ../../Database.rst:56 ../../Database.rst:58
+#: ../../Database.rst:58 ../../Database.rst:60
 msgid "References ``jid_id`` from ``tig_ma_jids``"
 msgstr ""
 
-#: ../../Database.rst:58
+#: ../../Database.rst:60
 msgid "buddy_id"
 msgstr ""
 
-#: ../../Database.rst:58
+#: ../../Database.rst:60
 msgid "ID of a bare JID of a message recipient/sender (different than owner)"
 msgstr ""
 
-#: ../../Database.rst:60
+#: ../../Database.rst:62
 msgid "ts"
 msgstr ""
 
-#: ../../Database.rst:60
+#: ../../Database.rst:62
 msgid "Timestamp of a message"
 msgstr ""
 
-#: ../../Database.rst:60
+#: ../../Database.rst:62
 msgid "Timestamp of archivization or delayed delivery"
 msgstr ""
 
-#: ../../Database.rst:62
+#: ../../Database.rst:64
 msgid "body"
 msgstr ""
 
-#: ../../Database.rst:62
+#: ../../Database.rst:64
 msgid "Body of a message"
 msgstr ""
 
-#: ../../Database.rst:64
+#: ../../Database.rst:66
 msgid "msg"
 msgstr ""
 
-#: ../../Database.rst:64
+#: ../../Database.rst:66
 msgid "Serialized message"
 msgstr ""
 
-#: ../../Database.rst:66
+#: ../../Database.rst:68
 msgid "stanza_id"
 msgstr ""
 
-#: ../../Database.rst:66
+#: ../../Database.rst:68
 msgid "ID attribute of archived message"
 msgstr ""
 
-#: ../../Database.rst:68
+#: ../../Database.rst:70
 msgid "is_ref"
 msgstr ""
 
-#: ../../Database.rst:68
+#: ../../Database.rst:70
 msgid "Marks if message is a reference to other message"
 msgstr ""
 
-#: ../../Database.rst:70
+#: ../../Database.rst:72
 msgid "ref_stable_id"
 msgstr ""
 
-#: ../../Database.rst:70
+#: ../../Database.rst:72
 msgid "``stable_id`` of referenced message"
 msgstr ""
 
-#: ../../Database.rst:75
+#: ../../Database.rst:77
 msgid "Table ``tig_ma_tags``"
 msgstr ""
 
-#: ../../Database.rst:77
+#: ../../Database.rst:79
 msgid ""
 "Table stores tags of archived messages. It stores one tag for many "
 "messages using ``tig_ma_msgs_tags`` to store relation between tag and a "
 "message."
 msgstr ""
 
-#: ../../Database.rst:82 ../../Database.rst:101
+#: ../../Database.rst:84 ../../Database.rst:103
 msgid "tag_id"
 msgstr ""
 
-#: ../../Database.rst:82 ../../Database.rst:101
+#: ../../Database.rst:84 ../../Database.rst:103
 msgid "Database ID of a tag"
 msgstr ""
 
-#: ../../Database.rst:84 ../../Database.rst:97
+#: ../../Database.rst:86 ../../Database.rst:99
 msgid "ID of a bare JID of a tag owner"
 msgstr ""
 
-#: ../../Database.rst:84 ../../Database.rst:97
+#: ../../Database.rst:86 ../../Database.rst:99
 msgid "ID of bare JID of owner for which messages with this tag were archived"
 msgstr ""
 
-#: ../../Database.rst:86
+#: ../../Database.rst:88
 msgid "tag"
 msgstr ""
 
-#: ../../Database.rst:86
+#: ../../Database.rst:88
 msgid "Actual tag value"
 msgstr ""
 
-#: ../../Database.rst:90
+#: ../../Database.rst:92
 msgid "Table ``tig_ma_msgs_tags``"
 msgstr ""
 
-#: ../../Database.rst:92
+#: ../../Database.rst:94
 msgid "Table stores relations between tags and archived messages with this tags."
 msgstr ""
 
-#: ../../Database.rst:97
+#: ../../Database.rst:99
 msgid "msg_owner_id"
 msgstr ""
 
-#: ../../Database.rst:99
+#: ../../Database.rst:101
 msgid "msg_stable_id"
 msgstr ""
 
-#: ../../Database.rst:99
+#: ../../Database.rst:101
 msgid "Unique with matching ``msg_owner_id``"
 msgstr ""
 
-#: ../../Database.rst:101
+#: ../../Database.rst:103
 msgid "References ``tag_id`` from ``tig_ma_tags``"
 msgstr ""
+
+#~ msgid ""
+#~ "You need to manually select schema "
+#~ "for correct database and component and"
+#~ " load this schema to database. For"
+#~ " more information about loading database"
+#~ " schema look into `??? <#Database "
+#~ "Preparation>`__ section of `??? <#Tigase "
+#~ "XMPP Server Administration Guide>`__"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Database schema for our components may"
+#~ " change between versions and if so"
+#~ " it needs to be updated before "
+#~ "new version may be started. To "
+#~ "upgrade schema please follow instructions "
+#~ "from `Preparation of database "
+#~ "<#_preparation_of_database>`__ section."
+#~ msgstr ""
 

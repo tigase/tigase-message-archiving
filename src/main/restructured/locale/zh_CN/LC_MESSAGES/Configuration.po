@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TigaseDoc \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-04-19 01:41-0700\n"
+"POT-Creation-Date: 2022-06-01 15:14-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.8.0\n"
 
 #: ../../Configuration.rst:2
 msgid "Configuration"
@@ -64,11 +64,11 @@ msgstr ""
 msgid "This is required for some advanced options."
 msgstr ""
 
-#: ../../Configuration.rst:41
+#: ../../Configuration.rst:43
 msgid "Support for MAM"
 msgstr ""
 
-#: ../../Configuration.rst:43
+#: ../../Configuration.rst:45
 msgid ""
 "If you want to use Message Archiving component with `XEP-0313: Message "
 "Archive Management <http://xmpp.org/extensions/xep-0313.html:>`__ "
@@ -76,11 +76,11 @@ msgid ""
 "processor:"
 msgstr ""
 
-#: ../../Configuration.rst:54
+#: ../../Configuration.rst:57
 msgid "Setting default value of archiving level for message on a server"
 msgstr ""
 
-#: ../../Configuration.rst:56
+#: ../../Configuration.rst:59
 msgid ""
 "Setting this property will change default archiving level for messages "
 "for every account on server for which per account default archiving level"
@@ -89,57 +89,57 @@ msgid ""
 "<http://xmpp.org/extensions/xep-0136.html#pref-default>`__"
 msgstr ""
 
-#: ../../Configuration.rst:58
+#: ../../Configuration.rst:61
 msgid "Possible values are:"
 msgstr ""
 
-#: ../../Configuration.rst:61
+#: ../../Configuration.rst:64
 msgid "**false**"
 msgstr ""
 
-#: ../../Configuration.rst:61
+#: ../../Configuration.rst:64
 msgid "Messages are not archived"
 msgstr ""
 
-#: ../../Configuration.rst:64
+#: ../../Configuration.rst:67
 msgid "**body**"
 msgstr ""
 
-#: ../../Configuration.rst:64
+#: ../../Configuration.rst:67
 msgid ""
 "Only message body will be stored. Message without a body will not be "
 "stored with this value set"
 msgstr ""
 
-#: ../../Configuration.rst:67
+#: ../../Configuration.rst:70
 msgid "**message**"
 msgstr ""
 
-#: ../../Configuration.rst:67
+#: ../../Configuration.rst:70
 msgid ""
 "While message stanza will be archived (if message should be stored, see "
-"`Saving Options <#nonBodyStore>`__)"
+":ref:`Saving Options<SavingOptions>`)"
 msgstr ""
 
-#: ../../Configuration.rst:70
+#: ../../Configuration.rst:73
 msgid "**stream**"
 msgstr ""
 
-#: ../../Configuration.rst:70
+#: ../../Configuration.rst:73
 msgid "In this mode every stanza should be archived. *(Not supported)*"
 msgstr ""
 
-#: ../../Configuration.rst:72
+#: ../../Configuration.rst:75
 msgid ""
 "To set default level to ``message`` you need to set ``default-store-"
 "method`` of ``message-archive`` processor to ``message``:"
 msgstr ""
 
-#: ../../Configuration.rst:84
+#: ../../Configuration.rst:87
 msgid "Setting required value of archiving level for messages on a server"
 msgstr ""
 
-#: ../../Configuration.rst:86
+#: ../../Configuration.rst:89
 msgid ""
 "Setting this property will change required archiving level for messages "
 "for every account on server. User will be able to change this to any "
@@ -150,26 +150,26 @@ msgid ""
 "be used as default archiving level setting."
 msgstr ""
 
-#: ../../Configuration.rst:88
+#: ../../Configuration.rst:91
 msgid ""
 "Possible values for this setting are the same as values for default "
-"archiving level setting, see `Setting default value of archiving level "
-"for message on a server "
-"<#_setting_default_value_of_archiving_level_for_message_on_a_server>`__ "
-"for list of possible values."
+"archiving level setting, see :ref:`Setting default value of archiving "
+"level for message on a "
+"server<setting_default_value_of_archiving_level_for_message_on_a_server>`"
+" for list of possible values."
 msgstr ""
 
-#: ../../Configuration.rst:90
+#: ../../Configuration.rst:93
 msgid ""
 "To set required level to ``body`` you need to set ``required-store-"
 "method`` of ``message-archive`` processor to ``body``:"
 msgstr ""
 
-#: ../../Configuration.rst:102
+#: ../../Configuration.rst:106
 msgid "Enabling support for tags"
 msgstr ""
 
-#: ../../Configuration.rst:104
+#: ../../Configuration.rst:108
 msgid ""
 "To enable this feature Message Archiving component needs to be configured"
 " properly. You need to add ``tags-support = true`` line to ``message-"
@@ -177,21 +177,21 @@ msgid ""
 "following example:"
 msgstr ""
 
-#: ../../Configuration.rst:112
+#: ../../Configuration.rst:116
 msgid "where:"
 msgstr ""
 
-#: ../../Configuration.rst:114
+#: ../../Configuration.rst:118
 msgid ""
 "``message-archive`` - is name of configuration section under which "
 "Message Archiving component is configured to run"
 msgstr ""
 
-#: ../../Configuration.rst:117
+#: ../../Configuration.rst:123
 msgid "Saving Options"
 msgstr ""
 
-#: ../../Configuration.rst:119
+#: ../../Configuration.rst:125
 msgid ""
 "By default, Tigase Message Archive will only store the message body with "
 "some metadata, this can exclude messages that are lacking a body. If you "
@@ -201,31 +201,31 @@ msgid ""
 "additionally store messages with ``<subject/>`` element:"
 msgstr ""
 
-#: ../../Configuration.rst:129
+#: ../../Configuration.rst:135
 msgid ""
 "Where above will set the archive to store messages with <body/> or "
 "<subject/> elements and for message with ``<result "
 "xmlns=\"urn:xmpp:mam:1\"/>`` element not to be stored."
 msgstr ""
 
-#: ../../Configuration.rst:133
+#: ../../Configuration.rst:139
 msgid ""
 "It is recommended to keep entry for not storing message with ``<result "
 "xmlns=\"urn:xmpp:mam:1\"/>`` element as this are results of MAM query and"
 " contain messages already stored in archive!"
 msgstr ""
 
-#: ../../Configuration.rst:137
+#: ../../Configuration.rst:143
 msgid ""
 "Enabling this for elements such as iq, or presence will quickly load the "
 "archive. Configure this setting carefully!"
 msgstr ""
 
-#: ../../Configuration.rst:140
+#: ../../Configuration.rst:148
 msgid "Configuration of automatic archiving of MUC messages"
 msgstr ""
 
-#: ../../Configuration.rst:142
+#: ../../Configuration.rst:150
 msgid ""
 "As mentioned above no additional configuration options than default "
 "configuration of Message Archiving component and plugin is needed to let "
@@ -236,75 +236,75 @@ msgid ""
 "``false`` to disable this feature)."
 msgstr ""
 
-#: ../../Configuration.rst:144
+#: ../../Configuration.rst:152
 msgid ""
 "To configure state of this feature on installation level, it is required "
 "to set ``store-muc-messages`` property of ``message-archive`` "
 "SessionManager processor:"
 msgstr ""
 
-#: ../../Configuration.rst:154
+#: ../../Configuration.rst:162
 msgid "where ``value`` may be one of following values:"
 msgstr ""
 
-#: ../../Configuration.rst:157 ../../Configuration.rst:168
+#: ../../Configuration.rst:165 ../../Configuration.rst:176
 msgid "``user``"
 msgstr ""
 
-#: ../../Configuration.rst:157
+#: ../../Configuration.rst:165
 msgid ""
 "allows value to be set on domain level or by user if domain level setting"
 " allows that"
 msgstr ""
 
-#: ../../Configuration.rst:160 ../../Configuration.rst:171
+#: ../../Configuration.rst:168 ../../Configuration.rst:179
 msgid "``true``"
 msgstr ""
 
-#: ../../Configuration.rst:160
+#: ../../Configuration.rst:168
 msgid ""
 "enables feature for every user in every hosted domain (cannot be "
 "overridden by on domain or user level)"
 msgstr ""
 
-#: ../../Configuration.rst:163 ../../Configuration.rst:175
+#: ../../Configuration.rst:171 ../../Configuration.rst:183
 msgid "``false``"
 msgstr ""
 
-#: ../../Configuration.rst:163
+#: ../../Configuration.rst:171
 msgid ""
 "disables feature for every user in every hosted domain (cannot be "
 "overridden by on domain or user level)"
 msgstr ""
 
-#: ../../Configuration.rst:165
+#: ../../Configuration.rst:173
 msgid ""
 "To configure state of this feature on domain level, you need to execute "
 "vhost configuration command. In list of fields to configure domain, field"
 " to set this will be available with following values:"
 msgstr ""
 
-#: ../../Configuration.rst:168
+#: ../../Configuration.rst:176
 msgid "allows user to stat of this feature (if allowed on installation level)"
 msgstr ""
 
-#: ../../Configuration.rst:171
+#: ../../Configuration.rst:179
 msgid ""
 "enables feature for users of configured domain (user will not be able to "
 "disable)"
 msgstr ""
 
-#: ../../Configuration.rst:174
+#: ../../Configuration.rst:182
 msgid ""
 "disables feature for users of configured domain (user will not be able to"
 " disable)"
 msgstr ""
 
-#: ../../Configuration.rst:178
+#: ../../Configuration.rst:186
 msgid "Purging Information from Message Archive"
 msgstr ""
 
-#: ../../Configuration.rst:180
+#: ../../Configuration.rst:188
 msgid ""
 "This feature allows for automatic removal of entries older than a "
 "configured number of days from the Message Archive. It is designed to "
@@ -314,11 +314,11 @@ msgid ""
 "next execution of purge."
 msgstr ""
 
-#: ../../Configuration.rst:182
+#: ../../Configuration.rst:190
 msgid "There are 3 settings available for this feature: To enable the feature:"
 msgstr ""
 
-#: ../../Configuration.rst:190
+#: ../../Configuration.rst:198
 msgid ""
 "This setting changes the initial delay after the server is started to "
 "begin removing old entries. In other words, MA purging will not take "
@@ -326,27 +326,27 @@ msgid ""
 "is PT1H, or one hour."
 msgstr ""
 
-#: ../../Configuration.rst:196
+#: ../../Configuration.rst:204
 msgid ""
 "This setting sets how long MA purging will wait between passes to check "
 "for and remove old entries. Default setting is P1D which is once a day."
 msgstr ""
 
-#: ../../Configuration.rst:202
+#: ../../Configuration.rst:210
 msgid "You may use all settings at once if you wish."
 msgstr ""
 
-#: ../../Configuration.rst:204
+#: ../../Configuration.rst:212
 msgid ""
 "**NOTE** that these commands are also compatible with ``unified-archive``"
 " component, just replace ``message`` with ``unified``."
 msgstr ""
 
-#: ../../Configuration.rst:208
+#: ../../Configuration.rst:216
 msgid "Configuration of number of days in VHost"
 msgstr ""
 
-#: ../../Configuration.rst:210
+#: ../../Configuration.rst:218
 msgid ""
 "VHost holds a setting that determines how long a message needs to be in "
 "archive for it to be considered old and removed. This can be set "
@@ -354,7 +354,7 @@ msgid ""
 " HTTP admin, or the update item execution in adhoc command."
 msgstr ""
 
-#: ../../Configuration.rst:212
+#: ../../Configuration.rst:220
 msgid ""
 "This configuration is done by execution of Update item configuration "
 "adhoc command of vhost-man component, where you should select domain for "
@@ -364,7 +364,7 @@ msgid ""
 " MA."
 msgstr ""
 
-#: ../../Configuration.rst:214
+#: ../../Configuration.rst:222
 msgid ""
 "In adhoc select domain for which messages should be removed and then in "
 "field XEP-0136 - retention type select value Number of days and in field "
@@ -372,18 +372,18 @@ msgid ""
 "events should be removed from MA."
 msgstr ""
 
-#: ../../Configuration.rst:216
+#: ../../Configuration.rst:224
 msgid ""
 "In HTTP UI select Other, then Update Item Configuration (Vhost-man), "
 "select the domain, and from there you can set XEP-0136 retention type, "
 "and set number of days at XEP-0136 retention period (in days)."
 msgstr ""
 
-#: ../../Configuration.rst:219
+#: ../../Configuration.rst:229
 msgid "Using separate store for archived messages"
 msgstr ""
 
-#: ../../Configuration.rst:221
+#: ../../Configuration.rst:231
 msgid ""
 "It is possible to use separate store for archived messages, to do so you "
 "need to configure new ``DataSource`` in ``dataSource`` section. Here we "
@@ -393,42 +393,42 @@ msgid ""
 "Archiving component."
 msgstr ""
 
-#: ../../Configuration.rst:223
+#: ../../Configuration.rst:233
 msgid "Example:"
 msgstr ""
 
-#: ../../Configuration.rst:241
+#: ../../Configuration.rst:251
 msgid ""
 "It is also possible to configure separate store for particular domain, "
 "i.e. ``example.com``. Here we will configure data source with name "
 "``example.com`` and use it to store data for archive:"
 msgstr ""
 
-#: ../../Configuration.rst:261
+#: ../../Configuration.rst:271
 msgid ""
 "With this configuration messages for other domains than ``example.com`` "
 "will be stored in default data source."
 msgstr ""
 
-#: ../../Configuration.rst:264
+#: ../../Configuration.rst:274
 msgid "Setting Pool Sizes"
 msgstr ""
 
-#: ../../Configuration.rst:266
+#: ../../Configuration.rst:276
 msgid ""
 "There are a high number of prepared statements which are used to process "
 "and archive messages as they go through the server, and you may "
 "experience an increase in resource use with the archive turned on. It is "
 "recommended to decrease the repository connection pool to help balance "
 "server load from this component using the `Pool Size "
-"<#dataRepoPoolSize>`__ property:"
+"<dataRepoPoolSize>`__ property:"
 msgstr ""
 
-#: ../../Configuration.rst:276
+#: ../../Configuration.rst:286
 msgid "Message Tagging Support"
 msgstr ""
 
-#: ../../Configuration.rst:278
+#: ../../Configuration.rst:288
 msgid ""
 "Tigase now is able to support querying message archives based on tags "
 "created for the query. Currently, Tigase can support the following tags "
@@ -438,40 +438,40 @@ msgid ""
 "prefix and used as a tag, for example @Tigase"
 msgstr ""
 
-#: ../../Configuration.rst:280
+#: ../../Configuration.rst:290
 msgid ""
 "**NOTE:** Tags must be written in messages from users, they do not act as"
 " wildcards. To search for #Tigase, a message must have #Tigase in the "
 "<body> element."
 msgstr ""
 
-#: ../../Configuration.rst:282
+#: ../../Configuration.rst:292
 msgid ""
 "This feature allows users to query and retrieve messages or collections "
 "from the archive that only contain one or more tags."
 msgstr ""
 
-#: ../../Configuration.rst:285
+#: ../../Configuration.rst:295
 msgid "Activating Tagging"
 msgstr ""
 
-#: ../../Configuration.rst:287
+#: ../../Configuration.rst:297
 msgid ""
 "To enable this feature, the following line must be in the config.tdsl "
 "file (or may be added with Admin or Web UI)"
 msgstr ""
 
-#: ../../Configuration.rst:296
+#: ../../Configuration.rst:306
 msgid "Usage"
 msgstr ""
 
-#: ../../Configuration.rst:298
+#: ../../Configuration.rst:308
 msgid ""
 "To execute a request, the tags must be individual children elements of "
 "the ``retrieve`` or ``list`` element like the following request:"
 msgstr ""
 
-#: ../../Configuration.rst:307
+#: ../../Configuration.rst:317
 msgid ""
 "You may also specify specific senders, and limit the time and date that "
 "you wish to search through to keep the resulting list smaller. That can "
@@ -479,20 +479,50 @@ msgid ""
 "``'with'``, ``'from’, and ’end'`` . Take a look at the below example:"
 msgstr ""
 
-#: ../../Configuration.rst:323
+#: ../../Configuration.rst:333
 msgid ""
 "This stanza is requesting to retrieve messages tagged with @User1 and "
 "#people from chats with the user juliet@capulet.com between January 1st, "
 "2014 at 00:00 to May 1st, 2014 at 00:00."
 msgstr ""
 
-#: ../../Configuration.rst:325
+#: ../../Configuration.rst:335
 msgid "**NOTE:** All times are in Zulu or GMT on a 24h clock."
 msgstr ""
 
-#: ../../Configuration.rst:327
+#: ../../Configuration.rst:337
 msgid ""
 "You can add as many tags as you wish, but each one is an **AND** "
 "statement; so the more tags you include, the smaller the results."
 msgstr ""
+
+#~ msgid ""
+#~ "While message stanza will be archived"
+#~ " (if message should be stored, see"
+#~ " `Saving Options <#nonBodyStore>`__)"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Possible values for this setting are "
+#~ "the same as values for default "
+#~ "archiving level setting, see `Setting "
+#~ "default value of archiving level for "
+#~ "message on a server "
+#~ "<#_setting_default_value_of_archiving_level_for_message_on_a_server>`__"
+#~ " for list of possible values."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "There are a high number of "
+#~ "prepared statements which are used to"
+#~ " process and archive messages as they"
+#~ " go through the server, and you "
+#~ "may experience an increase in resource"
+#~ " use with the archive turned on. "
+#~ "It is recommended to decrease the "
+#~ "repository connection pool to help "
+#~ "balance server load from this component"
+#~ " using the `Pool Size "
+#~ "<#dataRepoPoolSize>`__ property:"
+#~ msgstr ""
 
