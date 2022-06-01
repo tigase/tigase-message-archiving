@@ -67,7 +67,7 @@ We decided to no longer use *in-code* database upgrade to update database schema
 
 Additionally we moved from *in-code* generated SQL statements to stored procedures which are now part of provided database schema files.
 
-To continue usage of new versions of Message Archiving component it is required to manually load new component database schema, see `??? <#Preparation of database>`__ section for informations about that.
+To continue usage of new versions of Message Archiving component it is required to manually load new component database schema, see :ref:`Preparation of database<Preparationofdatabase>` section for informations about that.
 
 .. Warning::
 
@@ -81,11 +81,11 @@ Support for Message Archive Management protocol
 
 Now Tigase Message Archiving component supports searching of archived message using `XEP-0313: Message Archive Management <http://xmpp.org/extensions/xep-0313.html:>`__ protocol.
 
-For details on how to enable this feature look into `??? <#Support for MAM>`__
+For details on how to enable this feature look into :ref:`Support for MAM<Support_for_MAM>`
 
 Support for using separate database for different domains
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Since this version it is possible to use separate archived messages based on domains. This allows you to configure component to store archived message for particular domain to different database.
 
-For more informations please look into `??? <#Using separate store for archived messages>`__
+For more informations please look into :ref:`Using seperate store for archived messages<Using_seperate_store_fora_archived_messages>`
