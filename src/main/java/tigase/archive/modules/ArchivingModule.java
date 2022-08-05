@@ -100,7 +100,7 @@ public class ArchivingModule
 
 			msg_repo.archiveMessage(owner, buddy, direction, timestamp, msg, tags);
 		} else {
-			log.log(Level.INFO, "Owner attribute missing from packet: {0}", packet);
+			log.log(Level.CONFIG, "Owner attribute missing from packet: {0}", packet);
 		}
 	}
 
