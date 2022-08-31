@@ -1,0 +1,1440 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2004-2022, Tigase, Inc
+# This file is distributed under the same license as the TigaseDoc package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: TigaseDoc \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-08-31 09:25-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../Additional_features.rst:2
+msgid "Additional features"
+msgstr ""
+
+#: ../../Additional_features.rst:4
+msgid ""
+"Tigase Message Archiving Component contains few additional features "
+"useful for working with message archives."
+msgstr ""
+
+#: ../../Additional_features.rst:7
+msgid "Querying in all messages"
+msgstr ""
+
+#: ../../Additional_features.rst:9
+msgid ""
+"Feature allows user to search all of his archived messages without a need"
+" to specify who was send/receiver of this message. To search in all "
+"messages, request sent to retrieve archived messages should not contain "
+"``with`` attribute. As a result, when ``with`` attribute is omitted "
+"``<chat/>`` element of response will not contain ``with`` attribute but "
+"every ``<to/>`` and ``<from/>`` element will contain ``with`` attribute."
+msgstr ""
+
+#: ../../Additional_features.rst:12
+msgid "Querying by part of message body"
+msgstr ""
+
+#: ../../Additional_features.rst:14
+msgid ""
+"This feature allows user to query for messages or collections containing "
+"messages which in body of a message contained text passed by user."
+msgstr ""
+
+#: ../../Additional_features.rst:16
+msgid ""
+"To execute request in which user wants to find messages with \"test "
+"failed\" string XMPP client needs to add following element"
+msgstr ""
+
+#: ../../Additional_features.rst:24
+msgid "as child element of @retrieve@ or @list@ element of request."
+msgstr ""
+
+#: ../../Additional_features.rst:27
+msgid "Example query requests"
+msgstr ""
+
+#: ../../Additional_features.rst:30 ../../Additional_features.rst:93
+msgid "Example 1"
+msgstr ""
+
+#: ../../Additional_features.rst:32
+msgid ""
+"Retrieving messages with \"test failed\" string with user "
+"``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and ``2014-05-01 "
+"00:00:00``"
+msgstr ""
+
+#: ../../Additional_features.rst:49
+msgid "Example 2"
+msgstr ""
+
+#: ../../Additional_features.rst:51
+msgid ""
+"Retrieving collections containing messages with \"test failed\" string "
+"with user ``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and "
+"``2014-05-01 00:00:00``"
+msgstr ""
+
+#: ../../Additional_features.rst:68
+msgid "Querying by tags"
+msgstr ""
+
+#: ../../Additional_features.rst:70
+msgid ""
+"This feature adds support for tagging messages archived by Message "
+"Archiving component and by default is disabled (to learn how to enable "
+"this feature please see :ref:`Enabling support for "
+"tags<Enabling_support_for_tags>` section)."
+msgstr ""
+
+#: ../../Additional_features.rst:72
+msgid ""
+"Tagging can be done only by user sending message as to tag message tag "
+"needs to be included in message content (message body to be exact)."
+msgstr ""
+
+#: ../../Additional_features.rst:74
+msgid "Currently there are 2 types of tags supported:"
+msgstr ""
+
+#: ../../Additional_features.rst:76
+msgid ""
+"``hashtag`` - words prefixed by \"hash\" (#) are stored with prefix and "
+"used as tag, i.e. ``#Tigase``"
+msgstr ""
+
+#: ../../Additional_features.rst:78
+msgid ""
+"``mention`` - words prefixed by \"at\" (@) are stored with prefix and "
+"used as tag, i.e. ``@Tigase``"
+msgstr ""
+
+#: ../../Additional_features.rst:80
+msgid ""
+"Custom feature allows user to query/retrieve messages or collections from"
+" archive only containing particular tag or tags. To execute request in "
+"which user wants to retrieve only messages tagged with ``@User1`` and "
+"``#People`` XMPP client executing request needs to add following element "
+"as child element of ``<retrieve/>`` element or ``<list/>`` element:"
+msgstr ""
+
+#: ../../Additional_features.rst:90
+msgid "Querying/retrieving list of messages or collections"
+msgstr ""
+
+#: ../../Additional_features.rst:95
+msgid ""
+"Request to retrieve messages tagged with ``@User1`` and ``#People`` from "
+"chat with user ``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and"
+" ``2014-05-01 00:00:00``"
+msgstr ""
+
+#: ../../Additional_features.rst:112
+msgid "Example 2:"
+msgstr ""
+
+#: ../../Additional_features.rst:114
+msgid ""
+"Request to retrieve collections containing messages tagged with "
+"``@User1`` and ``#People`` from chat with user ``juliet@capulet.com`` "
+"between ``2014-01-01 00:00:00`` and ``2014-05-01 00:00:00``"
+msgstr ""
+
+#: ../../Additional_features.rst:132
+msgid "Retrieving list of tags used by user starting with some text"
+msgstr ""
+
+#: ../../Additional_features.rst:134
+msgid ""
+"To search for hashtags or user names already used following request might"
+" be used:"
+msgstr ""
+
+#: ../../Additional_features.rst:142
+msgid ""
+"which will return suggested similar hashtags which where found in "
+"database for particular user if following response:"
+msgstr ""
+
+#: ../../Additional_features.rst:160
+msgid "Automatic archiving of MUC messages"
+msgstr ""
+
+#: ../../Additional_features.rst:162
+msgid ""
+"If this feature is enabled MUC messages are stored in Message Archiving "
+"repository and are added in same way as for any other messages and "
+"``jid`` of MUC room is used as ``jid`` of message sender, so if MUC "
+"message sent from ``test@muc.example.com`` was stored then to retrieve "
+"this messages ``test@muc.example.com`` needs to be passed as ``with`` "
+"attribute to message retrieve request. Retrieved MUC messages will be "
+"retrieved in same format as normal message with one exception - each "
+"message will contain ``name`` attribute with name of occupant in room "
+"which sent this message."
+msgstr ""
+
+#: ../../Additional_features.rst:164
+msgid ""
+"This feature is by default disabled but it is possible to enable it for "
+"particular user. Additionally it is possible to change default setting on"
+" installation level and on hosted domain level to enable this feature, "
+"disable feature or allow user to decide if user want this feature to be "
+"enabled. For more information about configuration of this feature look at"
+" :ref:`Configuration of automatic archiving of MUC "
+"messages<Configuration_of_automatic archiving of MUC messages>`"
+msgstr ""
+
+#: ../../Additional_features.rst:168
+msgid ""
+"It is worth to mention that even if more than on user resource joined "
+"same room and each resource will receive same messages then only single "
+"message will be stored in Message Archving repository."
+msgstr ""
+
+#: ../../Additional_features.rst:170
+msgid ""
+"It is also important to note that MUC messages are archived to user "
+"message archive only when user is joined to MUC room (so if message was "
+"sent to room but it was not sent to particular user)"
+msgstr ""
+
+#: ../../Configuration.rst:2
+msgid "Configuration"
+msgstr ""
+
+#: ../../Configuration.rst:4
+msgid ""
+"To enable Tigase Message Archiving Component you need to add following "
+"block to ``etc/config.tdsl`` file:"
+msgstr ""
+
+#: ../../Configuration.rst:11
+msgid ""
+"It will enable component and configure it under name ``message-archive``."
+" By default it will also use database configured as ``default`` data "
+"source to store data."
+msgstr ""
+
+#: ../../Configuration.rst:14
+msgid "Custom Database"
+msgstr ""
+
+#: ../../Configuration.rst:16
+msgid ""
+"You can specify a custom database to be used for message archiving. To do"
+" this, define the archive-repo-uri property."
+msgstr ""
+
+#: ../../Configuration.rst:24
+msgid "Here, ``messagearchivedb`` hosted on localhost is used."
+msgstr ""
+
+#: ../../Configuration.rst:27
+msgid "XEP-0136 Support"
+msgstr ""
+
+#: ../../Configuration.rst:29
+msgid ""
+"To be able to use Message Archiving component with `XEP-0136: Message "
+"Archiving <http://xmpp.org/extensions/xep-0136.html:>`__ protocol, you "
+"additionally need to enable ``message-archive-xep-0136`` SessionManager "
+"processor:"
+msgstr ""
+
+#: ../../Configuration.rst:38
+msgid "This is required for some advanced options."
+msgstr ""
+
+#: ../../Configuration.rst:43
+msgid "Support for MAM"
+msgstr ""
+
+#: ../../Configuration.rst:45
+msgid ""
+"If you want to use Message Archiving component with `XEP-0313: Message "
+"Archive Management <http://xmpp.org/extensions/xep-0313.html:>`__ "
+"protocol, then you need to enable ``urn:xmpp:mam:1`` SessionManager "
+"processor:"
+msgstr ""
+
+#: ../../Configuration.rst:57
+msgid "Setting default value of archiving level for message on a server"
+msgstr ""
+
+#: ../../Configuration.rst:59
+msgid ""
+"Setting this property will change default archiving level for messages "
+"for every account on server for which per account default archiving level"
+" is not set. User will be able to change this value setting default modes"
+" as described in `XEP-0136 section 2.4 "
+"<http://xmpp.org/extensions/xep-0136.html#pref-default>`__"
+msgstr ""
+
+#: ../../Configuration.rst:61
+msgid "Possible values are:"
+msgstr ""
+
+#: ../../Configuration.rst:64
+msgid "**false**"
+msgstr ""
+
+#: ../../Configuration.rst:64
+msgid "Messages are not archived"
+msgstr ""
+
+#: ../../Configuration.rst:67
+msgid "**body**"
+msgstr ""
+
+#: ../../Configuration.rst:67
+msgid ""
+"Only message body will be stored. Message without a body will not be "
+"stored with this value set"
+msgstr ""
+
+#: ../../Configuration.rst:70
+msgid "**message**"
+msgstr ""
+
+#: ../../Configuration.rst:70
+msgid ""
+"While message stanza will be archived (if message should be stored, see "
+":ref:`Saving Options<SavingOptions>`)"
+msgstr ""
+
+#: ../../Configuration.rst:73
+msgid "**stream**"
+msgstr ""
+
+#: ../../Configuration.rst:73
+msgid "In this mode every stanza should be archived. *(Not supported)*"
+msgstr ""
+
+#: ../../Configuration.rst:75
+msgid ""
+"To set default level to ``message`` you need to set ``default-store-"
+"method`` of ``message-archive`` processor to ``message``:"
+msgstr ""
+
+#: ../../Configuration.rst:87
+msgid "Setting required value of archiving level for messages on a server"
+msgstr ""
+
+#: ../../Configuration.rst:89
+msgid ""
+"Setting this property will change required archiving level for messages "
+"for every account on server. User will be able to change this to any "
+"lower value by setting default modes as described in `XEP-0136 section "
+"2.4 <http://xmpp.org/extensions/xep-0136.html#pref-default>`__ but user "
+"will be allowed to set higher archiving level. If this property is set to"
+" higher value then default archiving level is set then this setting will "
+"be used as default archiving level setting."
+msgstr ""
+
+#: ../../Configuration.rst:91
+msgid ""
+"Possible values for this setting are the same as values for default "
+"archiving level setting, see :ref:`Setting default value of archiving "
+"level for message on a "
+"server<setting_default_value_of_archiving_level_for_message_on_a_server>`"
+" for list of possible values."
+msgstr ""
+
+#: ../../Configuration.rst:93
+msgid ""
+"To set required level to ``body`` you need to set ``required-store-"
+"method`` of ``message-archive`` processor to ``body``:"
+msgstr ""
+
+#: ../../Configuration.rst:106
+msgid "Enabling support for tags"
+msgstr ""
+
+#: ../../Configuration.rst:108
+msgid ""
+"To enable this feature Message Archiving component needs to be configured"
+" properly. You need to add ``tags-support = true`` line to ``message-"
+"archiving`` configuration section of ``etc/config.tdsl`` file. Like in "
+"following example:"
+msgstr ""
+
+#: ../../Configuration.rst:116
+msgid "where:"
+msgstr ""
+
+#: ../../Configuration.rst:118
+msgid ""
+"``message-archive`` - is name of configuration section under which "
+"Message Archiving component is configured to run"
+msgstr ""
+
+#: ../../Configuration.rst:123
+msgid "Saving Options"
+msgstr ""
+
+#: ../../Configuration.rst:125
+msgid ""
+"By default, Tigase Message Archive will only store the message body with "
+"some metadata, this can exclude messages that are lacking a body. If you "
+"decide you wish to save non-body elements within Message Archive, you can"
+" now can now configure this by setting ``msg-archive-paths`` to list of "
+"elements paths which should trigger saving to Message Archive. To "
+"additionally store messages with ``<subject/>`` element:"
+msgstr ""
+
+#: ../../Configuration.rst:135
+msgid ""
+"Where above will set the archive to store messages with <body/> or "
+"<subject/> elements and for message with ``<result "
+"xmlns=\"urn:xmpp:mam:1\"/>`` element not to be stored."
+msgstr ""
+
+#: ../../Configuration.rst:139
+msgid ""
+"It is recommended to keep entry for not storing message with ``<result "
+"xmlns=\"urn:xmpp:mam:1\"/>`` element as this are results of MAM query and"
+" contain messages already stored in archive!"
+msgstr ""
+
+#: ../../Configuration.rst:143
+msgid ""
+"Enabling this for elements such as iq, or presence will quickly load the "
+"archive. Configure this setting carefully!"
+msgstr ""
+
+#: ../../Configuration.rst:148
+msgid "Configuration of automatic archiving of MUC messages"
+msgstr ""
+
+#: ../../Configuration.rst:150
+msgid ""
+"As mentioned above no additional configuration options than default "
+"configuration of Message Archiving component and plugin is needed to let "
+"user decide if he wants to enable or disable this feature (but it is "
+"disabled by default). In this case user to enable this feature needs to "
+"set settings of message archiving adding ``muc-save`` attribute to "
+"``<default/>`` element of request with value set to ``true`` (or to "
+"``false`` to disable this feature)."
+msgstr ""
+
+#: ../../Configuration.rst:152
+msgid ""
+"To configure state of this feature on installation level, it is required "
+"to set ``store-muc-messages`` property of ``message-archive`` "
+"SessionManager processor:"
+msgstr ""
+
+#: ../../Configuration.rst:162
+msgid "where ``value`` may be one of following values:"
+msgstr ""
+
+#: ../../Configuration.rst:165 ../../Configuration.rst:176
+msgid "``user``"
+msgstr ""
+
+#: ../../Configuration.rst:165
+msgid ""
+"allows value to be set on domain level or by user if domain level setting"
+" allows that"
+msgstr ""
+
+#: ../../Configuration.rst:168 ../../Configuration.rst:179
+msgid "``true``"
+msgstr ""
+
+#: ../../Configuration.rst:168
+msgid ""
+"enables feature for every user in every hosted domain (cannot be "
+"overridden by on domain or user level)"
+msgstr ""
+
+#: ../../Configuration.rst:171 ../../Configuration.rst:183
+msgid "``false``"
+msgstr ""
+
+#: ../../Configuration.rst:171
+msgid ""
+"disables feature for every user in every hosted domain (cannot be "
+"overridden by on domain or user level)"
+msgstr ""
+
+#: ../../Configuration.rst:173
+msgid ""
+"To configure state of this feature on domain level, you need to execute "
+"vhost configuration command. In list of fields to configure domain, field"
+" to set this will be available with following values:"
+msgstr ""
+
+#: ../../Configuration.rst:176
+msgid "allows user to stat of this feature (if allowed on installation level)"
+msgstr ""
+
+#: ../../Configuration.rst:179
+msgid ""
+"enables feature for users of configured domain (user will not be able to "
+"disable)"
+msgstr ""
+
+#: ../../Configuration.rst:182
+msgid ""
+"disables feature for users of configured domain (user will not be able to"
+" disable)"
+msgstr ""
+
+#: ../../Configuration.rst:186
+msgid "Purging Information from Message Archive"
+msgstr ""
+
+#: ../../Configuration.rst:188
+msgid ""
+"This feature allows for automatic removal of entries older than a "
+"configured number of days from the Message Archive. It is designed to "
+"clean up database and keep its size within reasonable boundaries. If it "
+"is set to 1 day and entry is older than 24 hours then it will be removed,"
+" i.e. entry from yesterday from 10:11 will be removed after 10:11 after "
+"next execution of purge."
+msgstr ""
+
+#: ../../Configuration.rst:190
+msgid "There are 3 settings available for this feature: To enable the feature:"
+msgstr ""
+
+#: ../../Configuration.rst:198
+msgid ""
+"This setting changes the initial delay after the server is started to "
+"begin removing old entries. In other words, MA purging will not take "
+"place until the specified time after the server starts. Default setting "
+"is PT1H, or one hour."
+msgstr ""
+
+#: ../../Configuration.rst:204
+msgid ""
+"This setting sets how long MA purging will wait between passes to check "
+"for and remove old entries. Default setting is P1D which is once a day."
+msgstr ""
+
+#: ../../Configuration.rst:210
+msgid "You may use all settings at once if you wish."
+msgstr ""
+
+#: ../../Configuration.rst:212
+msgid ""
+"**NOTE** that these commands are also compatible with ``unified-archive``"
+" component, just replace ``message`` with ``unified``."
+msgstr ""
+
+#: ../../Configuration.rst:216
+msgid "Configuration of number of days in VHost"
+msgstr ""
+
+#: ../../Configuration.rst:218
+msgid ""
+"VHost holds a setting that determines how long a message needs to be in "
+"archive for it to be considered old and removed. This can be set "
+"independently per Vhost. This setting can be modified by either using the"
+" HTTP admin, or the update item execution in adhoc command."
+msgstr ""
+
+#: ../../Configuration.rst:220
+msgid ""
+"This configuration is done by execution of Update item configuration "
+"adhoc command of vhost-man component, where you should select domain for "
+"which messages should be removed and then in field XEP-0136 - retention "
+"type select value Number of days and in field XEP-0136 - retention period"
+" (in days) enter number of days after which events should be removed from"
+" MA."
+msgstr ""
+
+#: ../../Configuration.rst:222
+msgid ""
+"In adhoc select domain for which messages should be removed and then in "
+"field XEP-0136 - retention type select value Number of days and in field "
+"XEP-0136 - retention period (in days) enter number of days after which "
+"events should be removed from MA."
+msgstr ""
+
+#: ../../Configuration.rst:224
+msgid ""
+"In HTTP UI select Other, then Update Item Configuration (Vhost-man), "
+"select the domain, and from there you can set XEP-0136 retention type, "
+"and set number of days at XEP-0136 retention period (in days)."
+msgstr ""
+
+#: ../../Configuration.rst:229
+msgid "Using separate store for archived messages"
+msgstr ""
+
+#: ../../Configuration.rst:231
+msgid ""
+"It is possible to use separate store for archived messages, to do so you "
+"need to configure new ``DataSource`` in ``dataSource`` section. Here we "
+"will use ``message-archive-store`` as a name of a data source. "
+"Additionally you need to pass name of newly configured data source to "
+"``dataSourceName`` property of ``default`` repository of Message "
+"Archiving component."
+msgstr ""
+
+#: ../../Configuration.rst:233
+msgid "Example:"
+msgstr ""
+
+#: ../../Configuration.rst:251
+msgid ""
+"It is also possible to configure separate store for particular domain, "
+"i.e. ``example.com``. Here we will configure data source with name "
+"``example.com`` and use it to store data for archive:"
+msgstr ""
+
+#: ../../Configuration.rst:271
+msgid ""
+"With this configuration messages for other domains than ``example.com`` "
+"will be stored in default data source."
+msgstr ""
+
+#: ../../Configuration.rst:274
+msgid "Setting Pool Sizes"
+msgstr ""
+
+#: ../../Configuration.rst:276
+msgid ""
+"There are a high number of prepared statements which are used to process "
+"and archive messages as they go through the server, and you may "
+"experience an increase in resource use with the archive turned on. It is "
+"recommended to decrease the repository connection pool to help balance "
+"server load from this component using the `Pool Size "
+"<dataRepoPoolSize>`__ property:"
+msgstr ""
+
+#: ../../Configuration.rst:286
+msgid "Message Tagging Support"
+msgstr ""
+
+#: ../../Configuration.rst:288
+msgid ""
+"Tigase now is able to support querying message archives based on tags "
+"created for the query. Currently, Tigase can support the following tags "
+"to help search through message archives: - ``hashtag`` Words prefixed by "
+"a hash (#) are stored with a prefix and used as a tag, for example "
+"#Tigase - ``mention`` Words prefixed by an at (@) are stored with a "
+"prefix and used as a tag, for example @Tigase"
+msgstr ""
+
+#: ../../Configuration.rst:290
+msgid ""
+"**NOTE:** Tags must be written in messages from users, they do not act as"
+" wildcards. To search for #Tigase, a message must have #Tigase in the "
+"<body> element."
+msgstr ""
+
+#: ../../Configuration.rst:292
+msgid ""
+"This feature allows users to query and retrieve messages or collections "
+"from the archive that only contain one or more tags."
+msgstr ""
+
+#: ../../Configuration.rst:295
+msgid "Activating Tagging"
+msgstr ""
+
+#: ../../Configuration.rst:297
+msgid ""
+"To enable this feature, the following line must be in the config.tdsl "
+"file (or may be added with Admin or Web UI)"
+msgstr ""
+
+#: ../../Configuration.rst:306 ../../Usage.rst:2
+msgid "Usage"
+msgstr ""
+
+#: ../../Configuration.rst:308
+msgid ""
+"To execute a request, the tags must be individual children elements of "
+"the ``retrieve`` or ``list`` element like the following request:"
+msgstr ""
+
+#: ../../Configuration.rst:317
+msgid ""
+"You may also specify specific senders, and limit the time and date that "
+"you wish to search through to keep the resulting list smaller. That can "
+"be accomplished by adding more fields to the retrieve element such as "
+"``'with'``, ``'from’, and ’end'`` . Take a look at the below example:"
+msgstr ""
+
+#: ../../Configuration.rst:333
+msgid ""
+"This stanza is requesting to retrieve messages tagged with @User1 and "
+"#people from chats with the user juliet@capulet.com between January 1st, "
+"2014 at 00:00 to May 1st, 2014 at 00:00."
+msgstr ""
+
+#: ../../Configuration.rst:335
+msgid "**NOTE:** All times are in Zulu or GMT on a 24h clock."
+msgstr ""
+
+#: ../../Configuration.rst:337
+msgid ""
+"You can add as many tags as you wish, but each one is an **AND** "
+"statement; so the more tags you include, the smaller the results."
+msgstr ""
+
+#: ../../Database.rst:2
+msgid "Database"
+msgstr ""
+
+#: ../../Database.rst:7
+msgid "Preparation of database"
+msgstr ""
+
+#: ../../Database.rst:9
+msgid ""
+"Before you will be able to use Tigase Message Archiving Component and "
+"store messages in particular database you need to initialize this "
+"database. We provide few schemas for this component for MySQL, "
+"PostgreSQL, SQLServer and DerbyDB."
+msgstr ""
+
+#: ../../Database.rst:11
+msgid ""
+"They are placed in ``database/`` directory of installation package and "
+"named in ``dbtype-message-archiving-version.sql``, where ``dbname`` in "
+"name of database type which this schema supports and ``version`` is "
+"version of a Message Archiving Component for which this schema is "
+"designed."
+msgstr ""
+
+#: ../../Database.rst:13
+msgid ""
+"You need to manually select schema for correct database and component and"
+" load this schema to database. For more information about loading "
+"database schema look into `Database Preparation <#Database "
+"Preparation>`__ section of `Tigae XMPP Server Administration Guide "
+"<#Tigase XMPP Server Administration Guide>`__"
+msgstr ""
+
+#: ../../Database.rst:16
+msgid "Upgrade of database schema"
+msgstr ""
+
+#: ../../Database.rst:18
+msgid ""
+"Database schema for our components may change between versions and if so "
+"it needs to be updated before new version may be started. To upgrade "
+"schema please follow instructions from :ref:`Preparation of "
+"database<Preparationofdatabase>` section."
+msgstr ""
+
+#: ../../Database.rst:22
+msgid ""
+"If you use SNAPSHOT builds then schema may change for same version as "
+"this are versions we are still working on."
+msgstr ""
+
+#: ../../Database.rst:25
+msgid "Schema description"
+msgstr ""
+
+#: ../../Database.rst:27
+msgid ""
+"Tigase Message Archiving component uses few tables and stored procedures."
+" To make it easier to find them on database level they are prefixed with "
+"``tig_ma_``."
+msgstr ""
+
+#: ../../Database.rst:30
+msgid "Table ``tig_ma_jids``"
+msgstr ""
+
+#: ../../Database.rst:32
+msgid ""
+"This table stores all jids related to stored messages, ie. from ``to`` "
+"and ``from`` attributes of archived stanzas."
+msgstr ""
+
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
+msgid "Field"
+msgstr ""
+
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
+msgid "Description"
+msgstr ""
+
+#: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
+#: ../../Database.rst:97
+msgid "Comments"
+msgstr ""
+
+#: ../../Database.rst:37
+msgid "jid_id"
+msgstr ""
+
+#: ../../Database.rst:37
+msgid "Database ID of a JID"
+msgstr ""
+
+#: ../../Database.rst:39
+msgid "jid"
+msgstr ""
+
+#: ../../Database.rst:39
+msgid "Value of a bare JID"
+msgstr ""
+
+#: ../../Database.rst:41
+msgid "jid_sha1"
+msgstr ""
+
+#: ../../Database.rst:41
+msgid "SHA1 value of lowercased bare JID"
+msgstr ""
+
+#: ../../Database.rst:41
+msgid "Used for proper bare JID comparison during lookup."
+msgstr ""
+
+#: ../../Database.rst:43
+msgid "(N/A to PostgreSQL schema)"
+msgstr ""
+
+#: ../../Database.rst:45
+msgid "domain"
+msgstr ""
+
+#: ../../Database.rst:45
+msgid "Domain part of a bare JID"
+msgstr ""
+
+#: ../../Database.rst:45
+msgid "Stored for easier lookup of messages owned by users of a particular domain"
+msgstr ""
+
+#: ../../Database.rst:49
+msgid "Table ``tig_ma_msgs``"
+msgstr ""
+
+#: ../../Database.rst:51
+msgid "Table stores archived messages."
+msgstr ""
+
+#: ../../Database.rst:56
+msgid "stable_id"
+msgstr ""
+
+#: ../../Database.rst:56 ../../Database.rst:101
+msgid "Database ID of a message"
+msgstr ""
+
+#: ../../Database.rst:56
+msgid "Unique with matching ``owner_id``"
+msgstr ""
+
+#: ../../Database.rst:58 ../../Database.rst:86
+msgid "owner_id"
+msgstr ""
+
+#: ../../Database.rst:58
+msgid "ID of a bare JID of a message owner"
+msgstr ""
+
+#: ../../Database.rst:58 ../../Database.rst:60
+msgid "References ``jid_id`` from ``tig_ma_jids``"
+msgstr ""
+
+#: ../../Database.rst:60
+msgid "buddy_id"
+msgstr ""
+
+#: ../../Database.rst:60
+msgid "ID of a bare JID of a message recipient/sender (different than owner)"
+msgstr ""
+
+#: ../../Database.rst:62
+msgid "ts"
+msgstr ""
+
+#: ../../Database.rst:62
+msgid "Timestamp of a message"
+msgstr ""
+
+#: ../../Database.rst:62
+msgid "Timestamp of archivization or delayed delivery"
+msgstr ""
+
+#: ../../Database.rst:64
+msgid "body"
+msgstr ""
+
+#: ../../Database.rst:64
+msgid "Body of a message"
+msgstr ""
+
+#: ../../Database.rst:66
+msgid "msg"
+msgstr ""
+
+#: ../../Database.rst:66
+msgid "Serialized message"
+msgstr ""
+
+#: ../../Database.rst:68
+msgid "stanza_id"
+msgstr ""
+
+#: ../../Database.rst:68
+msgid "ID attribute of archived message"
+msgstr ""
+
+#: ../../Database.rst:70
+msgid "is_ref"
+msgstr ""
+
+#: ../../Database.rst:70
+msgid "Marks if message is a reference to other message"
+msgstr ""
+
+#: ../../Database.rst:72
+msgid "ref_stable_id"
+msgstr ""
+
+#: ../../Database.rst:72
+msgid "``stable_id`` of referenced message"
+msgstr ""
+
+#: ../../Database.rst:77
+msgid "Table ``tig_ma_tags``"
+msgstr ""
+
+#: ../../Database.rst:79
+msgid ""
+"Table stores tags of archived messages. It stores one tag for many "
+"messages using ``tig_ma_msgs_tags`` to store relation between tag and a "
+"message."
+msgstr ""
+
+#: ../../Database.rst:84 ../../Database.rst:103
+msgid "tag_id"
+msgstr ""
+
+#: ../../Database.rst:84 ../../Database.rst:103
+msgid "Database ID of a tag"
+msgstr ""
+
+#: ../../Database.rst:86 ../../Database.rst:99
+msgid "ID of a bare JID of a tag owner"
+msgstr ""
+
+#: ../../Database.rst:86 ../../Database.rst:99
+msgid "ID of bare JID of owner for which messages with this tag were archived"
+msgstr ""
+
+#: ../../Database.rst:88
+msgid "tag"
+msgstr ""
+
+#: ../../Database.rst:88
+msgid "Actual tag value"
+msgstr ""
+
+#: ../../Database.rst:92
+msgid "Table ``tig_ma_msgs_tags``"
+msgstr ""
+
+#: ../../Database.rst:94
+msgid "Table stores relations between tags and archived messages with this tags."
+msgstr ""
+
+#: ../../Database.rst:99
+msgid "msg_owner_id"
+msgstr ""
+
+#: ../../Database.rst:101
+msgid "msg_stable_id"
+msgstr ""
+
+#: ../../Database.rst:101
+msgid "Unique with matching ``msg_owner_id``"
+msgstr ""
+
+#: ../../Database.rst:103
+msgid "References ``tag_id`` from ``tig_ma_tags``"
+msgstr ""
+
+#: ../../Limitations.rst:2
+msgid "Limitations"
+msgstr ""
+
+#: ../../Limitations.rst:4
+msgid ""
+"Component groups messages in collections using date of a messages instead"
+" of id of message thread, due to fact that some clients are sending "
+"messages with no thread id (ie. Psi, Psi+)."
+msgstr ""
+
+#: ../../Limitations.rst:6
+msgid "Only bare JID is stored of sender or recipient."
+msgstr ""
+
+#: ../../Overview.rst:1
+msgid "Welcome to Tigase Message Archiving component guide"
+msgstr ""
+
+#: ../../Overview.rst:4
+msgid "Tigase Message Archiving Component"
+msgstr ""
+
+#: ../../Overview.rst:6
+msgid ""
+"Tigase Message Archiving Component originated as implementation of "
+"`XEP-0136: Message Archiving "
+"<http://xmpp.org/extensions/xep-0136.html:>`__ to add support for "
+"archiving of messages exchanged using Tigase XMPP Server. In current "
+"version component supports also `XEP-0313: Message Archive Management "
+"<http://xmpp.org/extensions/xep-0313.html>`__ specification to allow "
+"easier access to archived messages"
+msgstr ""
+
+#: ../../Release_notes.rst:2
+msgid "Tigase Message Archiving Release Notes"
+msgstr ""
+
+#: ../../Release_notes.rst:4
+msgid ""
+"Welcome to Tigase Message Archiving 3.0.0! This is a feature release for "
+"with a number of fixes and updates."
+msgstr ""
+
+#: ../../Release_notes.rst:7
+msgid "Tigase Message Archiving 3.0.0 Release Notes"
+msgstr ""
+
+#: ../../Release_notes.rst:10
+msgid "Major Changes"
+msgstr ""
+
+#: ../../Release_notes.rst:12
+msgid "Add support for urn:xmpp:mam:2"
+msgstr ""
+
+#: ../../Release_notes.rst:14
+msgid ""
+"Add support for `XEP-0308: Last Message Correction "
+"<https://xmpp.org/extensions/xep-0308.html>`__"
+msgstr ""
+
+#: ../../Release_notes.rst:17
+msgid "All Changes"
+msgstr ""
+
+#: ../../Release_notes.rst:19
+msgid ""
+"`#mam-47 <https://projects.tigase.net/issue/mam-47>`__: Add support for "
+"urn:xmpp:mam:2"
+msgstr ""
+
+#: ../../Release_notes.rst:21
+msgid ""
+"`#mam-49 <https://projects.tigase.net/issue/mam-49>`__: Historical "
+"message duplication"
+msgstr ""
+
+#: ../../Release_notes.rst:23
+msgid ""
+"`#mam-50 <https://projects.tigase.net/issue/mam-50>`__: XEP-0308: Last "
+"Message Correction"
+msgstr ""
+
+#: ../../Release_notes.rst:25
+msgid ""
+"`#mam-51 <https://projects.tigase.net/issue/mam-51>`__: Fix OMEMO "
+"encrypted messages are not stored by MA or MAM"
+msgstr ""
+
+#: ../../Release_notes.rst:27
+msgid ""
+"`#mam-54 <https://projects.tigase.net/issue/mam-54>`__: Fix NPE in "
+"MAM/Message Archiving"
+msgstr ""
+
+#: ../../Release_notes.rst:29
+msgid ""
+"`#mam-55 <https://projects.tigase.net/issue/mam-55>`__: Fix "
+"IllegalArgumentException in MessageArchiveVHostItemExtension"
+msgstr ""
+
+#: ../../Release_notes.rst:31
+msgid ""
+"`#mam-56 <https://projects.tigase.net/issue/mam-56>`__: Fix upgrade-"
+"schema failes"
+msgstr ""
+
+#: ../../Release_notes.rst:33
+msgid ""
+"`#mam-58 <https://projects.tigase.net/issue/mam-58>`__: Change message "
+"archiving rules"
+msgstr ""
+
+#: ../../Release_notes.rst:35
+msgid ""
+"`#mam-60 <https://projects.tigase.net/issue/mam-60>`__: Fix Message "
+"carbons stored in MAM"
+msgstr ""
+
+#: ../../Release_notes.rst:37
+msgid ""
+"`#mam-61 <https://projects.tigase.net/issue/mam-61>`__: Adjust schema to "
+"use new primary keys"
+msgstr ""
+
+#: ../../Release_notes.rst:39
+msgid ""
+"`#mam-65 <https://projects.tigase.net/issue/mam-65>`__: Fix "
+"archiveMessage: Data truncation: Data too long for column ``_body``"
+msgstr ""
+
+#: ../../Release_notes.rst:41
+msgid ""
+"`#mam-66 <https://projects.tigase.net/issue/mam-66>`__: Fix NPE in "
+"AbstractMAMProcessor.updatePrefrerences()"
+msgstr ""
+
+#: ../../Release_notes.rst:43
+msgid ""
+"`#mam-67 <https://projects.tigase.net/issue/mam-67>`__: Fix Incorrect "
+"datetime value in JDBCMessageArchiveRepository"
+msgstr ""
+
+#: ../../Release_notes.rst:45
+msgid ""
+"`#mam-68 <https://projects.tigase.net/issue/mam-68>`__: Add option to "
+"disable local MAM archive"
+msgstr ""
+
+#: ../../Release_notes.rst:47
+msgid ""
+"`#mam-69 <https://projects.tigase.net/issue/mam-69>`__: Fix Data "
+"truncation: Data too long for column '_stanzaId'"
+msgstr ""
+
+#: ../../Release_notes.rst:49
+msgid ""
+"`#mam-70 <https://projects.tigase.net/issue/mam-70>`__: Fix Schema is "
+"inconsistent (tigase.org mysql vs clean postgresql)"
+msgstr ""
+
+#: ../../Release_notes.rst:51
+msgid ""
+"`#mam-72 <https://projects.tigase.net/issue/mam-72>`__: Fix Deadlock on "
+"inserting message"
+msgstr ""
+
+#: ../../Release_notes.rst:54
+msgid "Previous Releases"
+msgstr ""
+
+#: ../../Release_notes.rst:57
+msgid "Tigase Message Archiving 2.x release"
+msgstr ""
+
+#: ../../Release_notes.rst:60
+msgid "Major changes"
+msgstr ""
+
+#: ../../Release_notes.rst:62
+msgid ""
+"Tigase Message Archiving component has undergone a few major changes to "
+"our code and structure. To continue to use Tigase Message Archiving "
+"component, a few changes may be needed to be made to your systems. Please"
+" see them below:"
+msgstr ""
+
+#: ../../Release_notes.rst:64
+msgid "Database schema changes"
+msgstr ""
+
+#: ../../Release_notes.rst:66
+msgid ""
+"We decided to no longer use *in-code* database upgrade to update database"
+" schema of Message Archiving component and rather provide separate schema"
+" files for every supported database."
+msgstr ""
+
+#: ../../Release_notes.rst:68
+msgid ""
+"Additionally we moved from *in-code* generated SQL statements to stored "
+"procedures which are now part of provided database schema files."
+msgstr ""
+
+#: ../../Release_notes.rst:70
+msgid ""
+"To continue usage of new versions of Message Archiving component it is "
+"required to manually load new component database schema, see "
+":ref:`Preparation of database<Preparationofdatabase>` section for "
+"informations about that."
+msgstr ""
+
+#: ../../Release_notes.rst:74
+msgid ""
+"Loading of new database schema is required to use new version of Message "
+"Archiving component."
+msgstr ""
+
+#: ../../Release_notes.rst:77
+msgid "New features"
+msgstr ""
+
+#: ../../Release_notes.rst:80
+msgid "Support for Message Archive Management protocol"
+msgstr ""
+
+#: ../../Release_notes.rst:82
+msgid ""
+"Now Tigase Message Archiving component supports searching of archived "
+"message using `XEP-0313: Message Archive Management "
+"<http://xmpp.org/extensions/xep-0313.html:>`__ protocol."
+msgstr ""
+
+#: ../../Release_notes.rst:84
+msgid ""
+"For details on how to enable this feature look into :ref:`Support for "
+"MAM<Support_for_MAM>`"
+msgstr ""
+
+#: ../../Release_notes.rst:87
+msgid "Support for using separate database for different domains"
+msgstr ""
+
+#: ../../Release_notes.rst:89
+msgid ""
+"Since this version it is possible to use separate archived messages based"
+" on domains. This allows you to configure component to store archived "
+"message for particular domain to different database."
+msgstr ""
+
+#: ../../Release_notes.rst:91
+msgid ""
+"For more informations please look into :ref:`Using seperate store for "
+"archived messages<Using_seperate_store_fora_archived_messages>`"
+msgstr ""
+
+#: ../../Usage.rst:4
+msgid ""
+"Now that we have the archive component running, how do we use it? "
+"Currently, the only way to activate and modify the component is through "
+"XMPP stanzas. Lets first begin by getting our default settings from the "
+"component:"
+msgstr ""
+
+#: ../../Usage.rst:12
+msgid ""
+"It’s a short stanza, but it will tell us what we need to know, Note that "
+"you do not need a from or a to for this stanza. The result is as follows:"
+msgstr ""
+
+#: ../../Usage.rst:26
+msgid "See below for what these settings mean."
+msgstr ""
+
+#: ../../Usage.rst:29
+msgid "XEP-0136 Field Values"
+msgstr ""
+
+#: ../../Usage.rst:38
+msgid "<**auto**/>"
+msgstr ""
+
+#: ../../Usage.rst:32 ../../Usage.rst:74 ../../Usage.rst:107
+msgid "**Required Attributes**"
+msgstr ""
+
+#: ../../Usage.rst:34
+msgid "``save=`` Boolean turning archiving on or off"
+msgstr ""
+
+#: ../../Usage.rst:36 ../../Usage.rst:67 ../../Usage.rst:100
+msgid "**Optional Settings**"
+msgstr ""
+
+#: ../../Usage.rst:38
+msgid ""
+"``scope=`` Determines scope of archiving, default is ``'stream'`` which "
+"turns off after stream end, or may be ``'global'`` which keeps auto save "
+"permanent,"
+msgstr ""
+
+#: ../../Usage.rst:69
+msgid "<**default**/>"
+msgstr ""
+
+#: ../../Usage.rst:41
+msgid ""
+"Default element sets default settings for OTR and save modes, includes an"
+" option for archive expiration."
+msgstr ""
+
+#: ../../Usage.rst:43
+msgid "**Required Attribures**"
+msgstr ""
+
+#: ../../Usage.rst:45 ../../Usage.rst:78
+msgid ""
+"``otr=`` Specifies setting for Off The Record mode. Available settings "
+"are:"
+msgstr ""
+
+#: ../../Usage.rst:47 ../../Usage.rst:80
+msgid "``approve`` The user MUST explicitly approve OTR communication."
+msgstr ""
+
+#: ../../Usage.rst:49 ../../Usage.rst:82
+msgid "``concede`` Communications MAY be OTR if requested by another user."
+msgstr ""
+
+#: ../../Usage.rst:51 ../../Usage.rst:84
+msgid "``forbid`` Communications MUST NOT be OTR."
+msgstr ""
+
+#: ../../Usage.rst:53 ../../Usage.rst:86
+msgid "``oppose`` Communications SHOULD NOT be OTR."
+msgstr ""
+
+#: ../../Usage.rst:55 ../../Usage.rst:88
+msgid "``prefer`` Communications SHOULD be OTR."
+msgstr ""
+
+#: ../../Usage.rst:57 ../../Usage.rst:90
+msgid "``require`` Communications MUST be OTR."
+msgstr ""
+
+#: ../../Usage.rst:59 ../../Usage.rst:92
+msgid ""
+"``save=`` Specifies the portion of messages to archive, by default it is "
+"set to ``body``."
+msgstr ""
+
+#: ../../Usage.rst:61 ../../Usage.rst:94
+msgid "``body`` Archives only the items within the <body/> elements."
+msgstr ""
+
+#: ../../Usage.rst:63 ../../Usage.rst:96
+msgid "``message`` Archive the entire XML content of each message."
+msgstr ""
+
+#: ../../Usage.rst:65 ../../Usage.rst:98
+msgid ""
+"``stream`` Archive saves every byte of communication between server and "
+"client. (Not recommended, high resource use)"
+msgstr ""
+
+#: ../../Usage.rst:69 ../../Usage.rst:102
+msgid ""
+"``expire=`` Specifies after how many seconds should the server delete "
+"saved messages."
+msgstr ""
+
+#: ../../Usage.rst:102
+msgid "<**item**/>"
+msgstr ""
+
+#: ../../Usage.rst:72
+msgid ""
+"The Item element specifies settings for a particular entity. These "
+"settings will override default settings for the specified JIDS."
+msgstr ""
+
+#: ../../Usage.rst:76
+msgid ""
+"``JID=`` The Jabber ID of the entity that you wish to put these settings "
+"on, it may be a full JID, bare JID, or just a domain."
+msgstr ""
+
+#: ../../Usage.rst:123
+msgid "<**method**/>"
+msgstr ""
+
+#: ../../Usage.rst:105
+msgid ""
+"This element specifies the user preference for available archiving "
+"methods."
+msgstr ""
+
+#: ../../Usage.rst:109
+msgid "``type=`` The type of archiving to set"
+msgstr ""
+
+#: ../../Usage.rst:111
+msgid "``auto`` Preferences for use of automatic archiving on the user’s server."
+msgstr ""
+
+#: ../../Usage.rst:113
+msgid "``local`` Set to use local archiving on user’s machine or device."
+msgstr ""
+
+#: ../../Usage.rst:115
+msgid "``manual`` Preferences for use of manual archiving to the server."
+msgstr ""
+
+#: ../../Usage.rst:117
+msgid "``use=`` Sets level of use for the type"
+msgstr ""
+
+#: ../../Usage.rst:119
+msgid "``prefer`` The selected method should be used if it is available."
+msgstr ""
+
+#: ../../Usage.rst:121
+msgid "``concede`` This will be used if no other methods are available."
+msgstr ""
+
+#: ../../Usage.rst:123
+msgid "``forbid`` The associated method MUST not be used."
+msgstr ""
+
+#: ../../Usage.rst:125
+msgid ""
+"Now that we have established settings, lets send a stanza changing a few "
+"of them:"
+msgstr ""
+
+#: ../../Usage.rst:139
+msgid ""
+"This now sets archiving by default for all users on the domain.com "
+"server, forbids OTR, and prefers auto save method for archiving."
+msgstr ""
+
+#: ../../Usage.rst:142
+msgid "Manual Activation"
+msgstr ""
+
+#: ../../Usage.rst:144
+msgid ""
+"Turning on archiving requires a simple stanza which will turn on "
+"archiving for the use sending the stanza and using default settings."
+msgstr ""
+
+#: ../../Usage.rst:154
+msgid "A sucessful result will yield this response from the server:"
+msgstr ""
+
+#: ../../Usage.rst:160
+msgid ""
+"Once this is turned on, incoming and outgoing messages from the user will"
+" be stored in ``tig_ma_msgs`` table in the database."
+msgstr ""
+
+#: ../../index.rst:4
+msgid "Tigase Message Archiving Component - Version 3.1.0"
+msgstr ""
+
