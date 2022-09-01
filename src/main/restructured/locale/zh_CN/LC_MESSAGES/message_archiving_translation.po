@@ -3,33 +3,36 @@
 # This file is distributed under the same license as the TigaseDoc package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: TigaseDoc \n"
+"Project-Id-Version: TigaseDoc\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-31 09:25-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-09-01 20:24+0000\n"
+"Last-Translator: Qian Luo <qian.luo@tigase.net>\n"
+"Language-Team: Chinese (Simplified) <http://translate.tigase.net/projects/"
+"tigase-message-archiving/tigase-message-archiving-documentation/zh_Hans/>\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.11.2\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: ../../Additional_features.rst:2
 msgid "Additional features"
-msgstr ""
+msgstr "附加的功能"
 
 #: ../../Additional_features.rst:4
 msgid ""
 "Tigase Message Archiving Component contains few additional features "
 "useful for working with message archives."
-msgstr ""
+msgstr "Tigase 消息归档组件包含一些对处理消息归档有用的附加功能。"
 
 #: ../../Additional_features.rst:7
 msgid "Querying in all messages"
-msgstr ""
+msgstr "查询所有消息"
 
 #: ../../Additional_features.rst:9
 msgid ""
@@ -40,34 +43,40 @@ msgid ""
 "``<chat/>`` element of response will not contain ``with`` attribute but "
 "every ``<to/>`` and ``<from/>`` element will contain ``with`` attribute."
 msgstr ""
+"该功能允许用户搜索他所有的存档消息，而无需指定谁是该消息的发送者/接收者。要在"
+"所有消息中搜索，发送来检索归档消息的请求不应包含 ``with`` 属性。因此，当省略 "
+"``with`` 属性时，``<chat/>`` 响应元素将不包含 ``with`` 属性，而是每个 ``<to/"
+">`` 和 ``<from/>`` 元素将包含 ``with`` 属性。"
 
 #: ../../Additional_features.rst:12
 msgid "Querying by part of message body"
-msgstr ""
+msgstr "部分消息正文查询"
 
 #: ../../Additional_features.rst:14
 msgid ""
 "This feature allows user to query for messages or collections containing "
 "messages which in body of a message contained text passed by user."
-msgstr ""
+msgstr "此功能允许用户查询包含消息的消息或集合，这些消息在消息正文中，其包含用户传递"
+"的文本。"
 
 #: ../../Additional_features.rst:16
 msgid ""
 "To execute request in which user wants to find messages with \"test "
 "failed\" string XMPP client needs to add following element"
-msgstr ""
+msgstr "要执行用户想要查找带有 \"test failed\"字符串的消息的请求，XMPP "
+"客户端需要添加以下元素"
 
 #: ../../Additional_features.rst:24
 msgid "as child element of @retrieve@ or @list@ element of request."
-msgstr ""
+msgstr "作为请求的@retrieve@ 或@list@ 元素的子元素。"
 
 #: ../../Additional_features.rst:27
 msgid "Example query requests"
-msgstr ""
+msgstr "示例查询请求"
 
 #: ../../Additional_features.rst:30 ../../Additional_features.rst:93
 msgid "Example 1"
-msgstr ""
+msgstr "示例 1"
 
 #: ../../Additional_features.rst:32
 msgid ""
@@ -75,10 +84,12 @@ msgid ""
 "``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and ``2014-05-01 "
 "00:00:00``"
 msgstr ""
+"在 ``2014-01-01 00:00:00`` 和 ``2014-05-01 00:00:00`` 之间使用用户 "
+"``juliet@capulet.com`` 检索带有\"test failed\"字符串的消息"
 
 #: ../../Additional_features.rst:49
 msgid "Example 2"
-msgstr ""
+msgstr "示例 2"
 
 #: ../../Additional_features.rst:51
 msgid ""
@@ -86,10 +97,12 @@ msgid ""
 "with user ``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and "
 "``2014-05-01 00:00:00``"
 msgstr ""
+"在 ``2014-01-01 00:00:00`` 和 ``2014-05-01 00:00:00`` 之间使用用户 "
+"``juliet@capulet.com`` 检索包含带有 \"test failed\"字符串的消息的集合"
 
 #: ../../Additional_features.rst:68
 msgid "Querying by tags"
-msgstr ""
+msgstr "按标签查询"
 
 #: ../../Additional_features.rst:70
 msgid ""
@@ -98,28 +111,34 @@ msgid ""
 "this feature please see :ref:`Enabling support for "
 "tags<Enabling_support_for_tags>` section)."
 msgstr ""
+"此功能添加了对消息存档组件存档的标记消息的支持，默认情况下是禁用的（要了解如"
+"何启用此功能，请参阅 :ref:`启用对标签的支持<Enabling_support_for_tags>` "
+"部分）。"
 
 #: ../../Additional_features.rst:72
 msgid ""
 "Tagging can be done only by user sending message as to tag message tag "
 "needs to be included in message content (message body to be exact)."
-msgstr ""
+msgstr "标记只能由用户发送消息来完成，因为标记消息标记需要包含在消息内容中（确切地说"
+"是消息主体）。"
 
 #: ../../Additional_features.rst:74
 msgid "Currently there are 2 types of tags supported:"
-msgstr ""
+msgstr "目前支持两种类型的标签："
 
 #: ../../Additional_features.rst:76
 msgid ""
 "``hashtag`` - words prefixed by \"hash\" (#) are stored with prefix and "
 "used as tag, i.e. ``#Tigase``"
-msgstr ""
+msgstr "``hashtag`` - 以 \"hash\" (#) 为前缀的单词与前缀一起存储并用作标记，即 "
+"``#Tigase``"
 
 #: ../../Additional_features.rst:78
 msgid ""
 "``mention`` - words prefixed by \"at\" (@) are stored with prefix and "
 "used as tag, i.e. ``@Tigase``"
-msgstr ""
+msgstr "``mention`` - 以 \"at\"（@）为前缀的单词与前缀一起存储并用作标签，即 "
+"``@Tigase``"
 
 #: ../../Additional_features.rst:80
 msgid ""
@@ -129,10 +148,14 @@ msgid ""
 "``#People`` XMPP client executing request needs to add following element "
 "as child element of ``<retrieve/>`` element or ``<list/>`` element:"
 msgstr ""
+"自定义功能允许用户从仅包含特定标签或标签的存档中查询/检索消息或集合。"
+"要执行的用户只想检索标记为 ``@User1`` 和 ``#People`` 的消息的请求，XMPP "
+"客户端执行请求则需要添加以下元素作为 ``<retrieve/>`` 元素的子元素或 ``<list/"
+">`` 元素："
 
 #: ../../Additional_features.rst:90
 msgid "Querying/retrieving list of messages or collections"
-msgstr ""
+msgstr "查询/检索消息或集合列表"
 
 #: ../../Additional_features.rst:95
 msgid ""
@@ -140,10 +163,12 @@ msgid ""
 "chat with user ``juliet@capulet.com`` between ``2014-01-01 00:00:00`` and"
 " ``2014-05-01 00:00:00``"
 msgstr ""
+"请求从 ``2014-01-01 00:00:00`` 到 ``2014-05-01 00:00:00`` 与用户 "
+"``juliet@capulet.com`` 的聊天中检索标记为 ``@User1`` 和 ``#People`` 的消息"
 
 #: ../../Additional_features.rst:112
 msgid "Example 2:"
-msgstr ""
+msgstr "示例 2："
 
 #: ../../Additional_features.rst:114
 msgid ""
@@ -151,26 +176,30 @@ msgid ""
 "``@User1`` and ``#People`` from chat with user ``juliet@capulet.com`` "
 "between ``2014-01-01 00:00:00`` and ``2014-05-01 00:00:00``"
 msgstr ""
+"请求从 ``2014-01-01 00:00:00`` 到 ``2014-05-01 00:00:00`` 与用户 "
+"``juliet@capulet.com`` 聊天中检索包含带有 ``@User1`` 和 ``#People`` "
+"标记的消息的集合"
 
 #: ../../Additional_features.rst:132
 msgid "Retrieving list of tags used by user starting with some text"
-msgstr ""
+msgstr "检索用户使用的以某些文本开头的标签列表"
 
 #: ../../Additional_features.rst:134
 msgid ""
 "To search for hashtags or user names already used following request might"
 " be used:"
-msgstr ""
+msgstr "要搜索已使用的主题标签或用户名，可以使用以下请求："
 
 #: ../../Additional_features.rst:142
 msgid ""
 "which will return suggested similar hashtags which where found in "
 "database for particular user if following response:"
-msgstr ""
+msgstr "如果有以下响应，它将返回建议的类似主题标签，这些标签在特定用户的数据库中可找"
+"到："
 
 #: ../../Additional_features.rst:160
 msgid "Automatic archiving of MUC messages"
-msgstr ""
+msgstr "MUC消息的自动归档"
 
 #: ../../Additional_features.rst:162
 msgid ""
@@ -184,6 +213,13 @@ msgid ""
 "message will contain ``name`` attribute with name of occupant in room "
 "which sent this message."
 msgstr ""
+"如果启用此功能，MUC "
+"消息将存储在消息存档存储库中，并以与任何其他消息相同的方式添加，并且 MUC "
+"房间的 ``jid`` 用作消息发送者的 ``jid``，因此，如果存储了从 ``test@muc."
+"example.com`` 发送的 MUC 消息，那么要检索此消息 ``test@muc.example.com`` "
+"并需要作为 ``with`` 属性传递给消息检索请求。检索到的 MUC "
+"消息将以与普通消息相同的格式检索，但有一个例外 - 每条消息将包含 ``name`` "
+"属性，其中包含发送此消息的房间中的占用者姓名。"
 
 #: ../../Additional_features.rst:164
 msgid ""
@@ -195,30 +231,36 @@ msgid ""
 " :ref:`Configuration of automatic archiving of MUC "
 "messages<Configuration_of_automatic archiving of MUC messages>`"
 msgstr ""
+"此功能默认禁用，但可以为特定用户启用它。此外，可以更改安装级别和托管域级别的"
+"默认设置以启用此功能、禁用功能或允许用户决定是否要启用此功能。有关此功能配置"
+"的更多信息，请查看 :ref:`MUC 消息自动归档的配置<Configuration_of_automatic "
+"archiving of MUC messages>`"
 
 #: ../../Additional_features.rst:168
 msgid ""
 "It is worth to mention that even if more than on user resource joined "
 "same room and each resource will receive same messages then only single "
 "message will be stored in Message Archving repository."
-msgstr ""
+msgstr "值得一提的是，即使有多个用户资源加入同一个房间并且每个资源都会收到相同的消息"
+"，消息存档存储库中也只会存储一条消息。"
 
 #: ../../Additional_features.rst:170
 msgid ""
 "It is also important to note that MUC messages are archived to user "
 "message archive only when user is joined to MUC room (so if message was "
 "sent to room but it was not sent to particular user)"
-msgstr ""
+msgstr "同样重要的是要注意，只有当用户加入 MUC 房间时，MUC "
+"消息才会存档到用户消息存档（如果消息已发送到房间但未发送给特定用户）"
 
 #: ../../Configuration.rst:2
 msgid "Configuration"
-msgstr ""
+msgstr "配置"
 
 #: ../../Configuration.rst:4
 msgid ""
 "To enable Tigase Message Archiving Component you need to add following "
 "block to ``etc/config.tdsl`` file:"
-msgstr ""
+msgstr "要启用 Tigase 消息存档组件，您需要将以下块添加到 ``etc/config.tdsl`` 文件："
 
 #: ../../Configuration.rst:11
 msgid ""
@@ -226,24 +268,26 @@ msgid ""
 " By default it will also use database configured as ``default`` data "
 "source to store data."
 msgstr ""
+"它将启用组件并在名称 ``message-archive`` 下对其进行配置。默认情况下，"
+"它还将使用配置为 ``default`` 数据源的数据库来存储数据。"
 
 #: ../../Configuration.rst:14
 msgid "Custom Database"
-msgstr ""
+msgstr "自定义数据库"
 
 #: ../../Configuration.rst:16
 msgid ""
 "You can specify a custom database to be used for message archiving. To do"
 " this, define the archive-repo-uri property."
-msgstr ""
+msgstr "您可以指定用于消息归档的自定义数据库。为此，请定义 archive-repo-uri 属性。"
 
 #: ../../Configuration.rst:24
 msgid "Here, ``messagearchivedb`` hosted on localhost is used."
-msgstr ""
+msgstr "在这里，使用了托管在 localhost 上的 ``messagearchivedb``。"
 
 #: ../../Configuration.rst:27
 msgid "XEP-0136 Support"
-msgstr ""
+msgstr "XEP-0136 支持"
 
 #: ../../Configuration.rst:29
 msgid ""
@@ -252,14 +296,17 @@ msgid ""
 "additionally need to enable ``message-archive-xep-0136`` SessionManager "
 "processor:"
 msgstr ""
+"为了能够通过 `XEP-0136: Message Archiving <http://xmpp.org/extensions/"
+"xep-0136.html:>`__ 协议使用消息归档 组件，您还需要启用 ``message-archive-xep "
+"-0136`` SessionManager 处理器："
 
 #: ../../Configuration.rst:38
 msgid "This is required for some advanced options."
-msgstr ""
+msgstr "这是一些高级选项所必需的。"
 
 #: ../../Configuration.rst:43
 msgid "Support for MAM"
-msgstr ""
+msgstr "支持 MAM"
 
 #: ../../Configuration.rst:45
 msgid ""
@@ -268,10 +315,13 @@ msgid ""
 "protocol, then you need to enable ``urn:xmpp:mam:1`` SessionManager "
 "processor:"
 msgstr ""
+"如果要使用带有 `XEP-0313: Message Archive Management <http://xmpp.org/"
+"extensions/xep-0313.html:>`__ 协议的消息归档组件，则需要启用 "
+"``urn:xmpp:mam:1`` SessionManager 处理器："
 
 #: ../../Configuration.rst:57
 msgid "Setting default value of archiving level for message on a server"
-msgstr ""
+msgstr "为服务器上的消息设置归档级别的默认值"
 
 #: ../../Configuration.rst:59
 msgid ""
@@ -281,56 +331,62 @@ msgid ""
 " as described in `XEP-0136 section 2.4 "
 "<http://xmpp.org/extensions/xep-0136.html#pref-default>`__"
 msgstr ""
+"设置此属性将对服务器上未设置的每个默认归档级别的帐户的邮件的默认归档级别进行"
+"更改。用户将能够更改此值设置默认模式，如 `XEP-0136 第 2.4 节 <http://xmpp."
+"org/extensions/xep-0136.html#pref-default>`__ 中所述"
 
 #: ../../Configuration.rst:61
 msgid "Possible values are:"
-msgstr ""
+msgstr "可能的值为："
 
 #: ../../Configuration.rst:64
 msgid "**false**"
-msgstr ""
+msgstr "**假**"
 
 #: ../../Configuration.rst:64
 msgid "Messages are not archived"
-msgstr ""
+msgstr "消息未被归档"
 
 #: ../../Configuration.rst:67
 msgid "**body**"
-msgstr ""
+msgstr "**正文**"
 
 #: ../../Configuration.rst:67
 msgid ""
 "Only message body will be stored. Message without a body will not be "
 "stored with this value set"
-msgstr ""
+msgstr "仅存储消息正文。没有正文的消息将不会使用此值集存储"
 
 #: ../../Configuration.rst:70
 msgid "**message**"
-msgstr ""
+msgstr "**信息**"
 
 #: ../../Configuration.rst:70
 msgid ""
 "While message stanza will be archived (if message should be stored, see "
 ":ref:`Saving Options<SavingOptions>`)"
-msgstr ""
+msgstr "虽然消息节将被存档（如果应该存储消息，请参阅 :ref:`Saving "
+"Options<SavingOptions>`）"
 
 #: ../../Configuration.rst:73
 msgid "**stream**"
-msgstr ""
+msgstr "**流**"
 
 #: ../../Configuration.rst:73
 msgid "In this mode every stanza should be archived. *(Not supported)*"
-msgstr ""
+msgstr "在这种模式下，每个节都应该被归档。 *（不支持）*"
 
 #: ../../Configuration.rst:75
 msgid ""
 "To set default level to ``message`` you need to set ``default-store-"
 "method`` of ``message-archive`` processor to ``message``:"
 msgstr ""
+"要将默认级别设置为 ``message`` ，您需要将 ``message-archive`` 处理器的 "
+"``default-store-method`` 设置为 ``message``："
 
 #: ../../Configuration.rst:87
 msgid "Setting required value of archiving level for messages on a server"
-msgstr ""
+msgstr "为服务器上的消息设置所需的归档级别值"
 
 #: ../../Configuration.rst:89
 msgid ""
@@ -342,6 +398,11 @@ msgid ""
 " higher value then default archiving level is set then this setting will "
 "be used as default archiving level setting."
 msgstr ""
+"设置此属性将更改服务器上每个帐户的消息所需的归档级别。用户将能够通过设置默认"
+"模式将其更改为任何较低的值，正如 `XEP-0136 第 2.4 节 <http://xmpp.org/"
+"extensions/xep-0136.html#pref-default>`__ 中所述，但用户将允许设置更高的归档"
+"级别。如果此属性设置为更高的值，则设置默认归档级别，而且此设置将用作默认归档"
+"级别设置。"
 
 #: ../../Configuration.rst:91
 msgid ""
@@ -351,16 +412,21 @@ msgid ""
 "server<setting_default_value_of_archiving_level_for_message_on_a_server>`"
 " for list of possible values."
 msgstr ""
+"此设置的可能值与默认归档级别设置的值相同，请参阅 :ref:`为服务器上的消息设置归"
+"档级别的默认值<setting_default_value_of_archiving_level_for_message_on_a_serv"
+"er>` 以获取可能值列表。"
 
 #: ../../Configuration.rst:93
 msgid ""
 "To set required level to ``body`` you need to set ``required-store-"
 "method`` of ``message-archive`` processor to ``body``:"
 msgstr ""
+"要将所需级别设置为 ``body``，您需要将 ``message-archive`` 处理器的 "
+"``required-store-method`` 设置为 ``body``:"
 
 #: ../../Configuration.rst:106
 msgid "Enabling support for tags"
-msgstr ""
+msgstr "启用对标签的支持"
 
 #: ../../Configuration.rst:108
 msgid ""
@@ -369,20 +435,23 @@ msgid ""
 "archiving`` configuration section of ``etc/config.tdsl`` file. Like in "
 "following example:"
 msgstr ""
+"要启用此功能，需要正确配置消息归档组件。您需要将 ``tags-support = true`` "
+"行添加到 ``etc/config.tdsl`` 文件的 ``message-archiving`` "
+"配置部分。就像下面的例子："
 
 #: ../../Configuration.rst:116
 msgid "where:"
-msgstr ""
+msgstr "其中:"
 
 #: ../../Configuration.rst:118
 msgid ""
 "``message-archive`` - is name of configuration section under which "
 "Message Archiving component is configured to run"
-msgstr ""
+msgstr "``message-archive`` - 是配置部分的名称，消息存档组件配置为在该部分下运行"
 
 #: ../../Configuration.rst:123
 msgid "Saving Options"
-msgstr ""
+msgstr "保存选项"
 
 #: ../../Configuration.rst:125
 msgid ""
@@ -393,6 +462,10 @@ msgid ""
 "elements paths which should trigger saving to Message Archive. To "
 "additionally store messages with ``<subject/>`` element:"
 msgstr ""
+"默认情况下，Tigase 消息存档仅存储带有一些元数据的消息正文，这可以排除缺少正文"
+"的消息。如果您决定要在消息存档中保存非正文元素，您现在可以通过将 ``msg-"
+"archive-paths`` 设置为应该触发保存到消息存档的元素路径列表来配置它。"
+"额外存储带有 ``<subject/>`` 元素的消息："
 
 #: ../../Configuration.rst:135
 msgid ""
@@ -400,6 +473,8 @@ msgid ""
 "<subject/> elements and for message with ``<result "
 "xmlns=\"urn:xmpp:mam:1\"/>`` element not to be stored."
 msgstr ""
+"以上将设置存档以存储带有 <body/> 或 <subject/> 元素的消息，并且不存储带有 ``"
+"<result xmlns=\"urn:xmpp:mam:1\"/>`` 元素的消息。"
 
 #: ../../Configuration.rst:139
 msgid ""
@@ -407,16 +482,18 @@ msgid ""
 "xmlns=\"urn:xmpp:mam:1\"/>`` element as this are results of MAM query and"
 " contain messages already stored in archive!"
 msgstr ""
+"建议保留不使用 ``<result xmlns=\"urn:xmpp:mam:1\"/>`` 元素存储消息的条目，"
+"因为这是 MAM 查询的结果并且包含已存储在存档中的消息！"
 
 #: ../../Configuration.rst:143
 msgid ""
 "Enabling this for elements such as iq, or presence will quickly load the "
 "archive. Configure this setting carefully!"
-msgstr ""
+msgstr "为 iq 或存在等元素启用此功能将快速加载存档。仔细配置此设置！"
 
 #: ../../Configuration.rst:148
 msgid "Configuration of automatic archiving of MUC messages"
-msgstr ""
+msgstr "MUC消息自动归档的配置"
 
 #: ../../Configuration.rst:150
 msgid ""
@@ -428,6 +505,10 @@ msgid ""
 "``<default/>`` element of request with value set to ``true`` (or to "
 "``false`` to disable this feature)."
 msgstr ""
+"如上所述，除了消息存档组件和插件的默认配置之外，不需要其他配置选项来让用户决"
+"定是否要启用或禁用此功能（但默认情况下禁用）。在这种情况下，用户要启用此功能"
+"则需要进行消息存档的设置，将 ``muc-save`` 属性添加到请求的 ``<default/>`` "
+"元素，其值设置为 ``true`` （或 ``false`` 禁用此功能）。"
 
 #: ../../Configuration.rst:152
 msgid ""
@@ -435,67 +516,70 @@ msgid ""
 "to set ``store-muc-messages`` property of ``message-archive`` "
 "SessionManager processor:"
 msgstr ""
+"要在安装级别配置此功能的状态，需要设置 ``message-archive`` SessionManager "
+"处理器的 ``store-muc-messages`` 属性："
 
 #: ../../Configuration.rst:162
 msgid "where ``value`` may be one of following values:"
-msgstr ""
+msgstr "其中 ``value`` 可以是以下值之一："
 
 #: ../../Configuration.rst:165 ../../Configuration.rst:176
 msgid "``user``"
-msgstr ""
+msgstr "``user``"
 
 #: ../../Configuration.rst:165
 msgid ""
 "allows value to be set on domain level or by user if domain level setting"
 " allows that"
-msgstr ""
+msgstr "如果域级别设置允许，则允许在域级别或由用户设置值"
 
 #: ../../Configuration.rst:168 ../../Configuration.rst:179
 msgid "``true``"
-msgstr ""
+msgstr "``true``"
 
 #: ../../Configuration.rst:168
 msgid ""
 "enables feature for every user in every hosted domain (cannot be "
 "overridden by on domain or user level)"
-msgstr ""
+msgstr "为每个托管域中的每个用户启用功能（不能被域或用户级别覆盖）"
 
 #: ../../Configuration.rst:171 ../../Configuration.rst:183
 msgid "``false``"
-msgstr ""
+msgstr "``false``"
 
 #: ../../Configuration.rst:171
 msgid ""
 "disables feature for every user in every hosted domain (cannot be "
 "overridden by on domain or user level)"
-msgstr ""
+msgstr "为每个托管域中的每个用户禁用功能（不能被域或用户级别覆盖）"
 
 #: ../../Configuration.rst:173
 msgid ""
 "To configure state of this feature on domain level, you need to execute "
 "vhost configuration command. In list of fields to configure domain, field"
 " to set this will be available with following values:"
-msgstr ""
+msgstr "要在域级别配置此功能的状态，您需要执行 vhost "
+"配置命令。在配置域的字段列表中，设置此项的字段将提供以下值："
 
 #: ../../Configuration.rst:176
 msgid "allows user to stat of this feature (if allowed on installation level)"
-msgstr ""
+msgstr "允许用户统计此功能（如果安装级别允许）"
 
 #: ../../Configuration.rst:179
 msgid ""
 "enables feature for users of configured domain (user will not be able to "
 "disable)"
-msgstr ""
+msgstr "为已配置域的用户启用功能（用户将无法禁用）"
 
 #: ../../Configuration.rst:182
 msgid ""
 "disables feature for users of configured domain (user will not be able to"
 " disable)"
-msgstr ""
+msgstr "为已配置域的用户禁用功能（用户将无法禁用）"
 
 #: ../../Configuration.rst:186
 msgid "Purging Information from Message Archive"
-msgstr ""
+msgstr "从消息存档中清除信息"
 
 #: ../../Configuration.rst:188
 msgid ""
@@ -506,10 +590,13 @@ msgid ""
 " i.e. entry from yesterday from 10:11 will be removed after 10:11 after "
 "next execution of purge."
 msgstr ""
+"此功能允许从邮件存档中自动删除超过配置天数的条目。它旨在清理数据库并将其容量"
+"保持在合理的范围内。如果设置为 1 天并且条目超过 24 小时，那么它将被删除，"
+"即从昨天 10:11 开始的条目将在下次执行清除后的 10:11 之后被删除。"
 
 #: ../../Configuration.rst:190
 msgid "There are 3 settings available for this feature: To enable the feature:"
-msgstr ""
+msgstr "此功能有 3 种可用设置： 要启用此功能："
 
 #: ../../Configuration.rst:198
 msgid ""
@@ -517,27 +604,31 @@ msgid ""
 "begin removing old entries. In other words, MA purging will not take "
 "place until the specified time after the server starts. Default setting "
 "is PT1H, or one hour."
-msgstr ""
+msgstr "此设置更改服务器启动后开始删除旧条目的初始延迟。换句话说，"
+"直到服务器启动后的指定时间才会进行 MA 清除。默认设置为 PT1H，或一小时。"
 
 #: ../../Configuration.rst:204
 msgid ""
 "This setting sets how long MA purging will wait between passes to check "
 "for and remove old entries. Default setting is P1D which is once a day."
-msgstr ""
+msgstr "此设置对 MA 清除在两次检查和删除旧条目之间等待的时间进行设置。"
+"默认设置为每天一次的 P1D。"
 
 #: ../../Configuration.rst:210
 msgid "You may use all settings at once if you wish."
-msgstr ""
+msgstr "如果您愿意，您可以一次使用所有设置。"
 
 #: ../../Configuration.rst:212
 msgid ""
 "**NOTE** that these commands are also compatible with ``unified-archive``"
 " component, just replace ``message`` with ``unified``."
 msgstr ""
+"**注意** 这些命令也与 ``unified-archive`` 组件兼容，只需将 ``message`` "
+"替换为 ``unified`` 即可。"
 
 #: ../../Configuration.rst:216
 msgid "Configuration of number of days in VHost"
-msgstr ""
+msgstr "VHost中天数的配置"
 
 #: ../../Configuration.rst:218
 msgid ""
@@ -546,6 +637,9 @@ msgid ""
 "independently per Vhost. This setting can be modified by either using the"
 " HTTP admin, or the update item execution in adhoc command."
 msgstr ""
+"VHost 拥有一个设置，该设置确定消息需要归档多长时间才能被视为旧消息并被删除。"
+"这可以为每个 Vhost 独立设置。也可以使用 HTTP 管理员或在 adhoc "
+"命令中执行更新项目来修改此设置。"
 
 #: ../../Configuration.rst:220
 msgid ""
@@ -556,6 +650,10 @@ msgid ""
 " (in days) enter number of days after which events should be removed from"
 " MA."
 msgstr ""
+"此配置是通过执行 vhost-man 组件的 Update item configuration adhoc "
+"命令完成的，您应该在其中选择应删除消息的域，然后在字段 XEP-0136 - "
+"保留类型选择天数值和字段 XEP-0136 - 保留期（以天为单位）输入应从 MA "
+"中删除事件的天数。"
 
 #: ../../Configuration.rst:222
 msgid ""
@@ -564,6 +662,8 @@ msgid ""
 "XEP-0136 - retention period (in days) enter number of days after which "
 "events should be removed from MA."
 msgstr ""
+"在临时选择域中应删除的消息，然后在字段 XEP-0136 - 保留类型选择值天数，在字段 "
+"XEP-0136 - 保留期（以天为单位）中输入应从 MA 中删除事件的天数。"
 
 #: ../../Configuration.rst:224
 msgid ""
@@ -571,10 +671,13 @@ msgid ""
 "select the domain, and from there you can set XEP-0136 retention type, "
 "and set number of days at XEP-0136 retention period (in days)."
 msgstr ""
+"在 HTTP UI 中选择 Other，然后选择 Update Item Configuration (Vhost-"
+"man)，选择域，然后您可以从那里设置 XEP-0136 保留类型，并设置 XEP-0136 "
+"保留期的天数（以天为单位）。"
 
 #: ../../Configuration.rst:229
 msgid "Using separate store for archived messages"
-msgstr ""
+msgstr "对归档消息使用单独的存储"
 
 #: ../../Configuration.rst:231
 msgid ""
@@ -585,10 +688,14 @@ msgid ""
 "``dataSourceName`` property of ``default`` repository of Message "
 "Archiving component."
 msgstr ""
+"可以为归档消息使用单独的存储，为此您需要在 ``dataSource`` 部分配置新的 "
+"``DataSource``。在这里，我们将使用 ``message-archive-store`` "
+"作为数据源的名称。此外，您需要将新配置的数据源的名称传递给消息归档组件的 "
+"``default`` 存储库的 ``dataSourceName`` 属性。"
 
 #: ../../Configuration.rst:233
 msgid "Example:"
-msgstr ""
+msgstr "示例："
 
 #: ../../Configuration.rst:251
 msgid ""
@@ -596,16 +703,18 @@ msgid ""
 "i.e. ``example.com``. Here we will configure data source with name "
 "``example.com`` and use it to store data for archive:"
 msgstr ""
+"也可以为特定域配置单独的存储，即 ``example.com``。在这里，我们将配置名称为 "
+"``example.com`` 的数据源，并使用它来存储数据以进行归档："
 
 #: ../../Configuration.rst:271
 msgid ""
 "With this configuration messages for other domains than ``example.com`` "
 "will be stored in default data source."
-msgstr ""
+msgstr "使用此配置消息，除 ``example.com`` 之外的其他域的消息将存储在默认数据源中。"
 
 #: ../../Configuration.rst:274
 msgid "Setting Pool Sizes"
-msgstr ""
+msgstr "设置池容量"
 
 #: ../../Configuration.rst:276
 msgid ""
@@ -616,10 +725,13 @@ msgid ""
 "server load from this component using the `Pool Size "
 "<dataRepoPoolSize>`__ property:"
 msgstr ""
+"当消息通过服务器时，有大量用于处理和归档消息的准备好的语句，并且在打开归档时"
+"您可能会遇到资源使用量增加的情况。建议使用 `Pool Size <dataRepoPoolSize>`__ "
+"属性减少存储库连接池以帮助平衡来自该组件的服务器负载："
 
 #: ../../Configuration.rst:286
 msgid "Message Tagging Support"
-msgstr ""
+msgstr "消息标记支持"
 
 #: ../../Configuration.rst:288
 msgid ""
@@ -630,39 +742,46 @@ msgid ""
 "#Tigase - ``mention`` Words prefixed by an at (@) are stored with a "
 "prefix and used as a tag, for example @Tigase"
 msgstr ""
+"Tigase 现在能够支持基于为查询创建的标签来查询消息档案。目前，Tigase "
+"可以支持以下标签来帮助搜索消息档案： - ``hashtag`` 以哈希 (#) "
+"为前缀的单词与前缀一起存储并用作标签，例如 #Tigase - ``mention`` 以 at (@) "
+"为前缀的单词与前缀一起存储并用作标记，例如 @Tigase"
 
 #: ../../Configuration.rst:290
 msgid ""
 "**NOTE:** Tags must be written in messages from users, they do not act as"
 " wildcards. To search for #Tigase, a message must have #Tigase in the "
 "<body> element."
-msgstr ""
+msgstr "**注意：** 标签必须写在来自用户的消息中，它们不能用作通配符。要搜索#Tigase，"
+"消息的<body> 元素中必须包含#Tigase。"
 
 #: ../../Configuration.rst:292
 msgid ""
 "This feature allows users to query and retrieve messages or collections "
 "from the archive that only contain one or more tags."
-msgstr ""
+msgstr "此功能允许用户从仅包含一个或多个标签的存档中查询和检索消息或集合。"
 
 #: ../../Configuration.rst:295
 msgid "Activating Tagging"
-msgstr ""
+msgstr "激活标记"
 
 #: ../../Configuration.rst:297
 msgid ""
 "To enable this feature, the following line must be in the config.tdsl "
 "file (or may be added with Admin or Web UI)"
-msgstr ""
+msgstr "要启用此功能，以下行必须在 config.tdsl 文件中（或者可以使用 Admin 或 Web UI "
+"添加）"
 
 #: ../../Configuration.rst:306 ../../Usage.rst:2
 msgid "Usage"
-msgstr ""
+msgstr "用法"
 
 #: ../../Configuration.rst:308
 msgid ""
 "To execute a request, the tags must be individual children elements of "
 "the ``retrieve`` or ``list`` element like the following request:"
-msgstr ""
+msgstr "要执行请求，标签必须是 ``retrieve`` 或 ``list`` "
+"元素的单个子元素，如以下请求："
 
 #: ../../Configuration.rst:317
 msgid ""
@@ -671,6 +790,9 @@ msgid ""
 "be accomplished by adding more fields to the retrieve element such as "
 "``'with'``, ``'from’, and ’end'`` . Take a look at the below example:"
 msgstr ""
+"您还可以指定特定的发件人，并限制您希望搜索的时间和日期，以使结果列表更小。这"
+"可以通过向检索元素添加更多字段来实现，例如 ``'with'``, ``'from' and "
+"'end'``。看看下面的例子："
 
 #: ../../Configuration.rst:333
 msgid ""
@@ -678,24 +800,27 @@ msgid ""
 "#people from chats with the user juliet@capulet.com between January 1st, "
 "2014 at 00:00 to May 1st, 2014 at 00:00."
 msgstr ""
+"本节请求从 2014 年 1 月 1 日 00:00 到 2014 年 5 月 1 日 00:00 期间与用户 "
+"juliet@capulet.com 的聊天中检索标记为 @User1 和 #people 的消息。"
 
 #: ../../Configuration.rst:335
 msgid "**NOTE:** All times are in Zulu or GMT on a 24h clock."
-msgstr ""
+msgstr "**注意：** 所有时间均为 24 小时制的Zulu 或GMT标准时间。"
 
 #: ../../Configuration.rst:337
 msgid ""
 "You can add as many tags as you wish, but each one is an **AND** "
 "statement; so the more tags you include, the smaller the results."
-msgstr ""
+msgstr "您可以添加任意数量的标签，但每个标签都是一个 **AND** "
+"语句；因此，您包含的标签越多，结果就越小。"
 
 #: ../../Database.rst:2
 msgid "Database"
-msgstr ""
+msgstr "数据库"
 
 #: ../../Database.rst:7
 msgid "Preparation of database"
-msgstr ""
+msgstr "准备数据库"
 
 #: ../../Database.rst:9
 msgid ""
@@ -704,6 +829,9 @@ msgid ""
 "database. We provide few schemas for this component for MySQL, "
 "PostgreSQL, SQLServer and DerbyDB."
 msgstr ""
+"在您能够使用 Tigase "
+"消息归档组件并将消息存储在特定数据库中之前，您需要初始化此数据库。我们为 "
+"MySQL、PostgreSQL、SQLServer 和 DerbyDB 的这个组件提供了一些模式。"
 
 #: ../../Database.rst:11
 msgid ""
@@ -713,6 +841,9 @@ msgid ""
 "version of a Message Archiving Component for which this schema is "
 "designed."
 msgstr ""
+"它们放置在安装包的 ``database/`` 目录中，并在 ``dbtype-message-archiving-"
+"version.sql`` 中命名，其中 ``dbname`` 是该模式支持的数据库类型的名称, "
+"``version`` 是为此模式设计的消息归档组件的版本。"
 
 #: ../../Database.rst:13
 msgid ""
@@ -722,10 +853,13 @@ msgid ""
 "Preparation>`__ section of `Tigae XMPP Server Administration Guide "
 "<#Tigase XMPP Server Administration Guide>`__"
 msgstr ""
+"您需要为正确的数据库和组件手动选择架构并将此架构加载到数据库。有关加载数据库"
+"模式的更多信息，请查看 `Tigae XMPP 服务器管理指南 <#Tigae XMPP "
+"服务器管理指南>`__ 的 `数据库准备 <#Database Preparation>`__ 部分"
 
 #: ../../Database.rst:16
 msgid "Upgrade of database schema"
-msgstr ""
+msgstr "升级数据库架构"
 
 #: ../../Database.rst:18
 msgid ""
@@ -734,266 +868,273 @@ msgid ""
 "schema please follow instructions from :ref:`Preparation of "
 "database<Preparationofdatabase>` section."
 msgstr ""
+"我们组件的数据库架构可能会在版本之间发生变化，如果是这样，则需要在新版本启动"
+"之前对其进行更新。要升级架构，请按照 :ref:`数据库准备<Preparationofdatabase>`"
+" 部分的说明进行操作。"
 
 #: ../../Database.rst:22
 msgid ""
 "If you use SNAPSHOT builds then schema may change for same version as "
 "this are versions we are still working on."
-msgstr ""
+msgstr "如果您使用 SNAPSHOT "
+"构建，则架构可能会更改为相同版本，因为这是我们仍在处理的版本。"
 
 #: ../../Database.rst:25
 msgid "Schema description"
-msgstr ""
+msgstr "架构描述"
 
 #: ../../Database.rst:27
 msgid ""
 "Tigase Message Archiving component uses few tables and stored procedures."
 " To make it easier to find them on database level they are prefixed with "
 "``tig_ma_``."
-msgstr ""
+msgstr "Tigase 消息归档组件使用很少的表和存储过程。为了更容易在数据库级别找到它们，"
+"它们以 ``tig_ma_`` 为前缀。"
 
 #: ../../Database.rst:30
 msgid "Table ``tig_ma_jids``"
-msgstr ""
+msgstr "表 ``tig_ma_jids``"
 
 #: ../../Database.rst:32
 msgid ""
 "This table stores all jids related to stored messages, ie. from ``to`` "
 "and ``from`` attributes of archived stanzas."
-msgstr ""
+msgstr "该表存储与存储消息相关的所有jid，即 来自于归档节的 ``to`` 和 ``from`` 属性。"
 
 #: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
 #: ../../Database.rst:97
 msgid "Field"
-msgstr ""
+msgstr "字段"
 
 #: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
 #: ../../Database.rst:97
 msgid "Description"
-msgstr ""
+msgstr "描述"
 
 #: ../../Database.rst:35 ../../Database.rst:54 ../../Database.rst:82
 #: ../../Database.rst:97
 msgid "Comments"
-msgstr ""
+msgstr "注释"
 
 #: ../../Database.rst:37
 msgid "jid_id"
-msgstr ""
+msgstr "jid_id"
 
 #: ../../Database.rst:37
 msgid "Database ID of a JID"
-msgstr ""
+msgstr "JID的数据库ID"
 
 #: ../../Database.rst:39
 msgid "jid"
-msgstr ""
+msgstr "jid"
 
 #: ../../Database.rst:39
 msgid "Value of a bare JID"
-msgstr ""
+msgstr "裸 JID 的值"
 
 #: ../../Database.rst:41
 msgid "jid_sha1"
-msgstr ""
+msgstr "jid_sha1"
 
 #: ../../Database.rst:41
 msgid "SHA1 value of lowercased bare JID"
-msgstr ""
+msgstr "小写裸 JID 的 SHA1 值"
 
 #: ../../Database.rst:41
 msgid "Used for proper bare JID comparison during lookup."
-msgstr ""
+msgstr "用于在查找期间进行正确的裸 JID 比较。"
 
 #: ../../Database.rst:43
 msgid "(N/A to PostgreSQL schema)"
-msgstr ""
+msgstr "（对 PostgreSQL 架构不适用）"
 
 #: ../../Database.rst:45
 msgid "domain"
-msgstr ""
+msgstr "域"
 
 #: ../../Database.rst:45
 msgid "Domain part of a bare JID"
-msgstr ""
+msgstr "裸 JID 的域部分"
 
 #: ../../Database.rst:45
 msgid "Stored for easier lookup of messages owned by users of a particular domain"
-msgstr ""
+msgstr "存储以便更轻松地查找特定域用户拥有的邮件"
 
 #: ../../Database.rst:49
 msgid "Table ``tig_ma_msgs``"
-msgstr ""
+msgstr "表 ``tig_ma_msgs``"
 
 #: ../../Database.rst:51
 msgid "Table stores archived messages."
-msgstr ""
+msgstr "表存储归档的消息。"
 
 #: ../../Database.rst:56
 msgid "stable_id"
-msgstr ""
+msgstr "stable_id"
 
 #: ../../Database.rst:56 ../../Database.rst:101
 msgid "Database ID of a message"
-msgstr ""
+msgstr "消息的数据库 ID"
 
 #: ../../Database.rst:56
 msgid "Unique with matching ``owner_id``"
-msgstr ""
+msgstr "唯一匹配的 ``owner_id``"
 
 #: ../../Database.rst:58 ../../Database.rst:86
 msgid "owner_id"
-msgstr ""
+msgstr "owner_id"
 
 #: ../../Database.rst:58
 msgid "ID of a bare JID of a message owner"
-msgstr ""
+msgstr "消息所有者的裸 JID 的 ID"
 
 #: ../../Database.rst:58 ../../Database.rst:60
 msgid "References ``jid_id`` from ``tig_ma_jids``"
-msgstr ""
+msgstr "参考来自 ``tig_ma_jids`` 的 ``jid_id``"
 
 #: ../../Database.rst:60
 msgid "buddy_id"
-msgstr ""
+msgstr "buddy_id"
 
 #: ../../Database.rst:60
 msgid "ID of a bare JID of a message recipient/sender (different than owner)"
-msgstr ""
+msgstr "消息接收者/发送者的裸 JID 的 ID（不同于所有者）"
 
 #: ../../Database.rst:62
 msgid "ts"
-msgstr ""
+msgstr "ts"
 
 #: ../../Database.rst:62
 msgid "Timestamp of a message"
-msgstr ""
+msgstr "消息的时间戳"
 
 #: ../../Database.rst:62
 msgid "Timestamp of archivization or delayed delivery"
-msgstr ""
+msgstr "存档或延迟交付的时间戳"
 
 #: ../../Database.rst:64
 msgid "body"
-msgstr ""
+msgstr "正文"
 
 #: ../../Database.rst:64
 msgid "Body of a message"
-msgstr ""
+msgstr "消息正文"
 
 #: ../../Database.rst:66
 msgid "msg"
-msgstr ""
+msgstr "msg"
 
 #: ../../Database.rst:66
 msgid "Serialized message"
-msgstr ""
+msgstr "序列化消息"
 
 #: ../../Database.rst:68
 msgid "stanza_id"
-msgstr ""
+msgstr "stanza_id"
 
 #: ../../Database.rst:68
 msgid "ID attribute of archived message"
-msgstr ""
+msgstr "归档消息的 ID 属性"
 
 #: ../../Database.rst:70
 msgid "is_ref"
-msgstr ""
+msgstr "is_ref"
 
 #: ../../Database.rst:70
 msgid "Marks if message is a reference to other message"
-msgstr ""
+msgstr "对消息是否是对其他消息的引用进行标记"
 
 #: ../../Database.rst:72
 msgid "ref_stable_id"
-msgstr ""
+msgstr "ref_stable_id"
 
 #: ../../Database.rst:72
 msgid "``stable_id`` of referenced message"
-msgstr ""
+msgstr "引用消息的 ``stable_id``"
 
 #: ../../Database.rst:77
 msgid "Table ``tig_ma_tags``"
-msgstr ""
+msgstr "表 ``tig_ma_tags``"
 
 #: ../../Database.rst:79
 msgid ""
 "Table stores tags of archived messages. It stores one tag for many "
 "messages using ``tig_ma_msgs_tags`` to store relation between tag and a "
 "message."
-msgstr ""
+msgstr "表存储归档消息的标签。它使用 ``tig_ma_msgs_tags`` "
+"为许多消息存储一个标签，以存储标签和消息之间的关系。"
 
 #: ../../Database.rst:84 ../../Database.rst:103
 msgid "tag_id"
-msgstr ""
+msgstr "tag_id"
 
 #: ../../Database.rst:84 ../../Database.rst:103
 msgid "Database ID of a tag"
-msgstr ""
+msgstr "标签的数据库 ID"
 
 #: ../../Database.rst:86 ../../Database.rst:99
 msgid "ID of a bare JID of a tag owner"
-msgstr ""
+msgstr "标签所有者的裸 JID 的 ID"
 
 #: ../../Database.rst:86 ../../Database.rst:99
 msgid "ID of bare JID of owner for which messages with this tag were archived"
-msgstr ""
+msgstr "已归档带有此标签的消息的所有者的裸 JID 的 ID"
 
 #: ../../Database.rst:88
 msgid "tag"
-msgstr ""
+msgstr "标签"
 
 #: ../../Database.rst:88
 msgid "Actual tag value"
-msgstr ""
+msgstr "实际标签值"
 
 #: ../../Database.rst:92
 msgid "Table ``tig_ma_msgs_tags``"
-msgstr ""
+msgstr "表 ``tig_ma_msgs_tags``"
 
 #: ../../Database.rst:94
 msgid "Table stores relations between tags and archived messages with this tags."
-msgstr ""
+msgstr "表存储标签和带有该标签的归档消息之间的关系。"
 
 #: ../../Database.rst:99
 msgid "msg_owner_id"
-msgstr ""
+msgstr "msg_owner_id"
 
 #: ../../Database.rst:101
 msgid "msg_stable_id"
-msgstr ""
+msgstr "msg_stable_id"
 
 #: ../../Database.rst:101
 msgid "Unique with matching ``msg_owner_id``"
-msgstr ""
+msgstr "唯一匹配的 ``msg_owner_id``"
 
 #: ../../Database.rst:103
 msgid "References ``tag_id`` from ``tig_ma_tags``"
-msgstr ""
+msgstr "参考来自 ``tig_ma_tags`` 的 ``tag_id``"
 
 #: ../../Limitations.rst:2
 msgid "Limitations"
-msgstr ""
+msgstr "局限"
 
 #: ../../Limitations.rst:4
 msgid ""
 "Component groups messages in collections using date of a messages instead"
 " of id of message thread, due to fact that some clients are sending "
 "messages with no thread id (ie. Psi, Psi+)."
-msgstr ""
+msgstr "组件使用消息的日期而不是消息线程的 id 对集合中的消息进行分组，"
+"因为某些客户端正在发送没有线程 id 的消息（即 Psi、Psi+）。"
 
 #: ../../Limitations.rst:6
 msgid "Only bare JID is stored of sender or recipient."
-msgstr ""
+msgstr "仅存储发送者或接收者的裸 JID。"
 
 #: ../../Overview.rst:1
 msgid "Welcome to Tigase Message Archiving component guide"
-msgstr ""
+msgstr "欢迎使用 Tigase 消息归档组件指南"
 
 #: ../../Overview.rst:4
 msgid "Tigase Message Archiving Component"
-msgstr ""
+msgstr "Tigase 消息归档组件"
 
 #: ../../Overview.rst:6
 msgid ""
@@ -1005,152 +1146,183 @@ msgid ""
 "<http://xmpp.org/extensions/xep-0313.html>`__ specification to allow "
 "easier access to archived messages"
 msgstr ""
+"Tigase 消息归档组件起源于 `XEP-0136: 消息归档 <http://xmpp.org/extensions/"
+"xep-0136.html:>`__ 的实现，以添加对使用 Tigase XMPP "
+"服务器交换的消息归档的支持。在当前版本中，组件还支持 `XEP-0313: 邮件归档管理 "
+"<http://xmpp.org/extensions/xep-0313.html>`__ "
+"规范，以允许更轻松地访问存档消息"
 
 #: ../../Release_notes.rst:2
 msgid "Tigase Message Archiving Release Notes"
-msgstr ""
+msgstr "Tigase 消息归档发行说明"
 
 #: ../../Release_notes.rst:4
 msgid ""
 "Welcome to Tigase Message Archiving 3.0.0! This is a feature release for "
 "with a number of fixes and updates."
-msgstr ""
+msgstr "欢迎使用 Tigase 消息归档 3.0.0！这是一个包含许多修复和更新的功能版本。"
 
 #: ../../Release_notes.rst:7
 msgid "Tigase Message Archiving 3.0.0 Release Notes"
-msgstr ""
+msgstr "Tigase 消息归档 3.0.0 发行说明"
 
 #: ../../Release_notes.rst:10
 msgid "Major Changes"
-msgstr ""
+msgstr "主要变化"
 
 #: ../../Release_notes.rst:12
 msgid "Add support for urn:xmpp:mam:2"
-msgstr ""
+msgstr "添加对 urn:xmpp:mam:2 的支持"
 
 #: ../../Release_notes.rst:14
 msgid ""
 "Add support for `XEP-0308: Last Message Correction "
 "<https://xmpp.org/extensions/xep-0308.html>`__"
 msgstr ""
+"添加对 `XEP-0308: 最后的消息更正 <https://xmpp.org/extensions/xep-0308.html>`"
+"__ 的支持"
 
 #: ../../Release_notes.rst:17
 msgid "All Changes"
-msgstr ""
+msgstr "所有更改"
 
 #: ../../Release_notes.rst:19
 msgid ""
 "`#mam-47 <https://projects.tigase.net/issue/mam-47>`__: Add support for "
 "urn:xmpp:mam:2"
 msgstr ""
+"`#mam-47 <https://projects.tigase.net/issue/mam-47>`__: 添加对 urn:xmpp:mam:"
+"2 的支持"
 
 #: ../../Release_notes.rst:21
 msgid ""
 "`#mam-49 <https://projects.tigase.net/issue/mam-49>`__: Historical "
 "message duplication"
-msgstr ""
+msgstr "`#mam-49 <https://projects.tigase.net/issue/mam-49>`__: 历史消息重复"
 
 #: ../../Release_notes.rst:23
 msgid ""
 "`#mam-50 <https://projects.tigase.net/issue/mam-50>`__: XEP-0308: Last "
 "Message Correction"
 msgstr ""
+"`#mam-50 <https://projects.tigase.net/issue/mam-50>`__: "
+"XEP-0308：最后的消息更正"
 
 #: ../../Release_notes.rst:25
 msgid ""
 "`#mam-51 <https://projects.tigase.net/issue/mam-51>`__: Fix OMEMO "
 "encrypted messages are not stored by MA or MAM"
 msgstr ""
+"`#mam-51 <https://projects.tigase.net/issue/mam-51>`__: 修复 OMEMO "
+"加密消息其不被 MA 或 MAM 存储"
 
 #: ../../Release_notes.rst:27
 msgid ""
 "`#mam-54 <https://projects.tigase.net/issue/mam-54>`__: Fix NPE in "
 "MAM/Message Archiving"
 msgstr ""
+"`#mam-54 <https://projects.tigase.net/issue/mam-54>`__: 修复 MAM/"
+"消息归档中的 NPE"
 
 #: ../../Release_notes.rst:29
 msgid ""
 "`#mam-55 <https://projects.tigase.net/issue/mam-55>`__: Fix "
 "IllegalArgumentException in MessageArchiveVHostItemExtension"
 msgstr ""
+"`#mam-55 <https://projects.tigase.net/issue/mam-55>`__: 修复 "
+"MessageArchiveVHostItemExtension 中的 IllegalArgumentException"
 
 #: ../../Release_notes.rst:31
 msgid ""
 "`#mam-56 <https://projects.tigase.net/issue/mam-56>`__: Fix upgrade-"
 "schema failes"
-msgstr ""
+msgstr "`#mam-56 <https://projects.tigase.net/issue/mam-56>`__: 修复升级模式失败"
 
 #: ../../Release_notes.rst:33
 msgid ""
 "`#mam-58 <https://projects.tigase.net/issue/mam-58>`__: Change message "
 "archiving rules"
-msgstr ""
+msgstr "`#mam-58 <https://projects.tigase.net/issue/mam-58>`__: 更改邮件归档规则"
 
 #: ../../Release_notes.rst:35
 msgid ""
 "`#mam-60 <https://projects.tigase.net/issue/mam-60>`__: Fix Message "
 "carbons stored in MAM"
-msgstr ""
+msgstr "`#mam-60 <https://projects.tigase.net/issue/mam-60>`__: 修复存储在 MAM "
+"中的消息碳"
 
 #: ../../Release_notes.rst:37
 msgid ""
 "`#mam-61 <https://projects.tigase.net/issue/mam-61>`__: Adjust schema to "
 "use new primary keys"
-msgstr ""
+msgstr "`#mam-61 <https://projects.tigase.net/issue/mam-61>`__: "
+"调整架构以使用新的主键"
 
 #: ../../Release_notes.rst:39
 msgid ""
 "`#mam-65 <https://projects.tigase.net/issue/mam-65>`__: Fix "
 "archiveMessage: Data truncation: Data too long for column ``_body``"
 msgstr ""
+"`#mam-65 <https://projects.tigase.net/issue/"
+"mam-65>`__:修复archiveMessage：数据截断：列 ``_body`` 的数据太长"
 
 #: ../../Release_notes.rst:41
 msgid ""
 "`#mam-66 <https://projects.tigase.net/issue/mam-66>`__: Fix NPE in "
 "AbstractMAMProcessor.updatePrefrerences()"
 msgstr ""
+"`#mam-66 <https://projects.tigase.net/issue/mam-66>`__: 修复 "
+"AbstractMAMProcessor.updatePfrerences() 中的 NPE"
 
 #: ../../Release_notes.rst:43
 msgid ""
 "`#mam-67 <https://projects.tigase.net/issue/mam-67>`__: Fix Incorrect "
 "datetime value in JDBCMessageArchiveRepository"
 msgstr ""
+"`#mam-67 <https://projects.tigase.net/issue/mam-67>`__: 修复 "
+"JDBCMessageArchiveRepository 中不正确的日期时间值"
 
 #: ../../Release_notes.rst:45
 msgid ""
 "`#mam-68 <https://projects.tigase.net/issue/mam-68>`__: Add option to "
 "disable local MAM archive"
 msgstr ""
+"`#mam-68 <https://projects.tigase.net/issue/mam-68>`__: 添加选项以禁用本地 "
+"MAM 存档"
 
 #: ../../Release_notes.rst:47
 msgid ""
 "`#mam-69 <https://projects.tigase.net/issue/mam-69>`__: Fix Data "
 "truncation: Data too long for column '_stanzaId'"
 msgstr ""
+"`#mam-69 <https://projects.tigase.net/issue/mam-69>`__: 修复数据截断：列 "
+"'_stanzaId' 的数据太长"
 
 #: ../../Release_notes.rst:49
 msgid ""
 "`#mam-70 <https://projects.tigase.net/issue/mam-70>`__: Fix Schema is "
 "inconsistent (tigase.org mysql vs clean postgresql)"
 msgstr ""
+"`#mam-70 <https://projects.tigase.net/issue/mam-70>`__: 修复 不一致的架构 （"
+"tigase.org mysql vs clean postgresql）"
 
 #: ../../Release_notes.rst:51
 msgid ""
 "`#mam-72 <https://projects.tigase.net/issue/mam-72>`__: Fix Deadlock on "
 "inserting message"
-msgstr ""
+msgstr "`#mam-72 <https://projects.tigase.net/issue/mam-72>`__: 修复插入消息时的死锁"
 
 #: ../../Release_notes.rst:54
 msgid "Previous Releases"
-msgstr ""
+msgstr "以前的版本"
 
 #: ../../Release_notes.rst:57
 msgid "Tigase Message Archiving 2.x release"
-msgstr ""
+msgstr "Tigase 消息归档 2.x 版本"
 
 #: ../../Release_notes.rst:60
 msgid "Major changes"
-msgstr ""
+msgstr "主要变化"
 
 #: ../../Release_notes.rst:62
 msgid ""
@@ -1159,23 +1331,27 @@ msgid ""
 "component, a few changes may be needed to be made to your systems. Please"
 " see them below:"
 msgstr ""
+"Tigase 消息归档组件对我们的代码和结构进行了一些重大更改。要继续使用 Tigase "
+"消息归档组件，可能需要对您的系统进行一些更改。请在下面查看它们："
 
 #: ../../Release_notes.rst:64
 msgid "Database schema changes"
-msgstr ""
+msgstr "数据库架构更改"
 
 #: ../../Release_notes.rst:66
 msgid ""
 "We decided to no longer use *in-code* database upgrade to update database"
 " schema of Message Archiving component and rather provide separate schema"
 " files for every supported database."
-msgstr ""
+msgstr "我们决定不再使用 *in-code* 数据库升级来更新消息归档组件的数据库架构，而是为每"
+"个支持的数据库提供单独的架构文件。"
 
 #: ../../Release_notes.rst:68
 msgid ""
 "Additionally we moved from *in-code* generated SQL statements to stored "
 "procedures which are now part of provided database schema files."
-msgstr ""
+msgstr "此外，我们从 *in-code* 生成的 SQL "
+"语句转移到存储过程，这些存储过程现在是提供的数据库架构文件的一部分。"
 
 #: ../../Release_notes.rst:70
 msgid ""
@@ -1184,20 +1360,22 @@ msgid ""
 ":ref:`Preparation of database<Preparationofdatabase>` section for "
 "informations about that."
 msgstr ""
+"要继续使用新版本的消息存档组件，需要手动加载新的组件数据库架构，有关该信息的"
+"信息，请参阅 :ref:`数据库准备<Preparationofdatabase>` 部分。"
 
 #: ../../Release_notes.rst:74
 msgid ""
 "Loading of new database schema is required to use new version of Message "
 "Archiving component."
-msgstr ""
+msgstr "使用新版本的消息归档组件需要加载新的数据库架构。"
 
 #: ../../Release_notes.rst:77
 msgid "New features"
-msgstr ""
+msgstr "新功能"
 
 #: ../../Release_notes.rst:80
 msgid "Support for Message Archive Management protocol"
-msgstr ""
+msgstr "支持消息归档管理协议"
 
 #: ../../Release_notes.rst:82
 msgid ""
@@ -1205,29 +1383,34 @@ msgid ""
 "message using `XEP-0313: Message Archive Management "
 "<http://xmpp.org/extensions/xep-0313.html:>`__ protocol."
 msgstr ""
+"现在 Tigase 消息归档组件支持使用 `XEP-0313:邮件归档管理 <http://xmpp.org/"
+"extensions/xep-0313.html:>`__ 协议搜索归档消息。"
 
 #: ../../Release_notes.rst:84
 msgid ""
 "For details on how to enable this feature look into :ref:`Support for "
 "MAM<Support_for_MAM>`"
-msgstr ""
+msgstr "有关如何启用此功能的详细信息，请查看 :ref:`支持 MAM<Support_for_MAM>`"
 
 #: ../../Release_notes.rst:87
 msgid "Support for using separate database for different domains"
-msgstr ""
+msgstr "支持对不同域使用单独的数据库"
 
 #: ../../Release_notes.rst:89
 msgid ""
 "Since this version it is possible to use separate archived messages based"
 " on domains. This allows you to configure component to store archived "
 "message for particular domain to different database."
-msgstr ""
+msgstr "从这个版本开始，可以使用基于域的单独存档消息。这允许您配置组件从而将特定域的"
+"存档消息存储到不同的数据库。"
 
 #: ../../Release_notes.rst:91
 msgid ""
 "For more informations please look into :ref:`Using seperate store for "
 "archived messages<Using_seperate_store_fora_archived_messages>`"
 msgstr ""
+"有关更多信息，请查看 "
+":ref:`对归档消息使用单独的存储<Using_seperate_store_fora_archived_messages>`"
 
 #: ../../Usage.rst:4
 msgid ""
@@ -1235,37 +1418,40 @@ msgid ""
 "Currently, the only way to activate and modify the component is through "
 "XMPP stanzas. Lets first begin by getting our default settings from the "
 "component:"
-msgstr ""
+msgstr "现在我们已经运行了归档组件，我们如何使用它呢？目前，"
+"激活和修改组件的唯一方法是通过 XMPP "
+"节。让我们首先从组件中获取我们的默认设置："
 
 #: ../../Usage.rst:12
 msgid ""
 "It’s a short stanza, but it will tell us what we need to know, Note that "
 "you do not need a from or a to for this stanza. The result is as follows:"
-msgstr ""
+msgstr "这是一个简短的节，但它会告诉我们我们需要知道的内容，请注意，此节不需要一个 "
+"from 或 一个 to。结果如下："
 
 #: ../../Usage.rst:26
 msgid "See below for what these settings mean."
-msgstr ""
+msgstr "有关这些设置的含义，请参见下文。"
 
 #: ../../Usage.rst:29
 msgid "XEP-0136 Field Values"
-msgstr ""
+msgstr "XEP-0136 字段值"
 
 #: ../../Usage.rst:38
 msgid "<**auto**/>"
-msgstr ""
+msgstr "<**auto**/>"
 
 #: ../../Usage.rst:32 ../../Usage.rst:74 ../../Usage.rst:107
 msgid "**Required Attributes**"
-msgstr ""
+msgstr "**必需的属性**"
 
 #: ../../Usage.rst:34
 msgid "``save=`` Boolean turning archiving on or off"
-msgstr ""
+msgstr "``save=`` 打开或关闭归档的布尔值"
 
 #: ../../Usage.rst:36 ../../Usage.rst:67 ../../Usage.rst:100
 msgid "**Optional Settings**"
-msgstr ""
+msgstr "**可选设置**"
 
 #: ../../Usage.rst:38
 msgid ""
@@ -1273,168 +1459,173 @@ msgid ""
 "turns off after stream end, or may be ``'global'`` which keeps auto save "
 "permanent,"
 msgstr ""
+"``scope=`` 决定存档的范围，默认是 ``'stream'`` 在流结束后关闭，或者可以是 "
+"``'global'`` 保持自动永久保存，"
 
 #: ../../Usage.rst:69
 msgid "<**default**/>"
-msgstr ""
+msgstr "<**default**/>"
 
 #: ../../Usage.rst:41
 msgid ""
 "Default element sets default settings for OTR and save modes, includes an"
 " option for archive expiration."
-msgstr ""
+msgstr "默认元素设置 OTR 和保存模式的默认设置，包括存档到期选项。"
 
 #: ../../Usage.rst:43
 msgid "**Required Attribures**"
-msgstr ""
+msgstr "**必需的属性**"
 
 #: ../../Usage.rst:45 ../../Usage.rst:78
 msgid ""
 "``otr=`` Specifies setting for Off The Record mode. Available settings "
 "are:"
-msgstr ""
+msgstr "``otr=`` 指定关闭录制模式的设置。可用的设置有："
 
 #: ../../Usage.rst:47 ../../Usage.rst:80
 msgid "``approve`` The user MUST explicitly approve OTR communication."
-msgstr ""
+msgstr "``approve`` 用户 **必须** 明确批准 OTR 通信。"
 
 #: ../../Usage.rst:49 ../../Usage.rst:82
 msgid "``concede`` Communications MAY be OTR if requested by another user."
-msgstr ""
+msgstr "``concede`` 如果另一个用户请求，通信 **可能** 是 OTR。"
 
 #: ../../Usage.rst:51 ../../Usage.rst:84
 msgid "``forbid`` Communications MUST NOT be OTR."
-msgstr ""
+msgstr "``forbid`` 通信 **一定不能** 为 OTR。"
 
 #: ../../Usage.rst:53 ../../Usage.rst:86
 msgid "``oppose`` Communications SHOULD NOT be OTR."
-msgstr ""
+msgstr "``oppose`` 通信 **不应该** 是 OTR。"
 
 #: ../../Usage.rst:55 ../../Usage.rst:88
 msgid "``prefer`` Communications SHOULD be OTR."
-msgstr ""
+msgstr "``prefer`` 通信 **应该** 是 OTR。"
 
 #: ../../Usage.rst:57 ../../Usage.rst:90
 msgid "``require`` Communications MUST be OTR."
-msgstr ""
+msgstr "``require`` 通信 **必须** 是 OTR。"
 
 #: ../../Usage.rst:59 ../../Usage.rst:92
 msgid ""
 "``save=`` Specifies the portion of messages to archive, by default it is "
 "set to ``body``."
-msgstr ""
+msgstr "``save=`` 指定要归档的消息部分，默认情况下它设置为 ``body``。"
 
 #: ../../Usage.rst:61 ../../Usage.rst:94
 msgid "``body`` Archives only the items within the <body/> elements."
-msgstr ""
+msgstr "``body`` 仅归档 <body/> 元素中的项目。"
 
 #: ../../Usage.rst:63 ../../Usage.rst:96
 msgid "``message`` Archive the entire XML content of each message."
-msgstr ""
+msgstr "``message`` 归档每条消息的整个 XML 内容。"
 
 #: ../../Usage.rst:65 ../../Usage.rst:98
 msgid ""
 "``stream`` Archive saves every byte of communication between server and "
 "client. (Not recommended, high resource use)"
-msgstr ""
+msgstr "``stream`` 存档保存服务器和客户端之间的每一个通信字节。 "
+"（不推荐，资源占用高）"
 
 #: ../../Usage.rst:69 ../../Usage.rst:102
 msgid ""
 "``expire=`` Specifies after how many seconds should the server delete "
 "saved messages."
-msgstr ""
+msgstr "``expire=`` 指定服务器应在多少秒后删除已保存的消息。"
 
 #: ../../Usage.rst:102
 msgid "<**item**/>"
-msgstr ""
+msgstr "<**item**/>"
 
 #: ../../Usage.rst:72
 msgid ""
 "The Item element specifies settings for a particular entity. These "
 "settings will override default settings for the specified JIDS."
-msgstr ""
+msgstr "Item 元素指定特定实体的设置。这些设置将覆盖指定 JIDS 的默认设置。"
 
 #: ../../Usage.rst:76
 msgid ""
 "``JID=`` The Jabber ID of the entity that you wish to put these settings "
 "on, it may be a full JID, bare JID, or just a domain."
-msgstr ""
+msgstr "``JID=`` 您希望对这些设置的实体的 Jabber ID进行设置，它可以是完整的 JID、裸 "
+"JID 或只是一个域。"
 
 #: ../../Usage.rst:123
 msgid "<**method**/>"
-msgstr ""
+msgstr "<**method**/>"
 
 #: ../../Usage.rst:105
 msgid ""
 "This element specifies the user preference for available archiving "
 "methods."
-msgstr ""
+msgstr "此元素指定用户对可用归档方法的偏好。"
 
 #: ../../Usage.rst:109
 msgid "``type=`` The type of archiving to set"
-msgstr ""
+msgstr "``type=`` 要设置的归档类型"
 
 #: ../../Usage.rst:111
 msgid "``auto`` Preferences for use of automatic archiving on the user’s server."
-msgstr ""
+msgstr "``auto`` 在用户服务器上使用自动归档的首选项。"
 
 #: ../../Usage.rst:113
 msgid "``local`` Set to use local archiving on user’s machine or device."
-msgstr ""
+msgstr "``local`` 设置为在用户的机器或设备上使用本地归档。"
 
 #: ../../Usage.rst:115
 msgid "``manual`` Preferences for use of manual archiving to the server."
-msgstr ""
+msgstr "``manual`` 使用手动归档到服务器的首选项。"
 
 #: ../../Usage.rst:117
 msgid "``use=`` Sets level of use for the type"
-msgstr ""
+msgstr "``use=`` 设置类型的使用级别"
 
 #: ../../Usage.rst:119
 msgid "``prefer`` The selected method should be used if it is available."
-msgstr ""
+msgstr "``prefer`` 如果可用，则应使用所选方法。"
 
 #: ../../Usage.rst:121
 msgid "``concede`` This will be used if no other methods are available."
-msgstr ""
+msgstr "``concede`` 如果没有其他方法可用，将使用此方法。"
 
 #: ../../Usage.rst:123
 msgid "``forbid`` The associated method MUST not be used."
-msgstr ""
+msgstr "``forbid`` **不得** 使用关联的方法。"
 
 #: ../../Usage.rst:125
 msgid ""
 "Now that we have established settings, lets send a stanza changing a few "
 "of them:"
-msgstr ""
+msgstr "现在我们已经建立了设置，让我们发送一个节来更改其中的一些："
 
 #: ../../Usage.rst:139
 msgid ""
 "This now sets archiving by default for all users on the domain.com "
 "server, forbids OTR, and prefers auto save method for archiving."
-msgstr ""
+msgstr "这现在默认为 domain.com 服务器上的所有用户设置存档，禁止 "
+"OTR，并更喜欢自动保存方法进行存档。"
 
 #: ../../Usage.rst:142
 msgid "Manual Activation"
-msgstr ""
+msgstr "手动激活"
 
 #: ../../Usage.rst:144
 msgid ""
 "Turning on archiving requires a simple stanza which will turn on "
 "archiving for the use sending the stanza and using default settings."
-msgstr ""
+msgstr "打开归档需要一个简单的节，其将打开归档以供发送节和使用默认设置使用。"
 
 #: ../../Usage.rst:154
 msgid "A sucessful result will yield this response from the server:"
-msgstr ""
+msgstr "成功的结果将从服务器产生以下响应："
 
 #: ../../Usage.rst:160
 msgid ""
 "Once this is turned on, incoming and outgoing messages from the user will"
 " be stored in ``tig_ma_msgs`` table in the database."
-msgstr ""
+msgstr "一旦启用此功能，来自用户的传入和传出消息将存储在数据库中的 ``tig_ma_msgs`` "
+"表中。"
 
 #: ../../index.rst:4
 msgid "Tigase Message Archiving Component - Version 3.1.0"
-msgstr ""
-
+msgstr "Tigase 消息归档组件 - 版本 3.1.0"
