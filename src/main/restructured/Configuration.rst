@@ -314,7 +314,7 @@ To execute a request, the tags must be individual children elements of the ``ret
        <tag>@User1</tag>
    </query>
 
-You may also specify specific senders, and limit the time and date that you wish to search through to keep the resulting list smaller. That can be accomplished by adding more fields to the retrieve element such as ``'with'``, ``'from’, and ’end'`` . Take a look at the below example:
+You may also specify specific senders, and limit the time and date that you wish to search through to keep the resulting list smaller. That can be accomplished by adding more fields to the retrieve element such as ``'with'``, ``'from', and 'end'`` . Take a look at the below example:
 
 .. code:: xml
 
