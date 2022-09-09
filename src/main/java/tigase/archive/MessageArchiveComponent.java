@@ -60,8 +60,11 @@ public class MessageArchiveComponent
 
 	private static final String TAGS_SUPPORT_PROP_KEY = "tags-support";
 	private static final String REMOVE_EXPIRED_MESSAGES_KEY = "remove-expired-messages";
+	private static final String REMOVE_EXPIRED_MESSAGES_FIELD = "removeExpiredMessages";
 	private static final String REMOVE_EXPIRED_MESSAGES_DELAY_KEY = "remove-expired-messages-delay";
+	private static final String REMOVE_EXPIRED_MESSAGES_DELAY_FIELD = "removeExpiredMessagesDelay";
 	private static final String REMOVE_EXPIRED_MESSAGES_PERIOD_KEY = "remove-expired-messages-period";
+	private static final String REMOVE_EXPIRED_MESSAGES_PERIOD_FIELD = "removeExpiredMessagesPeriod";
 
 	//~--- fields ---------------------------------------------------------------
 
@@ -161,9 +164,9 @@ public class MessageArchiveComponent
 	@Override
 	public void beanConfigurationChanged(Collection<String> changedFields) {
 		super.beanConfigurationChanged(changedFields);
-		if (changedFields.contains(REMOVE_EXPIRED_MESSAGES_KEY) ||
-				changedFields.contains(REMOVE_EXPIRED_MESSAGES_PERIOD_KEY) ||
-				changedFields.contains(REMOVE_EXPIRED_MESSAGES_DELAY_KEY)) {
+		if (changedFields.contains(REMOVE_EXPIRED_MESSAGES_FIELD) ||
+				changedFields.contains(REMOVE_EXPIRED_MESSAGES_PERIOD_FIELD) ||
+				changedFields.contains(REMOVE_EXPIRED_MESSAGES_DELAY_FIELD)) {
 			if (expiredMessagesRemovalTask != null) {
 				expiredMessagesRemovalTask.cancel();
 				expiredMessagesRemovalTask = null;
