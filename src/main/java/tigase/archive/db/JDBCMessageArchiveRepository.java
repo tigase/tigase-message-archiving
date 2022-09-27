@@ -552,7 +552,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		Queue<Item> results = new ArrayDeque<Item>();
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 
-		log.log(Level.FINEST, () -> "Getting items items, criteria: " + crit + ", range: " + range);
+		log.log(Level.FINER, () -> "Getting items items, criteria: " + crit + ", range: " + range);
 		// there is no point to execute query if limit is estimated to be 0
 		if (Math.min(range.size(), crit.getRsm().getMax()) > 0) {
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
@@ -560,6 +560,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 				try {
 					setItemsQueryParams(get_messages_st, crit, range, FasteningCollation.full);
 
+					log.log(Level.FINEST, () -> "Executing getting items items, criteria: " + crit + ", get_messages_st: " + get_messages_st);
 					rs = get_messages_st.executeQuery();
 					while (rs.next()) {
 						Item item = newItemInstance();
