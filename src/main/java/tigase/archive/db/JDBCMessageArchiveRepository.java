@@ -159,6 +159,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	@Override
 	public void queryCollections(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws TigaseDBException {
 		try {
+			log.log(Level.FINEST, () -> "Querying collections: crit: " + crit);
 			Integer count = getCollectionsCount(crit);
 			if (count == null) {
 				count = 0;
@@ -179,6 +180,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	public void queryItems(Q crit, ItemHandler<Q, MAMRepository.Item> itemHandler)
 			throws TigaseDBException, ComponentException {
 		try {
+			log.log(Level.FINEST, () -> "Querying items, criteria: " + crit);
 			if (!crit.getIds().isEmpty()) {
 				ArrayDeque<MAMRepository.Item> items = new ArrayDeque<>();
 				for (String id : crit.getIds()) {
@@ -444,6 +446,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			}
 			stmt.setString(i++, sb.toString());
 		}
+		log.log(Level.FINEST, () -> "Setting PS parameters: " + stmt + ", crit: " + crit);
 		return i;
 	}
 
@@ -456,6 +459,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	private void getCollectionsItems(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws SQLException {
+		log.log(Level.FINEST, () -> "Getting collections items: " + crit);
 		ResultSet selectRs = null;
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, GET_COLLECTIONS_QUERY);
@@ -486,6 +490,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	private Integer getCollectionsCount(Q crit) throws SQLException {
+		log.log(Level.FINEST, () -> "Getting collections: " + crit);
 		ResultSet countRs = null;
 		Integer count = null;
 		BareJID owner = crit.getQuestionerJID().getBareJID();
@@ -513,6 +518,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	private MAMRepository.Item getItem(Q crit, String itemId) throws SQLException {
+		log.log(Level.FINEST, () -> "Getting MAM item: " + crit + ", itemId: " + itemId);
 		ResultSet rs = null;
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 		PreparedStatement get_message_st = data_repo.getPreparedStatement(owner, GET_MESSAGE_QUERY);
@@ -546,6 +552,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		Queue<Item> results = new ArrayDeque<Item>();
 		BareJID owner = crit.getQuestionerJID().getBareJID();
 
+		log.log(Level.FINEST, () -> "Getting items items, criteria: " + crit + ", range: " + range);
 		// there is no point to execute query if limit is estimated to be 0
 		if (Math.min(range.size(), crit.getRsm().getMax()) > 0) {
 			PreparedStatement get_messages_st = data_repo.getPreparedStatement(owner, GET_MESSAGES_QUERY);
@@ -598,6 +605,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 	
 	private Integer getItemsCount(Q crit) throws SQLException {
+		log.log(Level.FINEST, () -> "Getting items count, criteria: " + crit);
 		Integer count = null;
 		ResultSet rs = null;
 		BareJID owner = crit.getQuestionerJID().getBareJID();
@@ -618,6 +626,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	private Integer getItemPosition(String uid, Q query) throws SQLException, ComponentException {
+		log.log(Level.FINEST, () -> "Getting item position, criteria: " + query + ", uid: " + uid);
 		if (uid == null || uid.isEmpty()) {
 			return null;
 		}

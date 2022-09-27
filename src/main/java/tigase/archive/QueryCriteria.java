@@ -100,4 +100,18 @@ public class QueryCriteria
 		}
 		return items;
 	}
+
+	@Override
+	public String toString() {
+		final StringBuffer sb = new StringBuffer("QueryCriteria{");
+		sb.append("QueryImpl='").append(super.toString()).append('\'');
+		sb.append(", contains=").append(contains);
+		sb.append(", tags=").append(tags);
+		sb.append(", collections=").append(collections);
+		sb.append(", items=").append(items.size());
+		sb.append(", useMessageIdInRsm=").append(useMessageIdInRsm);
+		sb.append(", fasteningCollation=").append(getFasteningCollation());
+		sb.append('}');
+		return sb.toString();
+	}
 }
