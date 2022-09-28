@@ -446,7 +446,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			}
 			stmt.setString(i++, sb.toString());
 		}
-		log.log(Level.FINEST, () -> "Setting PS parameters: " + stmt + ", crit: " + crit);
+		log.log(Level.FINEST, () -> "Setting PS parameters: `" + stmt + "`, crit: " + crit);
 		return i;
 	}
 

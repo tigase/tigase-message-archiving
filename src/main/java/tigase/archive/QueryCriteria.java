@@ -108,7 +108,6 @@ public class QueryCriteria
 		sb.append(", contains=").append(contains);
 		sb.append(", tags=").append(tags);
 		sb.append(", collections=").append(collections);
-		sb.append(", items=").append(items.size());
 		sb.append(", useMessageIdInRsm=").append(useMessageIdInRsm);
 		sb.append(", fasteningCollation=").append(getFasteningCollation());
 		sb.append('}');
