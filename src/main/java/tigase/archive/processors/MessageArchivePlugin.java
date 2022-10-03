@@ -666,7 +666,12 @@ public class MessageArchivePlugin
 				return false;
 			}
 		}
-			
+
+		// do not store errors for sent PubSub notifications
+		if (packet.getType() == StanzaType.error && packet.getElemName() == Message.ELEM_NAME &&
+				packet.getElemChild("event", "http://jabber.org/protocol/pubsub#event") != null) {
+			return false;
+		}			
 
 		if (settings.archiveOnlyForContactsInRoster()) {
 			// to and from should already be set at this point
