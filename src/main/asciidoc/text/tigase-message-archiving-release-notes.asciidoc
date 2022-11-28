@@ -1,9 +1,0 @@
-= Tigase Message Archiving Release Notes
-:author: Wojciech Kapcia
-
-Welcome to Tigase Message Archiving 3.0.0! This is a feature release for with a number of fixes and updates.
-
-include::tigase-message-archiving-current.asciidoc[leveloffset=+1]
-
-== Previous Releases
-include::tigase-message-archiving-2.x.0.asciidoc[leveloffset=+2]
