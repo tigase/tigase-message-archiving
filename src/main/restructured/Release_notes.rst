@@ -3,6 +3,16 @@ Tigase Message Archiving Release Notes
 
 Welcome to Tigase Message Archiving 3.0.0! This is a feature release for with a number of fixes and updates.
 
+Tigase Message Archiving 3.1.0 Release Notes
+---------------------------------------------
+
+- Added support for mam2#extended; #mam-73
+- Fixed issues with retrieval of archived messages stored in DerbyDB; #mam-73
+- Adjust log levels; #server-1115
+- Fixed issue with scheduling message retention cleanup; #mam-76
+- Improve MAM logging; #servers-384
+- Disabled storage of errors for sent PubSub notifications; #mam-77
+
 Tigase Message Archiving 3.0.0 Release Notes
 ---------------------------------------------
 
