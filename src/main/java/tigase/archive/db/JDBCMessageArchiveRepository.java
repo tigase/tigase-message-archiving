@@ -402,7 +402,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			stmt.setObject(i++, null);
 		}
 		if (crit.getStart() != null) {
-			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getStart().getTime() == 0) {
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getStart().getTime() <= 0) {
 				stmt.setObject(i++, null);
 			} else {
 				data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getStart()));
@@ -411,7 +411,7 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 			stmt.setObject(i++, null);
 		}
 		if (crit.getEnd() != null) {
-			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getEnd().getTime() == 0) {
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && crit.getEnd().getTime() <= 0) {
 				stmt.setObject(i++, null);
 			} else {
 				data_repo.setTimestamp(stmt, i++, convertToTimestamp(crit.getEnd()));
