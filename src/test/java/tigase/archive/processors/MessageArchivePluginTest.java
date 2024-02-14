@@ -71,7 +71,6 @@ public class MessageArchivePluginTest
 		super.registerBeans(kernel);
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).setActive(true).exportable().exec();
 		kernel.registerBean(MessageDeliveryLogic.class).exec();
-		kernel.registerBean("vhost-man").asInstance(new DummyVHostManager()).setActive(true).exportable().exec();
 		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 	}
 

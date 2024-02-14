@@ -73,7 +73,6 @@ public class Xep0136MessageArchivingProcessorTest
 		super.registerBeans(kernel);
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).setActive(true).exportable().exec();
 		kernel.registerBean(MessageDeliveryLogic.class).exec();
-		kernel.registerBean("vhost-man").asInstance(new MessageArchivePluginTest.DummyVHostManager()).setActive(true).exportable().exec();
 		kernel.registerBean(MessageArchivePlugin.class).setActive(true).exec();
 		kernel.registerBean(Xep0136MessageArchivingProcessor.class).setActive(true).exec();
 	}
