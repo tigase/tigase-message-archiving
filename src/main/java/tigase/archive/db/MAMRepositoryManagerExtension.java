@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static tigase.db.util.importexport.Exporter.EXPORT_MAM_BATCH_SIZE;
 import static tigase.db.util.importexport.Exporter.EXPORT_MAM_SINCE;
 import static tigase.db.util.importexport.RepositoryManager.isSet;
 
@@ -45,12 +46,12 @@ public class MAMRepositoryManagerExtension extends RepositoryManagerExtensionBas
 
 	@Override
 	public Stream<CommandlineParameter> getExportParameters() {
-		return Stream.concat(super.getExportParameters(), Stream.of(NO_USER_MAM, EXPORT_MAM_SINCE));
+		return Stream.concat(super.getExportParameters(), Stream.of(NO_USER_MAM, EXPORT_MAM_SINCE, EXPORT_MAM_BATCH_SIZE));
 	}
 
 	@Override
 	public Stream<CommandlineParameter> getImportParameters() {
-		return Stream.concat(super.getImportParameters(), Stream.of(NO_USER_MAM, EXPORT_MAM_SINCE));
+		return Stream.concat(super.getImportParameters(), Stream.of(NO_USER_MAM));
 	}
 
 	@Override
