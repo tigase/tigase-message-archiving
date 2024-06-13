@@ -20,6 +20,7 @@ package tigase.archive;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.archive.db.MessageArchiveRepository;
+import tigase.archive.processors.MessageArchivePlugin;
 import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.modules.impl.DiscoveryModule;
 import tigase.db.TigaseDBException;
@@ -37,13 +38,16 @@ import tigase.server.Packet;
 import tigase.stats.StatisticsList;
 import tigase.util.common.TimerTask;
 import tigase.vhosts.VHostItem;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.modules.GetFormModule;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,6 +84,8 @@ public class MessageArchiveComponent
 	private Duration removeExpiredMessagesPeriod = Duration.ofDays(1);
 	@ConfigField(desc = "Tag support enabled", alias = TAGS_SUPPORT_PROP_KEY)
 	private boolean tagsSupport = false;
+	@Inject
+	private UserRepository userRepository;
 
 	//~--- constructors ---------------------------------------------------------
 
@@ -226,7 +232,33 @@ public class MessageArchiveComponent
 								}
 								break;
 							case userDefined:
-								// right now there is no implementation for this so let's handle it in same way as unlimited
+								List<BareJID> users = userRepository.getUsers();
+								for (BareJID user : users) {
+									try {
+										String value = userRepository.getData(user, MessageArchivePlugin.ID,
+																			  "retention");
+										if (value != null && !value.isEmpty()) {
+											int retentionInDays = Integer.parseInt(value);
+											long start = System.currentTimeMillis();
+											LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusDays(retentionInDays);
+											long timestamp_long = timestamp.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+											Timestamp ts = new java.sql.Timestamp(timestamp_long);
+											msg_repo.removeItems(user,null, null, ts);
+											long stop = System.currentTimeMillis();
+											long executedIn = stop - start;
+											time += executedIn;
+											log.log(Level.FINEST, "removed messsages older than {0} for user {1} in {2}ms",
+													new Object[]{timestamp.toString(), user, executedIn});
+										}
+									} catch (NumberFormatException ex) {
+										log.log(Level.FINEST, "skipping removal of expired messages for user " + user +
+												" due to incorrect retention value", ex);
+									} catch (TigaseDBException ex) {
+										log.log(Level.FINEST, "skipping removal of expired messages for user " + user +
+												" due to database error", ex);
+									}
+								}
+								break;
 							case unlimited:
 								log.log(Level.FINEST, "skipping removal of expired messages for domain {0}" +
 												" as removal for retention type {1} is not supported",

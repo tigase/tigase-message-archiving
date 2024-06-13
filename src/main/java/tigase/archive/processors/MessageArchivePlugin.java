@@ -84,7 +84,7 @@ public class MessageArchivePlugin
 	public static final String OWNER_JID = "owner";
 	public static final String ARCHIVE = "message-archive";
 	public static final String MSG_ARCHIVE_PATHS = "msg-archive-paths";
-	protected static final String ID = "message-archive";
+	public static final String ID = "message-archive";
 	protected static final String SETTINGS = ARCHIVE + "/settings";
 	private static final Logger log = Logger.getLogger(MessageArchivePlugin.class.getCanonicalName());
 	private static final String AUTO = "auto";
