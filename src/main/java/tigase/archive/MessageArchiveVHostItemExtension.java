@@ -152,10 +152,12 @@ public class MessageArchiveVHostItemExtension
 
 	@Override
 	public String toDebugString() {
-		return "enabled: " + enabled + ", defaultStore: " +
-				defaultStoreMethod.map(StoreMethod::toString).orElse("unset") + ", requiredStore: " +
-				requiredStoreMethod.map(StoreMethod::toString).orElse("unset") + ", retentionType: " + retentionType +
-				", saveMuc: " + saveMuc;
+		return "enabled: " + enabled +
+			", defaultStore: " + defaultStoreMethod.map(StoreMethod::toString).orElse("unset") +
+			", requiredStore: " + requiredStoreMethod.map(StoreMethod::toString).orElse("unset") +
+			", retentionType: " + retentionType +
+			", retentionDays: " + retentionDays +
+			", saveMuc: " + saveMuc;
 	}
 
 	@Override
@@ -193,8 +195,10 @@ public class MessageArchiveVHostItemExtension
 			case numberOfDays:
 				merged.retentionType = RetentionType.numberOfDays;
 				merged.retentionDays = Math.min(this.retentionDays == null ? Integer.MAX_VALUE : this.retentionDays, defaults.getRetentionDays() == null ? Integer.MAX_VALUE : defaults.getRetentionDays());
+				break;
 			case userDefined:
 				merged.retentionType = RetentionType.userDefined;
+				break;
 		}
 		merged.saveMuc = this.saveMuc.isPresent() ? this.saveMuc : defaults.getSaveMuc();
 		return merged;

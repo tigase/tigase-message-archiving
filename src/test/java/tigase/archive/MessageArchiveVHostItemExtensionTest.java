@@ -38,4 +38,19 @@ public class MessageArchiveVHostItemExtensionTest {
 		assertTrue(extension.isEnabled());
 		assertNull(extension.toElement());
 	}
+
+	@Test
+	public void testMerge() {
+		final MessageArchiveVHostItemExtension defExtension = new MessageArchiveVHostItemExtension();
+		defExtension.initFromElement(new Element(defExtension.getId(), new String[]{"retention-type"},
+		                                         new String[]{RetentionType.unlimited.toString()}));
+
+		final MessageArchiveVHostItemExtension domainExtension = new MessageArchiveVHostItemExtension();
+		assertEquals(RetentionType.userDefined, domainExtension.getRetentionType());
+		domainExtension.initFromElement(new Element(domainExtension.getId(), new String[]{"retention-type"}, new String[] {"numberOfDays"}));
+		assertEquals(RetentionType.numberOfDays, domainExtension.getRetentionType());
+		final MessageArchiveVHostItemExtension merged = domainExtension.mergeWithDefaults(
+			defExtension);
+		assertEquals(RetentionType.numberOfDays, merged.getRetentionType());
+	}
 }

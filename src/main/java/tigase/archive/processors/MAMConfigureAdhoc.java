@@ -112,28 +112,21 @@ public class MAMConfigureAdhoc implements AdHocCommand {
 			MessageArchiveVHostItemExtension extension = vHost.getExtension(MessageArchiveVHostItemExtension.class);
 			String retentionDays = userRepository.getData(request.getSender().getBareJID(), MessageArchivePlugin.ID,
 														  "retention");
+			log.finest(() -> "Retrieved retention days, user " + retentionDays + ", extension " + extension.toDebugString());
 			switch(extension.getRetentionType()) {
-				case unlimited -> {
-					Field field = Field.fieldFixed("");
-					field.setVar("retentionInDays");
-					field.setLabel("Retention in days");
-					form.addField(field);
-				}
-				case numberOfDays -> {
-					Field field = Field.fieldFixed("" + extension.getRetentionDays());
-					field.setVar("retentionInDays");
-					field.setLabel("Retention in days");
-					form.addField(field);
-				}
-				case userDefined -> {
-					form.addField(Field.fieldTextSingle("retentionInDays", retentionDays, "Retention in days"));
-				}
+				case unlimited -> setRetention(form, "");
+				case numberOfDays -> setRetention(form, "" + extension.getRetentionDays());
+				case userDefined -> setRetention(form, retentionDays);
 			}
 
 			return form;
 		} catch (TigaseDBException ex) {
 			throw new AdHocCommandException(Authorization.INTERNAL_SERVER_ERROR, ex.getMessage());
 		}
+	}
+
+	private static void setRetention(Form form, String retentionDays) {
+		form.addField(Field.fieldTextSingle("retentionInDays", retentionDays, "Retention in days"));
 	}
 
 	protected Form submitForm(AdhHocRequest request, AdHocResponse response, Form form) throws AdHocCommandException {
