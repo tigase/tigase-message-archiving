@@ -185,9 +185,15 @@ public class Xep0136MessageArchivingProcessor
 					expire = session.getData(SETTINGS, EXPIRE, null);
 					break;
 				case numberOfDays:
-					Integer retention = extension.getRetentionDays();
-					if (retention != null) {
-						expire = String.valueOf(retention.longValue() * 60 * 60 * 24);
+					Integer retentionDays = extension.getRetentionDays();
+					if (retentionDays != null) {
+						expire = String.valueOf(retentionDays.longValue() * 60 * 60 * 24);
+					}
+					break;
+				case numberOfHours:
+					Integer retentionHours = extension.getRetentionDays();
+					if (retentionHours != null) {
+						expire = String.valueOf(retentionHours.longValue() * 60 * 60);
 					}
 					break;
 				case unlimited:

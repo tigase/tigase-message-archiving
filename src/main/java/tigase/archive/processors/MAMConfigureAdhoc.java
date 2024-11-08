@@ -110,23 +110,22 @@ public class MAMConfigureAdhoc implements AdHocCommand {
 								 "Fill out and submit this form to configure message archiving");
 			VHostItem vHost = vHostManagerIfc.getVHostItem(request.getSender().getDomain());
 			MessageArchiveVHostItemExtension extension = vHost.getExtension(MessageArchiveVHostItemExtension.class);
-			String retentionDays = userRepository.getData(request.getSender().getBareJID(), MessageArchivePlugin.ID,
-														  "retention");
-			log.finest(() -> "Retrieved retention days, user " + retentionDays + ", extension " + extension.toDebugString());
-			switch(extension.getRetentionType()) {
-				case unlimited -> setRetention(form, "");
-				case numberOfDays -> setRetention(form, "" + extension.getRetentionDays());
-				case userDefined -> setRetention(form, retentionDays);
-			}
+			String retentionVHost = String.valueOf(extension.getRetentionDays());
+			String retentionUser = userRepository.getData(request.getSender().getBareJID(), MessageArchivePlugin.ID,
+			                                              "retention");
+			log.finest(() -> "Retrieved retention days, user " + retentionUser + ", extension " + extension.toDebugString());
+			Field f = switch (extension.getRetentionType()) {
+				case unlimited -> Field.fieldTextSingle("retentionInDays", "", "Retention in days");
+				case numberOfDays -> Field.fieldTextSingle("retentionInDays", retentionVHost, "Retention in days");
+				case numberOfHours -> Field.fieldTextSingle("retentionInHours", retentionVHost, "Retention in hours");
+				case userDefined -> Field.fieldTextSingle("retentionInDays", retentionUser, "Retention in days");
+			};
+			form.addField(f);
 
 			return form;
 		} catch (TigaseDBException ex) {
 			throw new AdHocCommandException(Authorization.INTERNAL_SERVER_ERROR, ex.getMessage());
 		}
-	}
-
-	private static void setRetention(Form form, String retentionDays) {
-		form.addField(Field.fieldTextSingle("retentionInDays", retentionDays, "Retention in days"));
 	}
 
 	protected Form submitForm(AdhHocRequest request, AdHocResponse response, Form form) throws AdHocCommandException {
@@ -141,6 +140,11 @@ public class MAMConfigureAdhoc implements AdHocCommand {
 														"Unlimited retention is required for this domain.");
 					}
 				} case numberOfDays -> {
+					if (retentionDays != null) {
+						throw new AdHocCommandException(Authorization.POLICY_VIOLATION,
+														"Retention time is enforced for this domain.");
+					}
+				} case numberOfHours -> {
 					if (retentionDays != null) {
 						throw new AdHocCommandException(Authorization.POLICY_VIOLATION,
 														"Retention time is enforced for this domain.");

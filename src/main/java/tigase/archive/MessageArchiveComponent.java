@@ -231,6 +231,20 @@ public class MessageArchiveComponent
 									count++;
 								}
 								break;
+							case numberOfHours:
+								Integer hours = extension.getRetentionDays();
+								if (hours != null) {
+									long start = System.currentTimeMillis();
+									LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Z")).minusHours(hours);
+									msg_repo.deleteExpiredMessages(vhost.getBareJID(), timestamp);
+									long stop = System.currentTimeMillis();
+									long executedIn = stop - start;
+									time += executedIn;
+									log.log(Level.FINEST, "removed messsages older than {0} for domain {1} in {2}ms",
+											new Object[]{timestamp.toString(), vhost.getDomain(), executedIn});
+									count++;
+								}
+								break;
 							case userDefined:
 								List<BareJID> users = userRepository.getUsers();
 								for (BareJID user : users) {

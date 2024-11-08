@@ -196,6 +196,10 @@ public class MessageArchiveVHostItemExtension
 				merged.retentionType = RetentionType.numberOfDays;
 				merged.retentionDays = Math.min(this.retentionDays == null ? Integer.MAX_VALUE : this.retentionDays, defaults.getRetentionDays() == null ? Integer.MAX_VALUE : defaults.getRetentionDays());
 				break;
+			case numberOfHours:
+				merged.retentionType = RetentionType.numberOfHours;
+				merged.retentionDays = Math.min(this.retentionDays == null ? Integer.MAX_VALUE : this.retentionDays, defaults.getRetentionDays() == null ? Integer.MAX_VALUE : defaults.getRetentionDays());
+				break;
 			case userDefined:
 				merged.retentionType = RetentionType.userDefined;
 				break;
@@ -218,11 +222,11 @@ public class MessageArchiveVHostItemExtension
 							   new String[]{"", "false", "body", "message", "stream"});
 		DataForm.addFieldValue(commandEl, prefix + "-retention-type",
 							   retentionType.name(), "Message Archiving - retention type",
-							   new String[]{"User defined", "Unlimited", "Number of days"},
-							   new String[]{"userDefined", "unlimited", "numberOfDays"});
+							   new String[]{"User defined", "Unlimited", "Number of days", "Number of hours"},
+							   new String[]{"userDefined", "unlimited", "numberOfDays", "numberOfHours"});
 		DataForm.addFieldValue(commandEl, prefix + "-retention-days",
 							   retentionDays == null ? "" : String.valueOf(retentionDays), "text-single",
-							   "Message Archiving - retention period (in days)");
+							   "Message Archiving - retention period (in days/hours)");
 		DataForm.addFieldValue(commandEl, prefix + "-save-muc", saveMuc.map(Enum::toString).orElse(""),
 							   "Message Archiving - store MUC messages",
 							   new String[]{"Default", StoreMuc.User.name(), StoreMuc.False.name(),
