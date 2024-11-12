@@ -114,13 +114,18 @@ public class MAMConfigureAdhoc implements AdHocCommand {
 			String retentionUser = userRepository.getData(request.getSender().getBareJID(), MessageArchivePlugin.ID,
 			                                              "retention");
 			log.finest(() -> "Retrieved retention days, user " + retentionUser + ", extension " + extension.toDebugString());
-			Field f = switch (extension.getRetentionType()) {
-				case unlimited -> Field.fieldTextSingle("retentionInDays", "", "Retention in days");
-				case numberOfDays -> Field.fieldTextSingle("retentionInDays", retentionVHost, "Retention in days");
-				case numberOfHours -> Field.fieldTextSingle("retentionInHours", retentionVHost, "Retention in hours");
-				case userDefined -> Field.fieldTextSingle("retentionInDays", retentionUser, "Retention in days");
+			Field retentionValue = switch (extension.getRetentionType()) {
+				case numberOfDays, numberOfHours -> Field.fieldTextSingle("retentionValue", retentionVHost, "Retention value");
+				case userDefined -> Field.fieldTextSingle("retentionValue", retentionUser, "Retention value");
+				case unlimited -> Field.fieldTextSingle("retentionValue", "", "Retention value");
 			};
-			form.addField(f);
+			
+			form.addField(retentionValue);
+			Field retentionUnit = switch (extension.getRetentionType()) {
+				case numberOfDays, userDefined, unlimited -> Field.fieldTextSingle("retentionUnit", "days", "Retention unit (days, hours)");
+				case numberOfHours -> Field.fieldTextSingle("retentionUnit", "hours", "Retention unit (days, hours)");
+			};
+			form.addField(retentionUnit);
 
 			return form;
 		} catch (TigaseDBException ex) {
