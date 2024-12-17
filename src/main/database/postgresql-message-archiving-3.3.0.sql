@@ -17,6 +17,33 @@
 --
 
 -- QUERY START:
+do $$
+begin
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_ts_index')) is not null) then
+    drop index tig_ma_msgs_ts_index on tig_ma_msgs;
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+do $$
+begin
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_ts_index')) is null) then
+    create index tig_ma_msgs_owner_id_ts_index on tig_ma_msgs ( owner_id, ts );
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
+do $$
+begin
+if exists (select 1 where (select to_regclass('public.tig_ma_msgs_owner_id_buddy_id_ts_index')) is null) then
+    create index tig_ma_msgs_owner_id_buddy_id_ts_index on tig_ma_msgs ( owner_id, buddy_id, ts );
+end if;
+end$$;
+-- QUERY END:
+
+-- QUERY START:
 create or replace function Tig_MA_GetMessages(_ownerJid varchar(2049), _buddyJid varchar(2049), _from timestamp with time zone, _to timestamp with time zone, _refType smallint, _tags text, _contains text, _limit int, _offset int) returns table(
                                                                                                                                                                                                                                     "msg" text, "ts" timestamp with time zone, "buddyJid" varchar(2049), "stableId" varchar(36), "refStableId" varchar(36)
                                                                                                                                                                                                                                 ) as $$

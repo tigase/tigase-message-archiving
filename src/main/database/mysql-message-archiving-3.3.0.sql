@@ -17,6 +17,47 @@
 --
 
 -- QUERY START:
+drop procedure if exists TigMAMUpgrade;
+-- QUERY END:
+
+delimiter //
+
+-- QUERY START:
+create procedure TigMAMUpgrade()
+begin
+    if not exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_ts_index') then
+        create index tig_ma_msgs_owner_id_ts_index on tig_ma_msgs (owner_id, ts);
+    end if;
+    if not exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id_ts_index') then
+        create index tig_ma_msgs_owner_id_buddy_id_ts_index on tig_ma_msgs (owner_id, buddy_id, ts);
+    end if;
+
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_ts_index') then
+        drop index tig_ma_msgs_ts_index on tig_ma_msgs;
+    end if;
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id') then
+        drop index tig_ma_msgs_owner_id on tig_ma_msgs;
+    end if;
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_ts_buddy_id') then
+        drop index tig_ma_msgs_owner_id_ts_buddy_id on tig_ma_msgs;
+    end if;
+    if exists (select 1 from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_ma_msgs' and INDEX_NAME = 'tig_ma_msgs_owner_id_buddy_id') then
+        drop index tig_ma_msgs_owner_id_buddy_id on tig_ma_msgs;
+    end if;
+end //
+-- QUERY END:
+
+delimiter ;
+
+-- QUERY START:
+call TigMAMUpgrade();
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists TigMAMUpgrade;
+-- QUERY END:
+
+-- QUERY START:
 drop procedure if exists Tig_MA_GetMessages;
 -- QUERY END:
 
@@ -51,7 +92,7 @@ begin
 		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
 		set @msgs_query = 'select m.msg, m.ts, b.jid, Tig_MA_OrderedToUuid(m.stable_id) as stable_id, Tig_MA_OrderedToUuid(m.ref_stable_id) as ref_stable_id
-		from tig_ma_msgs m
+		from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
@@ -82,7 +123,7 @@ begin
                 limit _limit offset _offset;
             when 1 then
                 select m.msg, m.ts, b.jid, Tig_MA_OrderedToUuid(m.stable_id) as stable_id, Tig_MA_OrderedToUuid(m.ref_stable_id) as ref_stable_id
-                from tig_ma_msgs m
+                from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
                     inner join tig_ma_jids o on m.owner_id = o.jid_id
                     inner join tig_ma_jids b on b.jid_id = m.buddy_id
                 where
@@ -156,7 +197,7 @@ begin
         select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
         select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
         set @msgs_query = 'select count(1)
-		from tig_ma_msgs m
+		from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
@@ -173,7 +214,7 @@ begin
         case _refType
             when 1 then
                 select count(1)
-                from tig_ma_msgs m
+                from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
                     inner join tig_ma_jids o on m.owner_id = o.jid_id
                     inner join tig_ma_jids b on b.jid_id = m.buddy_id
                 where
@@ -210,7 +251,7 @@ begin
 		select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
 		select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
 		set @msgs_query = 'select count(1) + 1
-		from tig_ma_msgs m
+		from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
@@ -235,7 +276,7 @@ begin
         case _refType
             when 1 then
                 select count(1) + 1
-                from tig_ma_msgs m
+                from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
                      join tig_ma_jids o on m.owner_id = o.jid_id
                     join tig_ma_jids b on m.buddy_id = b.jid_id
                 where
@@ -289,7 +330,7 @@ begin
         select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
         select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
         set @msgs_query = 'select min(m.ts), b.jid';
-        set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m
+        set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
@@ -306,7 +347,7 @@ begin
         deallocate prepare stmt;
     else
         select min(m.ts), b.jid
-        from tig_ma_msgs m
+        from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
             inner join tig_ma_jids o on m.owner_id = o.jid_id
             inner join tig_ma_jids b on b.jid_id = m.buddy_id
         where
@@ -333,7 +374,7 @@ begin
         select Tig_MA_GetHasTagsQuery(_tags) into @tags_query;
         select Tig_MA_GetBodyContainsQuery(_contains) into @contains_query;
         set @msgs_query = 'select count(1) from (select min(m.ts), b.jid';
-        set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m
+        set @msgs_query = CONCAT( @msgs_query,' from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
 			inner join tig_ma_jids o on m.owner_id = o.jid_id
 			inner join tig_ma_jids b on b.jid_id = m.buddy_id
 		where
@@ -350,7 +391,7 @@ begin
     else
         select count(1) from (
             select min(m.ts), b.jid
-            from tig_ma_msgs m
+            from tig_ma_msgs m ignore index (buddy_id, tig_ma_msgs_owner_id_buddy_id_is_ref_ts_index, tig_ma_msgs_owner_id_buddy_id_stanza_id_ts_index)
                 inner join tig_ma_jids o on m.owner_id = o.jid_id
                 inner join tig_ma_jids b on b.jid_id = m.buddy_id
             where
