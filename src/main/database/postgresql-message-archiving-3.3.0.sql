@@ -20,7 +20,7 @@
 do $$
 begin
 if exists (select 1 where (select to_regclass('public.tig_ma_msgs_ts_index')) is not null) then
-    drop index tig_ma_msgs_ts_index on tig_ma_msgs;
+    drop index tig_ma_msgs_ts_index;
 end if;
 end$$;
 -- QUERY END:
