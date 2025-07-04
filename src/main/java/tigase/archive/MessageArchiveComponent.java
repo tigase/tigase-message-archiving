@@ -181,9 +181,9 @@ public class MessageArchiveComponent
 			if (removeExpiredMessages) {
 				long initialDelay = removeExpiredMessagesDelay.toMillis();
 				long period = removeExpiredMessagesPeriod.toMillis();
-				log.log(Level.FINE,
-						"scheduling removal of expired messages to once every {0}ms after initial delay of {1}ms",
-						new Object[]{period, initialDelay});
+				log.log(Level.CONFIG,
+						"Scheduling removal of expired messages to once every {0} after initial delay of {1}",
+						new Object[]{removeExpiredMessagesPeriod, removeExpiredMessagesDelay});
 				expiredMessagesRemovalTask = new RemoveExpiredTask();
 				addTimerTask(expiredMessagesRemovalTask, initialDelay, period);
 			}
