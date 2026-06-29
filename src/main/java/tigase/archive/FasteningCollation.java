@@ -17,6 +17,10 @@
  */
 package tigase.archive;
 
+import tigase.annotations.TigaseDeprecated;
+
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public enum FasteningCollation {
 	simplified,
 	full,

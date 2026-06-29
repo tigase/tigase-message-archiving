@@ -17,6 +17,7 @@
  */
 package tigase.archive.db.derby;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.util.Algorithms;
 import tigase.xmpp.jid.BareJID;
 
@@ -29,6 +30,8 @@ import java.util.logging.Logger;
 /**
  * @author andrzej
  */
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class StoredProcedures {
 
 	private static final Logger log = Logger.getLogger(StoredProcedures.class.getName());

@@ -19,6 +19,7 @@ package tigase.archive;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.db.MessageArchiveRepository;
 import tigase.archive.processors.MessageArchivePlugin;
 import tigase.component.AbstractKernelBasedComponent;
@@ -56,6 +57,8 @@ import java.util.logging.Logger;
  */
 @Bean(name = "message-archive", parent = Kernel.class, active = true)
 @ConfigType(ConfigTypeEnum.DefaultMode)
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class MessageArchiveComponent
 		extends AbstractKernelBasedComponent
 		implements MessageArchiveConfig, UnregisterAware {

@@ -157,6 +157,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 	}
 
 	@Override
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	public void queryCollections(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws TigaseDBException {
 		try {
 			log.log(Level.FINEST, () -> "Querying collections: crit: " + crit);
@@ -236,6 +238,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 
 	//~--- get methods ----------------------------------------------------------
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	@Override
 	public List<String> getTags(BareJID owner, String startsWith, Q crit) throws TigaseDBException {
 		List<String> results = new ArrayList<String>();
@@ -304,6 +308,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		stmt.setInt(i++, crit.getRsm().getIndex());
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	public void setItemsQueryParams(PreparedStatement stmt, Q crit, Range range, FasteningCollation fasteningCollation)
 			throws SQLException {
 		int i = setQueryParams(stmt, crit, fasteningCollation);
@@ -450,14 +456,20 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return i;
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	protected Collection newCollectionInstance() {
 		return new Collection();
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	protected Item newItemInstance() {
 		return new Item();
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	private void getCollectionsItems(Q crit, CollectionHandler<Q, MessageArchiveRepository.Collection> collectionHandler) throws SQLException {
 		log.log(Level.FINEST, () -> "Getting collections items: " + crit);
 		ResultSet selectRs = null;
@@ -489,6 +501,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		}
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	private Integer getCollectionsCount(Q crit) throws SQLException {
 		log.log(Level.FINEST, () -> "Getting collections: " + crit);
 		ResultSet countRs = null;
@@ -509,6 +523,8 @@ public class JDBCMessageArchiveRepository<Q extends QueryCriteria>
 		return count;
 	}
 
+	@Deprecated
+	@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 	private Integer getColletionPosition(String uid, Q query) {
 		if (uid == null || uid.isEmpty()) {
 			return null;

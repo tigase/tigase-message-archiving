@@ -17,9 +17,13 @@
  */
 package tigase.archive.xep0313;
 
+import tigase.annotations.TigaseDeprecated;
+
 /**
  * Created by andrzej on 21.07.2016.
  */
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class QueryImpl
 		extends tigase.xmpp.mam.ExtendedQueryImpl {
 

@@ -17,6 +17,7 @@
  */
 package tigase.archive;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.xml.Element;
 
 import java.util.HashSet;
@@ -25,6 +26,8 @@ import java.util.Set;
 /**
  * @author andrzej
  */
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class TagsHelper {
 
 	private static final String[] MESSAGE_BODY_PATH = {"message", "body"};

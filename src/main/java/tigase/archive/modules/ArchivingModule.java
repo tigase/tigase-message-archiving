@@ -17,6 +17,7 @@
  */
 package tigase.archive.modules;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.archive.TagsHelper;
 import tigase.archive.db.MessageArchiveRepository;
@@ -43,6 +44,8 @@ import static tigase.archive.processors.MessageArchivePlugin.OWNER_JID;
  * Created by andrzej on 16.07.2016.
  */
 @Bean(name = "archiving", parent = MessageArchiveComponent.class, active = true)
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class ArchivingModule
 		extends AbstractModule {
 

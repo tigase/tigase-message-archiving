@@ -17,6 +17,7 @@
  */
 package tigase.archive.xep0313;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.archive.MessageArchiveComponent;
 import tigase.kernel.beans.Bean;
 import tigase.xmpp.mam.modules.QueryModule;
@@ -25,6 +26,8 @@ import tigase.xmpp.mam.modules.QueryModule;
  * Created by andrzej on 29.12.2016.
  */
 @Bean(name = "mamQueryModule", parent = MessageArchiveComponent.class, active = true)
+@Deprecated
+@TigaseDeprecated(since = "3.3.0", note = "Message Archive Component is deprecated and will be removed in Tigase XMPP Server 9.0.0 due to upcoming changes")
 public class MAMQueryModule
 		extends QueryModule {
 
